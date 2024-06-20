@@ -1,8 +1,11 @@
 import h5py
 import os
+import torch
+from torch.utils.data import Dataset
+from torchvision import transforms
 
-class CustomDataset(Dataset):
-    def __init__(self, root_dir = "", img_type="Ypdf", attributes = [], pulse_range = [], transform=None): #max pulse is [min_pulses, max_pulses]
+class DataMilking(Dataset):
+    def __init__(self, root_dir = "", img_type="Ypdf", attributes = [], pulse_range = [], transform=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
         self.transform = transform
         self.img_type = img_type
@@ -23,22 +26,25 @@ class CustomDataset(Dataset):
         return len(self.shot_paths)
 
     def __getitem__(self, idx):
+        
         file_path = os.path.join(self.root_dir, self.shot_paths[idx][0]) # find file where shot is
         shot_id = self.shot_paths[idx][1] #use other index to find the shot within the file
+        
         with h5py.File(file_path, 'r') as f:
             
             img  = f[shot_id][img_type]
             if self.transform:
                 img = self.transform(img)
+            
             attribute_data = []
             for attribute in attributes:
                 attribute_data.append(f[shot_id][img_typee].attrs[attribute])
-        return img, attribute_data
+        
+        return img, np.array(attribute_data)
             
 
 transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-# train_dataset = CustomDataset(root_dir='train', transform=transform)
-# train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
+
