@@ -2,8 +2,8 @@
 #SBATCH --partition=ampere
 #SBATCH --account=lcls:prjs2e21
 #SBATCH --job-name=reg
-#SBATCH --output=output-%j.txt
-#SBATCH --error=output-%j.txt
+#SBATCH --output=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
+#SBATCH --error=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem-per-cpu=10g
