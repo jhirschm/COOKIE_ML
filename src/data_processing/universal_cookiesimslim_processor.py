@@ -106,6 +106,8 @@ def main():
     data_file_paths = [os.path.join(args.file_paths, file) for file in os.listdir(args.file_paths) if file.endswith('.h5')]
     if (args.test_mode == True):
         data_file_paths = data_file_paths[0:1]
+    print("Data File Paths:")
+    print(data_file_paths)
     # Calculate and save the scalers
     ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(data_file_paths, args.scaler_save_path, args.scaler_name)
 
