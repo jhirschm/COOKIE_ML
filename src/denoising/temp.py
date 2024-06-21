@@ -1,1 +1,0 @@
-class Ximg_to_Ypdf_Autoencoder()
