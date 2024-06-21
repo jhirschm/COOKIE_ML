@@ -1,1 +1,1 @@
-temp file for structure 
+class Ximg_to_Ypdf_Autoencoder()
