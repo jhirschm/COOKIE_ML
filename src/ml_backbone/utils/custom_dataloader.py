@@ -1,3 +1,10 @@
+import numpy as np
+import h5py
+import os
+import torch
+from torch.utils.data import Dataset
+from torchvision import transforms
+import torch
 class DataMilking(Dataset):
     def __init__(self, root_dir = "", img_type="Ypdf", attributes = [], pulse_range = [], transform=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
@@ -7,6 +14,7 @@ class DataMilking(Dataset):
         self.shot_paths = []
         
         train_files = os.listdir(root_dir)
+        train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
         
         for file in train_files:
             with h5py.File(os.path.join(root_dir, file), 'r') as f:
