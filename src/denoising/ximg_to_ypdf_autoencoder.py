@@ -95,7 +95,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
                 print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}")
 
-                # Special scheduling
+                # Update the scheduler
+                scheduler.step(val_loss)
+
                 # Check if this is the best model so far
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
@@ -119,6 +121,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         'best_epoch': best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
+                
+                # Early stopping check
+                if scheduler.should_stop():
+                    print(f"Early stopping at epoch {epoch+1}")
+                    break
         # Save the output to the specified file
         run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
@@ -139,7 +146,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         plt.savefig(losses_path)
         plt.close()
 
-            return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
+        return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
         
 
