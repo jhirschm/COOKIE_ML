@@ -96,11 +96,12 @@ def main():
     parser.add_argument("--savepath", default="processed_data", help="Path to save the processed data")
     parser.add_argument("--energy_elements", default=512, type=int, help="Number of energy elements in the data")
     parser.add_argument("--suffix", default="_processed", help="Suffix to append to the processed data filename")
-
+    parser.add_argument("--test_mode", default=False, help="Run in test mode")
     args = parser.parse_args()
 
     data_file_paths = [os.path.join(args.file_paths, file) for file in os.listdir(args.file_paths) if file.endswith('.h5')]
-
+    if (args.test_mode == True):
+        data_file_paths = data_file_paths[0:1]
     # Calculate and save the scalers
     ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(data_file_paths, args.scaler_save_path, args.scaler_name)
 
