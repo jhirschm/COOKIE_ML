@@ -18,6 +18,10 @@ def calculate_scaler(file_paths, scaler_save_path, scaler_name):
     scaler_ximg = MinMaxScaler(feature_range=(-1, 1))
     scaler_ypdf = MinMaxScaler(feature_range=(-1, 1))
 
+    # Check if savepath exists, and create it if it doesn't
+    if not os.path.exists(scaler_save_path):
+        os.makedirs(scaler_save_path)
+        print(f"Directory {scaler_save_path} created.")
 
     for file_path in file_paths:
         with h5py.File(file_path, 'r') as h5f:
