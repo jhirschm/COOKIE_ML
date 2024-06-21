@@ -19,7 +19,8 @@ SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_033020
 SCALER_NAME="min_max_scaler"
 SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/"
 ENERGY_ELEMENTS=512
+TEST_MODE=True
 
 # Run the Python script with the specified arguments
-python3 /sdf/home/j/jhirschm/COOKIE_ML/src/data_processing/universal_cookiesimslim_processor.py $FILE_PATHS --scaler_save_path $SCALER_SAVE_PATH --scaler_name $SCALER_NAME  --savepath $SAVEPATH --energy_elements $ENERGY_ELEMENTS
+python3 /sdf/home/j/jhirschm/COOKIE_ML/src/data_processing/universal_cookiesimslim_processor.py $FILE_PATHS --scaler_save_path $SCALER_SAVE_PATH --scaler_name $SCALER_NAME  --savepath $SAVEPATH --energy_elements $ENERGY_ELEMENTS --test_mode $TEST_MODE
 
