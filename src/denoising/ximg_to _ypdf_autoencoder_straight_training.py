@@ -21,7 +21,7 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-device = torch.device("cpu")
+# device = torch.device("cpu")
 def main():
     # Input Data Paths and Output Save Paths
 
@@ -57,10 +57,10 @@ def main():
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.001)
     scheduler = CustomScheduler(optimizer, patience=5, cooldown=2, lr_reduction_factor=0.1, min_lr=1e-6, improvement_percentage=0.01)
-
     
     model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     identifier = "testAutoencoder"
+    autoencoder.to(device)
     autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=20)
 
 
