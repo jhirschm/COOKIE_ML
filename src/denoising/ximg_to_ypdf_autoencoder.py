@@ -1,9 +1,9 @@
 from denoising_util import *
-import DataMilking
+
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
-    def __init__(self, encoder_layers, decoder_layers):
+    def __init__(self, encoder_layers, decoder_layers, dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
-        
+        self.dtype = dtype
         # Create encoder based on the provided layer configuration
         encoder_modules = []
         for layer in encoder_layers:
@@ -12,7 +12,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 encoder_modules.append(nn.ReLU())
         
         self.encoder = nn.Sequential(*encoder_modules)
-        
+        # Cast encoder weights to torch.float32
+        for param in self.encoder.parameters():
+            param.data = param.data.to(self.dtype)
         # Create decoder based on the provided layer configuration
         decoder_modules = []
         for layer in decoder_layers:
@@ -25,8 +27,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
             decoder_modules[-1] = nn.Sigmoid()
         
         self.decoder = nn.Sequential(*decoder_modules)
+        for param in self.decoder.parameters():
+            param.data = param.data.to(self.dtype)
 
     def forward(self, x):
+
         x = self.encoder(x)
         x = self.decoder(x)
         return x
@@ -66,7 +71,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    inputs, labels = inputs.to(device), labels.to(device)
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
 
                     outputs = self(inputs)
                     loss = criterion(outputs, labels)
