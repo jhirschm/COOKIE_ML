@@ -32,6 +32,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
     def forward(self, x):
 
+        #Problems here!
         x = self.encoder(x)
         x = self.decoder(x)
         return x
@@ -75,6 +76,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     labels = labels.to(device)
 
                     outputs = self(inputs)
+                    outputs = outputs.squeeze()  # Remove channel dimension
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -93,6 +95,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         inputs, labels = batch
                         inputs, labels = inputs.to(device), labels.to(device)
                         outputs = self(inputs)
+                        outputs = outputs.squeeze()
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
