@@ -26,7 +26,8 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
     dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
     print(dataset)
@@ -56,15 +57,38 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.001)
-    scheduler = CustomScheduler(optimizer, patience=5, cooldown=2, lr_reduction_factor=0.1, min_lr=1e-6, improvement_percentage=0.01)
+    scheduler = CustomScheduler(optimizer, patience=5, cooldown=2, lr_reduction_factor=0.5, min_lr=1e-7, improvement_percentage=0.01)
     
-    model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06032024"
+
     identifier = "testAutoencoder"
     autoencoder.to(device)
     autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=20)
 
+    results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    with open(results_file, 'w') as f:
+        f.write("Model Training Results\n")
+        f.write("======================\n")
+        f.write(f"Data Path: {datapath}\n")
+        f.write(f"Model Save Directory: {model_save_dir}\n")
+        f.write("\nModel Parameters and Hyperparameters\n")
+        f.write("-----------------------------------\n")
+        f.write(f"Patience: {scheduler.patience}\n")
+        f.write(f"Cooldown: {scheduler.cooldown}\n")
+        f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+        f.write(f"Minimum Learning Rate: {scheduler.min_lr}\n")
+        f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+        f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+        f.write("\nModel Architecture\n")
+        f.write("------------------\n")
+        f.write(f"Encoder Layers: {encoder_layers}\n")
+        f.write(f"Decoder Layers: {decoder_layers}\n")
+        f.write("\nAdditional Notes\n")
+        f.write("----------------\n")
+        f.write("First trial on S3DF for Denoising.\n")
 
-    # Train the model
+    
     
 if __name__ == "__main__":
     main()
