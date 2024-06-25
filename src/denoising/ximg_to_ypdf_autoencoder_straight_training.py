@@ -63,15 +63,15 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.001)
-    max_epochs = 100
-    scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.01)
+    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.0001)
+    max_epochs = 200
+    scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-        
+
     identifier = "testAutoencoder"
     autoencoder.to(device)
     autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs)

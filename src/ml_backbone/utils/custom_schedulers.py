@@ -44,18 +44,21 @@ class CustomScheduler:
 
         if self.total_epochs >= self.max_num_epochs:
             # If the total number of epochs exceeds the maximum, stop training
-            print(f"Maximum number of epochs ({self.max_num_epochs}) reached.")
+            print(f"Maximum number of epochs ({self.max_num_epochs+1}) reached.")
             return True
         elif self.num_bad_epochs_early_stop >= self.early_stop_patience:
             # If bad epochs exceed early_stop_patience, stop training
-            print(f"Early stopping at epoch {epoch}")
+            print(f"Early stopping at epoch {epoch+1}")
             return True
         
 
         # Calculate the required improvement in validation loss
         required_improvement = self.best_val_loss * (1 - self.improvement_percentage)
+        # print(self.best_val_loss)
+        # print(required_improvement)
 
         if current < required_improvement:
+            # print("Improvement")
             # If there is an improvement, update the best validation loss and reset bad epochs counter
             self.best_val_loss = current
             self.num_bad_epochs = 0
@@ -63,7 +66,7 @@ class CustomScheduler:
             self.lr_reduced = False
             self.cooldown_counter = 0
         else:
-            if self.num_bad_epochs > self.patience:
+            if self.num_bad_epochs >= self.patience:
                 # If bad epochs exceed patience, reduce learning rate
                 self.reduce_lr(epoch)
                 self.cooldown_counter = self.cooldown  # Reset cooldown counter
@@ -85,8 +88,9 @@ class CustomScheduler:
         # Reduce the learning rate for each parameter group
         for param_group in self.optimizer.param_groups:
             old_lr = float(param_group['lr'])
-            new_lr = max(old_lr * self.lr_reduction_factor, self.min_lr)  # Ensure new_lr is not less than min_lr
+            new_lr = old_lr * self.lr_reduction_factor 
             param_group['lr'] = new_lr  # Update learning rate
+            print(f"Epoch {epoch+1}: reducing learning rate from {old_lr:.6f} to {new_lr:.6f}") # Assuming epoch starts from 0
 
     @property
     def in_cooldown(self):
