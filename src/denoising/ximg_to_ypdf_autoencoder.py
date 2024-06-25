@@ -105,7 +105,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}")
 
                 # Update the scheduler
-                scheduler.step(val_loss)
+                should_stop = scheduler.step(val_loss, epoch)
 
                 # Check if this is the best model so far
                 if val_loss < best_val_loss:
@@ -132,7 +132,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     torch.save(checkpoint, checkpoint_path)
                 
                 # Early stopping check
-                if scheduler.should_stop():
+                # if scheduler.should_stop():
+                #     print(f"Early stopping at epoch {epoch+1}")
+                #     break
+                if should_stop:
                     print(f"Early stopping at epoch {epoch+1}")
                     break
         # Save the output to the specified file
