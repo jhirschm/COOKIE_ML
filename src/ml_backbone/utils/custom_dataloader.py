@@ -4,7 +4,6 @@ import os
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-import torch
 class DataMilking(Dataset):
     def __init__(self, root_dir = "", img_type="Ypdf", attributes = [], pulse_number = 2, transform=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
