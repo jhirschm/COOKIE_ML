@@ -7,6 +7,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         
         # Create encoder based on the provided layer configuration
         encoder_modules = []
+        print("HERERERERE")
         print(encoder_layers)
         for i in range(encoder_layers.shape[0]):
             print(encoder_layers[i])
