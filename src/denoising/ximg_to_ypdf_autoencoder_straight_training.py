@@ -51,6 +51,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
+    print("HELLO")
 
     # Example usage
     encoder_layers = np.array([[nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],[nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],[nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
