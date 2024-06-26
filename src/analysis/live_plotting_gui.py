@@ -66,6 +66,8 @@ def update_plot(*args):
         ypdf = h5_file[selected_key]['target'][:]
         # Assuming third_img is also Ypdf for now
         third_img = h5_file[selected_key]['output'][:]
+        third_img = np.squeeze(third_img)
+
     
     # Clear previous plots
     ax1.clear()
