@@ -1,9 +1,9 @@
 import numpy as np
-from utils import DataMilking
+from utils import DataMilking, DataMilking_Nonfat
 import torch
 
 
-dataset = DataMilking(root_dir="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode", attributes=["energies", "phases", "npulses"], pulse_number=2)
+dataset = DataMilking_Nonfat(root_dir="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode", pulse_number=2)
 
 print(dataset)
 

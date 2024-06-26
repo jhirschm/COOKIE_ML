@@ -82,9 +82,9 @@ class DataMilking_Nonfat(Dataset):
             img_x = torch.tensor(img_x, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
             img_y = f[shot_id]["Ypdf"][()]
             img_y = torch.tensor(img_y, dtype=torch.float32)
-            if self.transform:
-                img_x = self.transform(img_x)
-                img_y = self.transform(img_y)
+            # if self.transform:
+            #     img_x = self.transform(img_x)
+            #     img_y = self.transform(img_y)
         # dataset = torch.utils.data.TensorDataset(torch.tensor(img_x), torch.tensor(img_y))    
                    
         # print("img: ", img)
