@@ -10,13 +10,13 @@
 #SBATCH --time=0-10:00:00
 ##SBATCH --gpus 3
 # source ~/.bashrc
-source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate jh_pytorch
+source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
 # Define paths to your data files and scalers
-FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/"
-SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
+FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/"
+SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
 SCALER_NAME="min_max_scaler"
-SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
+SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
 ENERGY_ELEMENTS=512
 TEST_MODE=False
 
