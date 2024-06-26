@@ -63,12 +63,9 @@ def update_plot(*args):
         # # Assuming third_img is also Ypdf for now
         # third_img = ypdf
         ximg = h5_file[selected_key]['input'][:]
-        ximg = np.reshape(ximg, (32, 16, 512))
         ypdf = h5_file[selected_key]['target'][:]
-        ypdf = np.reshape(ypdf, (32, 16, 512))
         # Assuming third_img is also Ypdf for now
         third_img = h5_file[selected_key]['output'][:]
-        third_img = np.reshape(third_img, (32, 16, 512))
 
     
     # Clear previous plots
