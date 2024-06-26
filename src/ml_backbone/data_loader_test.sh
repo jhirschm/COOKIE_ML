@@ -5,12 +5,12 @@
 #SBATCH --output=output-%j.txt
 #SBATCH --error=output-%j.txt
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=8g
+#SBATCH --cpus-per-task=8
+#SBATCH --mem-per-cpu=25g
 #SBATCH --time=0-01:0:00
 ##SBATCH --gpus 3
-source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate
-conda activate jh_pytorch
+# source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate
+# conda activate jh_pytorch
 
 # Define paths to your data files and scalers
 FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/"
