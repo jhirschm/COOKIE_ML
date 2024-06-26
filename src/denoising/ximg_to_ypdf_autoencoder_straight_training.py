@@ -1,3 +1,4 @@
+print("start")
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
 from denoising_util import *
 # Get the directory of the currently running file
