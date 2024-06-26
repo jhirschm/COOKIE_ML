@@ -58,10 +58,14 @@ def update_plot(*args):
     full_path = os.path.join(directory_path, selected_file)
     
     with h5py.File(full_path, 'r') as h5_file:
-        ximg = h5_file[selected_key]['Ximg'][:]
-        ypdf = h5_file[selected_key]['Ypdf'][:]
+        # ximg = h5_file[selected_key]['Ximg'][:]
+        # ypdf = h5_file[selected_key]['Ypdf'][:]
+        # # Assuming third_img is also Ypdf for now
+        # third_img = ypdf
+        ximg = h5_file[selected_key]['input'][:]
+        ypdf = h5_file[selected_key]['target'][:]
         # Assuming third_img is also Ypdf for now
-        third_img = ypdf
+        third_img = h5_file[selected_key]['output'][:]
     
     # Clear previous plots
     ax1.clear()
