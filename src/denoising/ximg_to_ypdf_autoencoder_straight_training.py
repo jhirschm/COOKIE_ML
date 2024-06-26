@@ -1,24 +1,18 @@
-print("start")
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
 
-print("HELLO")
 
 from denoising_util import *
-print("HELLO")
 
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
-print("HELLO")
 
 # Construct the path to the utils directory relative to the current file's directory
 utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
-print("HELLO")
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
 from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
 from utils import CustomScheduler
-print("HELLO")
 
 # Check if CUDA (GPU support) is available
 if torch.cuda.is_available():
@@ -31,10 +25,8 @@ else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
 device = torch.device("cpu")
-print("HELLO")
 
 def main():
-    print("HELLO")
 
     seed = 42
     torch.manual_seed(seed)
@@ -63,20 +55,10 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    print("HELLO")
 
     # Example usage
     encoder_layers = np.array([[nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],[nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],[nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
-    print("WHY IS THIS NOT WORKING")
-    print("here "+encoder_layers)
-    print("here "+ type(encoder_layers))
-    print(encoder_layers.shape)
-    print(encoder_layers[0,0])
-    print(encoder_layers[2,0])
-    print(encoder_layers[0,1])
-
-
     decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
