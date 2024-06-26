@@ -4,6 +4,69 @@ import os
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
+
+
+class DataMilking_SemiSkimmed(Dataset):
+    def __init__(self, root_dir = "", input_name="Ypdf", labels = [], pulse_number = 2, transform=None): #pulse_range is [min_pulses, max_pulses]
+        self.root_dir = root_dir
+        self.transform = transform
+        self.input_name = input_name
+        self.labels = labels
+        self.inputs_arr = []
+        self.labels_arr = []
+        
+        train_files = os.listdir(root_dir)
+        train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
+        
+        for file in train_files:
+            print("file: ", file)
+            with h5py.File(os.path.join(root_dir, file), 'r') as f:
+                for shot in f.keys():
+                    # print("input: ", shot)
+                    # print("labels: ", list(f[shot].attrs.items()))
+                    
+                    if pulse_number == f[shot].attrs["npulses"]:
+                        if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                            
+                            self.inputs_arr.append(f[shot][self.input_name][()])
+                        else: #input is an attribute
+                            self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+
+                        labels_temp = []
+                        for label in self.labels:
+                            
+                            if label == "Ypdf" or label == "Ximg": #label is an image
+                                labels_temp.append(f[shot][label][()])
+                            
+                            else: #label is an attribute
+                                labels_temp.append(f[shot].attrs[label])
+                        
+                        self.labels_arr.append(labels_temp)
+        
+        self.inputs_arr = np.array(self.inputs_arr)
+        self.labels_arr = np.array(self.labels_arr)
+                                
+            
+
+    def __len__(self):
+        return len(self.inputs_arr)
+
+    def __getitem__(self, idx):
+        data_point = self.inputs_arr[idx]
+        labels = self.labels_arr[idx]
+        
+        if self.input_name == "Ypdf" or self.input_name == "Ximg": #input is an image
+            if self.transform:
+                data_point = self.transform(data_point)
+                
+        if "Ypdf" in self.labels  or "Ximg" in self.labels: #label has an image
+            if self.transform:
+                labels = self.transform(labels)
+
+        return data_point, labels
+
+
 class DataMilking(Dataset):
     def __init__(self, root_dir = "", img_type="Ypdf", attributes = [], pulse_number = 2, transform=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
@@ -83,9 +146,9 @@ class DataMilking_Nonfat(Dataset):
             img_x = torch.tensor(img_x, dtype=torch.float32).unsqueeze(0)  # Add channel dimension
             img_y = f[shot_id]["Ypdf"][()]
             img_y = torch.tensor(img_y, dtype=torch.float32)
-            if self.transform:
-                img_x = self.transform(img_x)
-                img_y = self.transform(img_y)
+            # if self.transform:
+            #     img_x = self.transform(img_x)
+            #     img_y = self.transform(img_y)
         # dataset = torch.utils.data.TensorDataset(torch.tensor(img_x), torch.tensor(img_y))    
                    
         # print("img: ", img)
