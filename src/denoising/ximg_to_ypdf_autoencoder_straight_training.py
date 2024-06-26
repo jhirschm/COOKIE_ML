@@ -21,7 +21,6 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-<<<<<<< HEAD
 device = torch.device("cpu")
 def main():
     # Input Data Paths and Output Save Paths
@@ -37,7 +36,6 @@ def main():
     train_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=True) #need to fix eventually
     val_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=False)
     test_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=False)
-=======
 # device = torch.device("cpu")
 def main():
     seed = 42
