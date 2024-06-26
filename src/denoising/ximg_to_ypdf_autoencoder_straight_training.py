@@ -53,13 +53,11 @@ def main():
 
 
     # Example usage
-    encoder_layers = np.array([
-        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]
-    ])
-    print(encoder_layers)
-    print(type(encoder_layers))
+    encoder_layers = np.array([[nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],[nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],[nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    print("WHY IS THIS NOT WORKING")
+    print("here "+encoder_layers)
+    print("here "+ type(encoder_layers))
     print(encoder_layers.shape)
     print(encoder_layers[0,0])
     print(encoder_layers[2,0])
