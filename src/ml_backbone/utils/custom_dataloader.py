@@ -49,13 +49,15 @@ class DataMilking(Dataset):
         return img, attribute_data
             
 class DataMilking_Nonfat(Dataset):
-    def __init__(self, root_dir = "", pulse_number = 2, transform=None): #pulse_range is [min_pulses, max_pulses]
+    def __init__(self, root_dir = "", pulse_number = 2, transform=None, subset=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
         self.transform = transform
         self.shot_paths = []
         
         train_files = os.listdir(root_dir)
         train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
+        if subset is not None:
+            train_files = train_files[:subset]
         
         for file in train_files:
             # print("file: ", file)
