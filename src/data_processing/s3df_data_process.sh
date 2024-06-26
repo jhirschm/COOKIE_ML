@@ -13,10 +13,10 @@
 source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
 # Define paths to your data files and scalers
-FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/"
-SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+FILE_PATHS="/sdf/scratch/users/j/jhirschm/CookieSimSlimData/1-Pulse_03282024/"
+SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
 SCALER_NAME="min_max_scaler"
-SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
 ENERGY_ELEMENTS=512
 TEST_MODE=False
 
