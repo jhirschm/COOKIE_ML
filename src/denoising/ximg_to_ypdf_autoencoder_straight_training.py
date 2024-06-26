@@ -62,7 +62,6 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
->>>>>>> origin/main
 
 
     # Define the model
@@ -82,7 +81,6 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
-<<<<<<< HEAD
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.001)
     scheduler = CustomScheduler(optimizer, patience=5, cooldown=2, lr_reduction_factor=0.1, min_lr=1e-6, improvement_percentage=0.01)
 
@@ -93,7 +91,6 @@ def main():
 
 
     # Train the model
-=======
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
@@ -128,8 +125,7 @@ def main():
         f.write("----------------\n")
         f.write("Reducing number of files because taking too long to train. Also introduced random seed42.\n")
 
-    
->>>>>>> origin/main
+
     
 if __name__ == "__main__":
     main()
