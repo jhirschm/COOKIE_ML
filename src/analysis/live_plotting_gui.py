@@ -63,7 +63,9 @@ def update_plot(*args):
         # # Assuming third_img is also Ypdf for now
         # third_img = ypdf
         ximg = h5_file[selected_key]['input'][:]
+        ximg = np.reshape(ximg, (32, 16, 512))
         ypdf = h5_file[selected_key]['target'][:]
+        ypdf = np.reshape(ypdf, (32, 16, 512))
         # Assuming third_img is also Ypdf for now
         third_img = h5_file[selected_key]['output'][:]
         third_img = np.reshape(third_img, (32, 16, 512))
@@ -114,7 +116,8 @@ update_plot.cbar3 = None
 # Create a text entry field for directory path
 directory_path_entry = tk.Entry(root, textvariable=directory_path_var, width=50)
 directory_path_entry.pack(pady=10)
-directory_path_var.trace_add('write', change_directory_path)
+# directory_path_var.trace_add('write', change_directory_path)
+directory_path_entry.bind('<Return>', change_directory_path)
 
 # Create a dropdown menu (Combobox) for file selection
 file_selector = ttk.Combobox(root, textvariable=filename_var)
