@@ -10,7 +10,7 @@
 #SBATCH --time=0-24:00:00
 #SBATCH --gpus 3
 # source ~/.bashrc
-source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate jh_pytorch
+source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
 echo starting run 1 at: `date`
 # Check which GPU is being used
