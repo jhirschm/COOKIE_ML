@@ -49,18 +49,20 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
-    # Define the model
+    # Example usage
     encoder_layers = [
-        nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),
-        nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
-        nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
+        (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
+        (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
     ]
 
     decoder_layers = [
-        nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-        nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1),
-        nn.ConvTranspose2d(16, 1, kernel_size=3, stride=2, padding=1, output_padding=1)
+        (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
+        # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
     ]
+
 
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
@@ -70,7 +72,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024_subset4"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)

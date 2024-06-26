@@ -4,35 +4,31 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
     def __init__(self, encoder_layers, decoder_layers, dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
         self.dtype = dtype
+        
         # Create encoder based on the provided layer configuration
         encoder_modules = []
-        for layer in encoder_layers:
+        for layer, activation in encoder_layers:
             encoder_modules.append(layer)
-            if isinstance(layer, nn.Conv2d):
-                encoder_modules.append(nn.ReLU())
+            if activation is not None:
+                encoder_modules.append(activation)
         
         self.encoder = nn.Sequential(*encoder_modules)
         # Cast encoder weights to torch.float32
         for param in self.encoder.parameters():
             param.data = param.data.to(self.dtype)
+        
         # Create decoder based on the provided layer configuration
         decoder_modules = []
-        for layer in decoder_layers:
+        for layer, activation in decoder_layers:
             decoder_modules.append(layer)
-            if isinstance(layer, nn.ConvTranspose2d):
-                decoder_modules.append(nn.ReLU())
-        
-        # Replace the last ReLU with Sigmoid for the final layer
-        if isinstance(decoder_modules[-1], nn.ReLU):
-            decoder_modules[-1] = nn.Sigmoid()
+            if activation is not None:
+                decoder_modules.append(activation)
         
         self.decoder = nn.Sequential(*decoder_modules)
         for param in self.decoder.parameters():
             param.data = param.data.to(self.dtype)
 
     def forward(self, x):
-
-        #Problems here!
         x = self.encoder(x)
         x = self.decoder(x)
         return x
@@ -204,15 +200,17 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
 # Example usage
 encoder_layers = [
-    nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),
-    nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
-    nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
+    (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
+    (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
+    (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
 ]
 
 decoder_layers = [
-    nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-    nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1),
-    nn.ConvTranspose2d(16, 1, kernel_size=3, stride=2, padding=1, output_padding=1)
+    (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
+    (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
+    (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
+    # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
 ]
+
 
 autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
