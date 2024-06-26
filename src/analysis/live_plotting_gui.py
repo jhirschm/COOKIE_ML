@@ -8,7 +8,7 @@ import numpy as np
 
 # Default directory path
 default_directory_path = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test/"
-
+default_directory_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024_subset4/outputs/"
 # Function to update the file list based on the directory path
 def update_file_list(directory_path):
     if not os.path.exists(directory_path):
@@ -58,10 +58,15 @@ def update_plot(*args):
     full_path = os.path.join(directory_path, selected_file)
     
     with h5py.File(full_path, 'r') as h5_file:
-        ximg = h5_file[selected_key]['Ximg'][:]
-        ypdf = h5_file[selected_key]['Ypdf'][:]
+        # ximg = h5_file[selected_key]['Ximg'][:]
+        # ypdf = h5_file[selected_key]['Ypdf'][:]
+        # # Assuming third_img is also Ypdf for now
+        # third_img = ypdf
+        ximg = h5_file[selected_key]['input'][:]
+        ypdf = h5_file[selected_key]['target'][:]
         # Assuming third_img is also Ypdf for now
-        third_img = ypdf
+        third_img = h5_file[selected_key]['output'][:]
+
     
     # Clear previous plots
     ax1.clear()
@@ -108,7 +113,8 @@ update_plot.cbar3 = None
 # Create a text entry field for directory path
 directory_path_entry = tk.Entry(root, textvariable=directory_path_var, width=50)
 directory_path_entry.pack(pady=10)
-directory_path_var.trace_add('write', change_directory_path)
+# directory_path_var.trace_add('write', change_directory_path)
+directory_path_entry.bind('<Return>', change_directory_path)
 
 # Create a dropdown menu (Combobox) for file selection
 file_selector = ttk.Combobox(root, textvariable=filename_var)
