@@ -1,4 +1,3 @@
-# Standard library imports
 import os
 import argparse
 import sys
@@ -9,6 +8,7 @@ import json
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -21,9 +21,9 @@ from sklearn.metrics import (
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, LabelEncoder
 import h5py
 import matplotlib.pyplot as plt
+from torch.optim.lr_scheduler import StepLR, ReduceLROnPlateau
 import copy
 import joblib
-from torch.nn import init
 
 from sklearn.metrics import mean_squared_error
 
