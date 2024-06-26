@@ -191,11 +191,12 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         if save_results and results_dir and results_filename:
             results_filepath = f"{results_dir}/{results_filename}"
             with h5py.File(results_filepath, 'w') as h5file:
-                for key, (inputs_np, outputs_np, labels_np) in results.items():
-                    group = h5file.create_group(str(key))
-                    group.create_dataset('input', data=inputs_np)
-                    group.create_dataset('output', data=outputs_np)
-                    group.create_dataset('target', data=labels_np)
+                for batch_idx, (inputs_np, outputs_np, labels_np) in results.items():
+                    for example_idx in range(inputs_np.shape[0]):
+                        group = h5file.create_group(f"{batch_idx}_{example_idx}")
+                        group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
+                        group.create_dataset('output', data=outputs_np[example_idx].reshape(16, 512))
+                        group.create_dataset('target', data=labels_np[example_idx].reshape(16, 512))
 
         return avg_loss
 
