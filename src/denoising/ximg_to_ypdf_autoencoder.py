@@ -163,6 +163,42 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
+    def evaluate_model(self, dataloader, criterion, device, save_results=False, results_dir=None, results_filename=None):
+        # Calcualte the loss on the provided dataloader and save results if specified to H5 file including the input, output, and target
+        self.eval()
+        running_loss = 0.0
+        results = {}
+
+
+        with torch.no_grad():
+            for i, batch in enumerate(dataloader):
+                inputs, labels = batch
+                inputs, labels = inputs.to(device), labels.to(device)
+                outputs = self(inputs)
+                outputs = outputs.squeeze()
+                loss = criterion(outputs, labels)
+                running_loss += loss.item()
+
+                if save_results:
+                    # Convert tensors to numpy arrays
+                    inputs_np = inputs.cpu().numpy()
+                    outputs_np = outputs.cpu().numpy()
+                    labels_np = labels.cpu().numpy()
+                    results[i] = (inputs_np, outputs_np, labels_np)
+
+        avg_loss = running_loss / len(dataloader)
+
+        if save_results and results_dir and results_filename:
+            results_filepath = f"{results_dir}/{results_filename}"
+            with h5py.File(results_filepath, 'w') as h5file:
+                for key, (inputs_np, outputs_np, labels_np) in results.items():
+                    group = h5file.create_group(str(key))
+                    group.create_dataset('input', data=inputs_np)
+                    group.create_dataset('output', data=outputs_np)
+                    group.create_dataset('target', data=labels_np)
+
+        return avg_loss
+
         
 
 # Example usage
