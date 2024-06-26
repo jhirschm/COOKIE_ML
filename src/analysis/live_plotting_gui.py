@@ -8,7 +8,7 @@ import numpy as np
 
 # Default directory path
 default_directory_path = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test/"
-
+default_directory_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024_subset4/outputs/"
 # Function to update the file list based on the directory path
 def update_file_list(directory_path):
     if not os.path.exists(directory_path):
