@@ -9,9 +9,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         encoder_modules = []
         for i in range(len(encoder_layers)):
             print(encoder_layers[i])
-            full_layer = encoder_layers[i]
-            layer = full_layer[0]
-            activation = full_layer[1]
+            layer = encoder_layers[i][0]
+            activation = encoder_layers[i][1]
             encoder_modules.append(layer)
             if activation is not None:
                 encoder_modules.append(activation)
@@ -25,9 +24,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         decoder_modules = []
         for i in range(len(decoder_layers)):
             print(decoder_layers[i])
-            full_layer = decoder_layers[i]
-            layer = full_layer[0]
-            activation = full_layer[1]
+            layer = decoder_layers[i][0]
+            activation = decoder_layers[i][1]
             decoder_modules.append(layer)
             if activation is not None:
                 decoder_modules.append(activation)
