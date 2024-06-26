@@ -53,18 +53,18 @@ def main():
 
 
     # Example usage
-    encoder_layers = [
+    encoder_layers = np.array([
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]
-    ]   
+    ])
 
-    decoder_layers = [
+    decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
-    ]
+    ])
 
 
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
