@@ -32,6 +32,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
     def forward(self, x):
 
+        #Problems here!
         x = self.encoder(x)
         x = self.decoder(x)
         return x
@@ -61,7 +62,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         name = f"{model_save_dir}/{identifier}"+"_run_time_info.txt"
         with open(name, "a") as f:
             f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
-
+            
 
             for epoch in range(max_epochs):
                 self.train()  # Set the model to training mode
@@ -75,6 +76,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     labels = labels.to(device)
 
                     outputs = self(inputs)
+                    outputs = outputs.squeeze()  # Remove channel dimension
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -93,16 +95,18 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         inputs, labels = batch
                         inputs, labels = inputs.to(device), labels.to(device)
                         outputs = self(inputs)
+                        outputs = outputs.squeeze()
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
                 val_loss = running_val_loss / len(val_dataloader)
                 val_losses.append(val_loss)
 
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}")
+                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
                 # Update the scheduler
-                scheduler.step(val_loss)
+                should_stop = scheduler.step(val_loss, epoch)
 
                 # Check if this is the best model so far
                 if val_loss < best_val_loss:
@@ -129,9 +133,14 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     torch.save(checkpoint, checkpoint_path)
                 
                 # Early stopping check
-                if scheduler.should_stop():
-                    print(f"Early stopping at epoch {epoch+1}")
+                # if scheduler.should_stop():
+                #     print(f"Early stopping at epoch {epoch+1}")
+                #     break
+                if should_stop:
+                    print(f"Early stopping at epoch {epoch+1}\n")
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
+                f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
         run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:

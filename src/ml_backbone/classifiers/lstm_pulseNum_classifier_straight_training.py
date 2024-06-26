@@ -1,13 +1,16 @@
-from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
-from denoising_util import *
+from lstm_pulseNum_classifier import LSTM_PulseNum_Classifier
+from classifiers_util import *
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Construct the path to the utils directory relative to the current file's directory
 utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
+denoise_dir = os.path.abspath(os.path.join(current_dir, '..', 'denoising'))
 
-# Add the utils directory to the Python path
 sys.path.append(utils_dir)
+sys.path.append(denoise_dir)
+
+from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
 from utils import DataMilking_Nonfat, DataMilking
 from utils import CustomScheduler
 
@@ -21,23 +24,6 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-<<<<<<< HEAD
-device = torch.device("cpu")
-def main():
-    # Input Data Paths and Output Save Paths
-
-    # Load Dataset and Feed to Dataloader
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode"
-    dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
-
-    print(dataset)
-
-    data_loader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=False)
-    data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2)
-    train_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=True) #need to fix eventually
-    val_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=False)
-    test_dataloader = torch.utils.data.DataLoader(data, batch_size=32, shuffle=False)
-=======
 # device = torch.device("cpu")
 def main():
     seed = 42
@@ -51,7 +37,7 @@ def main():
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
-    data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
+    data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2)
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
@@ -64,7 +50,6 @@ def main():
     train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
->>>>>>> origin/main
 
 
     # Define the model
@@ -84,23 +69,11 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
-<<<<<<< HEAD
-    optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.001)
-    scheduler = CustomScheduler(optimizer, patience=5, cooldown=2, lr_reduction_factor=0.1, min_lr=1e-6, improvement_percentage=0.01)
-
-    os.makedirs("/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode/autoencoder_test_model", exist_ok=True)
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode/autoencoder_test_model"
-    identifier = "testAutoencoder"
-    autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=20)
-
-
-    # Train the model
-=======
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024_subset4"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -128,10 +101,9 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Reducing number of files because taking too long to train. Also introduced random seed42.\n")
+        f.write("First trial on S3DF for Denoising.\n")
 
     
->>>>>>> origin/main
     
 if __name__ == "__main__":
     main()
