@@ -3,7 +3,7 @@ from utils import DataMilking, DataMilking_Nonfat, DataMilking_SemiSkimmed
 import torch
 
 
-dataset = DataMilkingSemiSkimmed(root_dir="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode", pulse_number=2, labels=["Ximg"])
+dataset = DataMilking_SemiSkimmed(root_dir="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06202024/TestMode", pulse_number=2, labels=["Ximg"])
 
 print(dataset)
 
