@@ -1,7 +1,8 @@
 from denoising_util import *
+from typing import List, Any
 
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
-    def __init__(self, encoder_layers, decoder_layers, dtype=torch.float32):
+    def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
         self.dtype = dtype
         
@@ -205,21 +206,26 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         return avg_loss
 
-        
-
-# Example usage
-encoder_layers = [
-    (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
-    (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
-]
-
-decoder_layers = [
-    (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
-    # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
-]
+def main():
 
 
-autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+    # Example usage
+    encoder_layers = [
+        (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
+        (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
+    ]
+
+    decoder_layers = [
+        (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
+        # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
+    ]
+
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+if __name__ == "__main__":
+  
+
+    main()

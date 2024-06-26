@@ -1,16 +1,24 @@
 print("start")
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
+
+print("HELLO")
+
 from denoising_util import *
+print("HELLO")
+
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
+print("HELLO")
 
 # Construct the path to the utils directory relative to the current file's directory
 utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
+print("HELLO")
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
 from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
 from utils import CustomScheduler
+print("HELLO")
 
 # Check if CUDA (GPU support) is available
 if torch.cuda.is_available():
@@ -23,8 +31,11 @@ else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
 device = torch.device("cpu")
+print("HELLO")
 
 def main():
+    print("HELLO")
+
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -115,4 +126,6 @@ def main():
 
     
 if __name__ == "__main__":
+    print("HEY")
+
     main()
