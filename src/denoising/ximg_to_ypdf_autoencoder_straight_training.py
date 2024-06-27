@@ -34,9 +34,9 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
