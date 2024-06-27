@@ -40,6 +40,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         return x
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
+        self.to(device)
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -89,9 +90,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     outputs = outputs.squeeze()  # Remove channel dimension
                     print("Loss check")
                     print(outputs.shape)
-                    print(labels.shape)
+                    
                     labels = labels.squeeze()
+                    print(labels.shape)
                     labels.to(device)
+                    outputs.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -120,6 +123,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
+                        outputs.to(device)
                         print("Loss check")
                         print(outputs.shape)
                         print(labels.shape)
