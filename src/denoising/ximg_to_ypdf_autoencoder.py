@@ -93,8 +93,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     
                     labels = labels.squeeze()
                     print(labels.shape)
-                    labels.to(device)
-                    outputs.to(device)
+                    labels = labels.to(device)
+                    outputs = outputs.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -123,7 +123,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
-                        outputs.to(device)
+                        outputs = outputs.to(device)
                         print("Loss check")
                         print(outputs.shape)
                         print(labels.shape)
