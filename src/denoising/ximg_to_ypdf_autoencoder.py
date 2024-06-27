@@ -80,10 +80,16 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     print("train set")
                     print(labels)
                     #labels = labels[0]
+                    
+                    print(labels.shape)
+                    labels = labels.to(device,torch.float32)
                     print(labels.shape)
 
                     outputs = self(inputs)
                     outputs = outputs.squeeze()  # Remove channel dimension
+                    print("Loss check")
+                    print(outputs.shape)
+                    print(labels.shape)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -112,6 +118,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
+                        print("Loss check")
+                        print(outputs.shape)
+                        print(labels.shape)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
