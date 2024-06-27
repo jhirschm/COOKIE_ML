@@ -82,7 +82,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     #labels = labels[0]
                     
                     print(labels.shape)
-                    labels = labels.to(device,torch.float32)
+                    # labels = labels.to(device,torch.float32)
                     print(labels.shape)
 
                     outputs = self(inputs)
@@ -90,6 +90,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     print("Loss check")
                     print(outputs.shape)
                     print(labels.shape)
+                    labels.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
