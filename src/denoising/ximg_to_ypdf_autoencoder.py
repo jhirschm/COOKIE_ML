@@ -90,6 +90,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     print("Loss check")
                     print(outputs.shape)
                     print(labels.shape)
+                    labels = labels.squeeze()
                     labels.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
