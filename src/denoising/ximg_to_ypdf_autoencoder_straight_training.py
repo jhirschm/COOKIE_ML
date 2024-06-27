@@ -24,7 +24,6 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-# device = torch.device("cpu")
 
 def main():
 
@@ -41,7 +40,7 @@ def main():
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"], test_batch=4)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -56,13 +55,16 @@ def main():
     train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
 
     # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
     # Example usage
-    encoder_layers = np.array([[nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],[nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],[nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
     decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
