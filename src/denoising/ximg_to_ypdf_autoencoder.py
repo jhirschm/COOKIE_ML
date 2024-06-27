@@ -102,7 +102,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                             inputs = torch.unsqueeze(inputs, 1)
                         print(inputs.shape)
                         inputs = inputs.to(device, torch.float32)
-                        labels = labels[0].to(device,torch.float32) #indexing for access to the first element of the list
+                        print(labels)
+                        labels = labels[0]
+                        print(labels)
+                        labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
                         loss = criterion(outputs, labels)
