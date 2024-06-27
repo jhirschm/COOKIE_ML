@@ -16,6 +16,8 @@ echo starting run 1 at: `date`
 # Check which GPU is being used
 echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 # Run the Python script with the specified arguments
+export PYTHONUNBUFFERED=1
+export PYTHONIOENCODING=utf-8
 python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training.py 
 # python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py 
 
