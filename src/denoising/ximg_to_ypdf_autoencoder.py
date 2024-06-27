@@ -77,8 +77,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     
-                    labels = labels[0].to(device, torch.float32)#indexing for access to the first element of the list
-                    labels = labels.to(device) 
+                    print("train set")
+                    print(labels)
+                    #labels = labels[0]
+                    print(labels.shape)
 
                     outputs = self(inputs)
                     outputs = outputs.squeeze()  # Remove channel dimension
@@ -97,14 +99,16 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 with torch.no_grad():
                     for batch in val_dataloader:
+                        print("val set")
+
                         print(inputs.shape)
                         if inputs.dim() == 3:
                             inputs = torch.unsqueeze(inputs, 1)
                         print(inputs.shape)
                         inputs = inputs.to(device, torch.float32)
                         print(labels)
-                        labels = labels[0]
-                        print(labels)
+                        # labels = labels[0]
+                        print(labels.shape)
                         labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
