@@ -31,7 +31,6 @@ class DataMilking_SemiSkimmed(Dataset):
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
                             self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
-                            print(self.inputs_arr[0].shape)
                         else: #input is an attribute
                             self.inputs_arr.append(f[shot].attrs[self.input_name])
                             
