@@ -7,17 +7,19 @@ from torchvision import transforms
 
 
 class DataMilking_SemiSkimmed(Dataset):
-    def __init__(self, root_dir = "", input_name="Ypdf", labels = [], pulse_number = 2, transform=None): #pulse_range is [min_pulses, max_pulses]
+    def __init__(self, root_dir = "", input_name="Ypdf", labels = [], pulse_number = 2, transform=None, test_batch=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
         self.transform = transform
         self.input_name = input_name
         self.labels = labels
         self.inputs_arr = []
         self.labels_arr = []
+        self.test_batch = test_batch
         
         train_files = os.listdir(root_dir)
         train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
-        
+        if self.test_batch is not None:
+            train_files = train_files[:self.test_batch]
         for file in train_files:
             print("file: ", file)
             with h5py.File(os.path.join(root_dir, file), 'r') as f:
@@ -28,7 +30,8 @@ class DataMilking_SemiSkimmed(Dataset):
                     if pulse_number == f[shot].attrs["npulses"]:
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
-                            self.inputs_arr.append(f[shot][self.input_name][()])
+                            self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            print(self.inputs_arr[0].shape)
                         else: #input is an attribute
                             self.inputs_arr.append(f[shot].attrs[self.input_name])
                             
@@ -37,10 +40,11 @@ class DataMilking_SemiSkimmed(Dataset):
                         for label in self.labels:
                             
                             if label == "Ypdf" or label == "Ximg": #label is an image
-                                labels_temp.append(f[shot][label][()])
-                            
+                                # labels_temp.append(f[shot][label][()])
+                                labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
                             else: #label is an attribute
                                 labels_temp.append(f[shot].attrs[label])
+                                print("Cast to Tensor, FIX")
                         
                         self.labels_arr.append(labels_temp)
         
