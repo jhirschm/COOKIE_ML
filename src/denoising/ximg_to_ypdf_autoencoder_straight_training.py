@@ -24,7 +24,7 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-device = torch.device("cpu")
+# device = torch.device("cpu")
 
 def main():
 
@@ -34,18 +34,23 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
     test_size = len(data) - train_size - val_size
+    #print sizes of train, val, and test
+    print(f"Train size: {train_size}")
+    print(f"Validation size: {val_size}")
+    print(f"Test size: {test_size}")
 
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
