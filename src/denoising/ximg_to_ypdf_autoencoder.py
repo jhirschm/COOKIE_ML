@@ -8,10 +8,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         
         # Create encoder based on the provided layer configuration
         encoder_modules = []
-        print("HERERERERE")
-        print(encoder_layers)
+        
         for i in range(encoder_layers.shape[0]):
-            print(encoder_layers[i])
             layer = encoder_layers[i,0]
             activation = encoder_layers[i,1]
             encoder_modules.append(layer)
@@ -25,9 +23,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         
         # Create decoder based on the provided layer configuration
         decoder_modules = []
-        print(decoder_layers)
         for i in range(len(decoder_layers)):
-            print(decoder_layers[i])
             layer = decoder_layers[i,0]
             activation = decoder_layers[i,1]
             decoder_modules.append(layer)
@@ -78,6 +74,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
+                    print(inputs)
+                    print(labels)
                     inputs = inputs.to(device)
                     labels = labels[0].to(device) #indexing for access to the first element of the list
 
