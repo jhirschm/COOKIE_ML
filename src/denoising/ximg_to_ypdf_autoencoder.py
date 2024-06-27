@@ -74,8 +74,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    print(type(inputs))
-                    print(inputs)
+                    print(inputs.shape)
                     inputs = inputs.to(torch.float32)
                     inputs = inputs.to(device)
                     labels = labels[0].to(torch.float32)
