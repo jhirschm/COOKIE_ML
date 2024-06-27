@@ -40,7 +40,7 @@ def main():
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"], test_batch=4)
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
