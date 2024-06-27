@@ -1,5 +1,8 @@
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
+
+
 from denoising_util import *
+
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -21,9 +24,9 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
-device = torch.device("cpu")
 
 def main():
+
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -37,34 +40,38 @@ def main():
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"],transform=1)
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
     test_size = len(data) - train_size - val_size
+    #print sizes of train, val, and test
+    print(f"Train size: {train_size}")
+    print(f"Validation size: {val_size}")
+    print(f"Test size: {test_size}")
 
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
 
     # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
     # Example usage
-    encoder_layers = [
-        (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
-        (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
-        (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
-    ]
-
-    decoder_layers = [
-        (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
-        (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
-        (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
-        # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
-    ]
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
 
 
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
@@ -108,4 +115,5 @@ def main():
 
     
 if __name__ == "__main__":
+
     main()

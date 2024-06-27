@@ -1,13 +1,17 @@
 from denoising_util import *
+from typing import List, Any
 
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
-    def __init__(self, encoder_layers, decoder_layers, dtype=torch.float32):
+    def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
         self.dtype = dtype
         
         # Create encoder based on the provided layer configuration
         encoder_modules = []
-        for layer, activation in encoder_layers:
+        
+        for i in range(encoder_layers.shape[0]):
+            layer = encoder_layers[i,0]
+            activation = encoder_layers[i,1]
             encoder_modules.append(layer)
             if activation is not None:
                 encoder_modules.append(activation)
@@ -19,7 +23,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         
         # Create decoder based on the provided layer configuration
         decoder_modules = []
-        for layer, activation in decoder_layers:
+        for i in range(len(decoder_layers)):
+            layer = decoder_layers[i,0]
+            activation = decoder_layers[i,1]
             decoder_modules.append(layer)
             if activation is not None:
                 decoder_modules.append(activation)
@@ -34,6 +40,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         return x
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
+        self.to(device)
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -68,11 +75,17 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    inputs = inputs.to(device)
-                    labels = labels[0].to(device) #indexing for access to the first element of the list
+                    inputs = torch.unsqueeze(inputs, 1)
+                    inputs = inputs.to(device, torch.float32)
+                    
+                    
 
                     outputs = self(inputs)
                     outputs = outputs.squeeze()  # Remove channel dimension
+                    
+                    labels = labels.squeeze()
+                    labels = labels.to(device)
+                    outputs = outputs.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -88,10 +101,15 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 with torch.no_grad():
                     for batch in val_dataloader:
-                        inputs, labels = batch
-                        inputs, labels = inputs.to(device), labels[0].to(device)
+
+                        if inputs.dim() == 3:
+                            inputs = torch.unsqueeze(inputs, 1)
+                        inputs = inputs.to(device, torch.float32)
+                        # labels = labels[0]
+                        labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
                         outputs = self(inputs)
                         outputs = outputs.squeeze()
+                        outputs = outputs.to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
@@ -196,21 +214,26 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         return avg_loss
 
-        
-
-# Example usage
-encoder_layers = [
-    (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
-    (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
-]
-
-decoder_layers = [
-    (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
-    (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
-    # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
-]
+def main():
 
 
-autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+    # Example usage
+    encoder_layers = [
+        (nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()),
+        (nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()),
+    ]
+
+    decoder_layers = [
+        (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
+        (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
+        # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
+    ]
+
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+if __name__ == "__main__":
+  
+
+    main()
