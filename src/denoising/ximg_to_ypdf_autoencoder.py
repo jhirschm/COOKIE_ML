@@ -98,7 +98,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 with torch.no_grad():
                     for batch in val_dataloader:
                         print(inputs.shape)
-                        inputs = torch.unsqueeze(inputs, 1)
+                        if inputs.dim() == 3:
+                            inputs = torch.unsqueeze(inputs, 1)
                         print(inputs.shape)
                         inputs = inputs.to(device, torch.float32)
                         labels = labels[0].to(device,torch.float32) #indexing for access to the first element of the list
