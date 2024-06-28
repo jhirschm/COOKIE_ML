@@ -70,9 +70,12 @@ def main():
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
-    state_dict = torch.load(best_model_path, map_location=device)
-    autoencoder.load_state_dict(state_dict)
+    
     autoencoder.to(device)
+    state_dict = torch.load(best_model_path, map_location=device)
+    print(state_dict)
+    autoencoder.load_state_dict(state_dict)
+    
 
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
