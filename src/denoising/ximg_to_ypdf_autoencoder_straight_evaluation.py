@@ -30,8 +30,8 @@ def main():
 
     # Load Dataset and Feed to Dataloader
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
+    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
@@ -68,7 +68,7 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs_from2pulse"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
     
     autoencoder.to(device)
@@ -97,7 +97,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Results for inspection on test.\n")
+        f.write("Results for inspection on test. Running on two pulses but trained on 1 pulse.\n")
 
     
     
