@@ -186,6 +186,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         with torch.no_grad():
             for i, batch in enumerate(dataloader):
+                print(i)
                 inputs, labels = batch
                 inputs = torch.unsqueeze(inputs, 1)
                 print(inputs.shape)
