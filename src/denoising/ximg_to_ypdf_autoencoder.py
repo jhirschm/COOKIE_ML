@@ -194,6 +194,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 inputs = inputs.to(device, torch.float32)
                 # labels = labels[0]
                 labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
+                print(labels.shape)
                 outputs = self(inputs)
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
