@@ -8,7 +8,7 @@ utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
-from utils import DataMilking_Nonfat, DataMilking
+from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
 from utils import CustomScheduler
 
 # Check if CUDA (GPU support) is available
