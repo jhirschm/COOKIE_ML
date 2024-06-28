@@ -70,7 +70,7 @@ class DataMilking_SemiSkimmed(Dataset):
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
         print("lengt of labels_arr: ", (self.labels_arr.shape))
-        print("lengt of inputs_arr: ", (self.inputs_arr.shape)
+        print("lengt of inputs_arr: ", (self.inputs_arr.shape))
         if len(self.labels_arr) == 1:
             print(self.labels_arr)
             self.labels_arr = self.labels_arr[0]
