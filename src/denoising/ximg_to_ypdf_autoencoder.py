@@ -100,7 +100,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 with torch.no_grad():
                     for batch in val_dataloader:
-
+                        inputs, labels = batch
                         if inputs.dim() == 3:
                             inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
@@ -185,6 +185,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         with torch.no_grad():
             for i, batch in enumerate(dataloader):
+                inputs, labels = batch
                 if inputs.dim() == 3:
                     inputs = torch.unsqueeze(inputs, 1)
                 inputs = inputs.to(device, torch.float32)
