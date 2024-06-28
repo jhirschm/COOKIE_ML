@@ -30,11 +30,12 @@ def main():
 
     # Load Dataset and Feed to Dataloader
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
+    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
+    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
-    data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
@@ -49,25 +50,28 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
-    # Define the model
-    encoder_layers = [
-        nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1),
-        nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1),
-        nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1)
-    ]
-
-    decoder_layers = [
-        nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-        nn.ConvTranspose2d(32, 16, kernel_size=3, stride=2, padding=1, output_padding=1),
-        nn.ConvTranspose2d(16, 1, kernel_size=3, stride=2, padding=1, output_padding=1)
-    ]
+    # Example usage
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
 
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06252024_subset4/outputs"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
+    state_dict = torch.load(best_model_path)
+    autoencoder.load_state_dict(state_dict)
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
