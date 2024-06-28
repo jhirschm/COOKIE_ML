@@ -28,7 +28,6 @@ class DataMilking_SemiSkimmed(Dataset):
                     # print("labels: ", list(f[shot].attrs.items()))
                     
                     if pulse_number is not None and pulse_number_max is None and pulse_number == f[shot].attrs["npulses"] :
-                        print("**** 1 ****")
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
                             self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
@@ -47,7 +46,7 @@ class DataMilking_SemiSkimmed(Dataset):
                                 print("Cast to Tensor, FIX")
                         
                         self.labels_arr.append(labels_temp)
-                        
+
                     elif pulse_number is None and pulse_number_max is not None and f[shot].attrs["npulses"] <= pulse_number_max:
                         print("**** 2 ****")
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
@@ -72,6 +71,7 @@ class DataMilking_SemiSkimmed(Dataset):
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
         if len(self.labels_arr) == 1:
+            print("**** 3 ****")
             print(self.labels_arr)
             self.labels_arr = self.labels_arr[0]
                                 
