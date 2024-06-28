@@ -185,7 +185,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
 
         with torch.no_grad():
-            for i, batch in enumerate(dataloader):
+            i = 0
+            for batch in dataloader:
                 print(i)
                 inputs, labels = batch
                 inputs = torch.unsqueeze(inputs, 1)
@@ -206,6 +207,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     outputs_np = outputs.cpu().numpy()
                     labels_np = labels.cpu().numpy()
                     results[i] = (inputs_np, outputs_np, labels_np, loss.item())
+                i+=1
 
         avg_loss = running_loss / len(dataloader)
 
