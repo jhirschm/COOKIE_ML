@@ -69,9 +69,11 @@ class DataMilking_SemiSkimmed(Dataset):
         
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
-        # if len(self.labels_arr) == 1:
-        #     print(self.labels_arr)
-        #     self.labels_arr = self.labels_arr[0]
+        print("lengt of labels_arr: ", len(self.labels_arr))
+        print("lengt of inputs_arr: ", len(self.inputs_arr)
+        if len(self.labels_arr) == 1:
+            print(self.labels_arr)
+            self.labels_arr = self.labels_arr[0]
                                 
             
 
@@ -81,6 +83,7 @@ class DataMilking_SemiSkimmed(Dataset):
     def __getitem__(self, idx):
         print("idx: ", idx)
         print(len(self.labels_arr))
+        print(len(self.inputs_arr))
         data_point = self.inputs_arr[idx]
         labels = self.labels_arr[idx]
         
