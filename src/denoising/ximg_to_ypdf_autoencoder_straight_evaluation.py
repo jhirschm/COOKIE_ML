@@ -74,7 +74,6 @@ def main():
     
     autoencoder.to(device)
     state_dict = torch.load(best_model_path, map_location=device)
-    print(state_dict)
     autoencoder.load_state_dict(state_dict)
     
 
