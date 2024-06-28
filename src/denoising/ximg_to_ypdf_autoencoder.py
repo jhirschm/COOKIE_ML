@@ -203,7 +203,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     inputs_np = inputs.cpu().numpy()
                     outputs_np = outputs.cpu().numpy()
                     labels_np = labels.cpu().numpy()
-                    results[i] = (inputs_np, outputs_np, labels_np, loss)
+                    results[i] = (inputs_np, outputs_np, labels_np, loss.item())
 
         avg_loss = running_loss / len(dataloader)
 
