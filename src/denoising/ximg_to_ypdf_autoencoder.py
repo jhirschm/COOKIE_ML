@@ -194,6 +194,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 outputs = self(inputs)
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
+                labels = labels.squeeze()
                 loss = criterion(outputs, labels)
                 running_loss += loss.item()
 
