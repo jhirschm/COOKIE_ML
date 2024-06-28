@@ -36,7 +36,7 @@ def main():
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number_max=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
@@ -69,7 +69,7 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs_fromEvenDist"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs_fromEvenDist_max10Pulses"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
     
     autoencoder.to(device)
@@ -98,7 +98,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse.\n")
+        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses\n")
 
     
     
