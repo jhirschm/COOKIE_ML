@@ -40,7 +40,7 @@ def main():
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
-    test_size = len(data) - train_size - val_size
+    test_size = int(len(data) - train_size - val_size)
 
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
