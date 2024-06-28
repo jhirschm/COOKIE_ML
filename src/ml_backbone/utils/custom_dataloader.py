@@ -7,7 +7,7 @@ from torchvision import transforms
 
 
 class DataMilking_SemiSkimmed(Dataset):
-    def __init__(self, root_dir = "", input_name="Ypdf", labels = [], pulse_number = 2, transform=None, test_batch=None): #pulse_range is [min_pulses, max_pulses]
+    def __init__(self, root_dir = "", input_name="Ypdf", labels = [], pulse_number = 2, pulse_number_max = None, transform=None, test_batch=None): #pulse_range is [min_pulses, max_pulses]
         self.root_dir = root_dir
         self.transform = transform
         self.input_name = input_name
@@ -27,7 +27,7 @@ class DataMilking_SemiSkimmed(Dataset):
                     # print("input: ", shot)
                     # print("labels: ", list(f[shot].attrs.items()))
                     
-                    if pulse_number == f[shot].attrs["npulses"]:
+                    if pulse_number == f[shot].attrs["npulses"] and pulse_number_max is None :
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
                             self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
@@ -46,6 +46,22 @@ class DataMilking_SemiSkimmed(Dataset):
                                 print("Cast to Tensor, FIX")
                         
                         self.labels_arr.append(labels_temp)
+                    elif f[shot].attrs["npulses"] <= pulse_number_max:
+                        if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                            
+                            self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                        else: #input is an attribute
+                            self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+
+                        labels_temp = []
+                        for label in self.labels:
+                            
+                            if label == "Ypdf" or label == "Ximg": #label is an image
+                                # labels_temp.append(f[shot][label][()])
+                                labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
+                            else: #label is an attribute
+                                print("Not Handled")
         
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
