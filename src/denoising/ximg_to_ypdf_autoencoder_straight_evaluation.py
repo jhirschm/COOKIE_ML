@@ -35,7 +35,7 @@ def main():
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
 
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"], test_batch=2)
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=2, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.1 * len(data))
