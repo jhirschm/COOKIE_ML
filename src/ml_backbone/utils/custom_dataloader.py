@@ -46,7 +46,7 @@ class DataMilking_SemiSkimmed(Dataset):
                                 print("Cast to Tensor, FIX")
                         
                         self.labels_arr.append(labels_temp)
-                    elif f[shot].attrs["npulses"] <= pulse_number_max:
+                    elif pulse_number_max is not None and f[shot].attrs["npulses"] <= pulse_number_max:
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
                             self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
