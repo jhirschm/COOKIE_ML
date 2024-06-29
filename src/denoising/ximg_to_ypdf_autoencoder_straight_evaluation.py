@@ -45,10 +45,10 @@ def main():
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
 
-    # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+     # Create data loaders
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
+    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
+    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8)
 
 
     # Example usage
@@ -63,7 +63,7 @@ def main():
         [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
-
+    
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
     # Define the loss function and optimizer

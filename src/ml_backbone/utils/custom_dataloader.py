@@ -27,6 +27,9 @@ class DataMilking_SemiSkimmed(Dataset):
                     # print("input: ", shot)
                     # print("labels: ", list(f[shot].attrs.items()))
                     
+                    print("npulse: ",f[shot].attrs["npulses"])
+                    print(type(f[shot].attrs["npulses"]))
+                    print("max pulse: ", pulse_number_max)
                     if pulse_number is not None and pulse_number_max is None and pulse_number == f[shot].attrs["npulses"] :
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
@@ -55,6 +58,7 @@ class DataMilking_SemiSkimmed(Dataset):
                             self.inputs_arr.append(f[shot].attrs[self.input_name])                          
 
                         labels_temp = []
+                        print("labels: ", self.labels)
                         for label in self.labels:
                             
                             if label == "Ypdf" or label == "Ximg": #label is an image
@@ -62,7 +66,7 @@ class DataMilking_SemiSkimmed(Dataset):
                                 labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
                             else: #label is an attribute
                                 print("Not Handled")
-
+                        self.labels_arr.append(labels_temp)
                     elif pulse_number is None and pulse_number_max is None:
                         # An exception should occur
                         print("No pulse number or max pulses specified")
