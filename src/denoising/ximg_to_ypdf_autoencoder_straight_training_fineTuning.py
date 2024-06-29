@@ -90,24 +90,11 @@ def main():
 
 
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
-    
-    autoencoder.to(device)
-    state_dict = torch.load(best_model_path, map_location=device)
-    autoencoder.load_state_dict(state_dict)
-    
-    # Freeze all layers
-    autoencoder.freeze_all_layers()
+    identifier = "testAutoencoder_fineTuning0Pulse"
+    encoder_layer_indices_unfreeze = [2]  # Specify the indices of the layers to unfreeze in the encoder
+    decoder_layer_indices_unfreeze = [0]  # Specify the indices of the layers to unfreeze in the decoder
 
-    # Unfreeze specific layers
-    encoder_layer_indices = [2]  # Specify the indices of the layers to unfreeze in the encoder
-    decoder_layer_indices = [0]  # Specify the indices of the layers to unfreeze in the decoder
-
-    autoencoder.unfreeze_layers(encoder_layer_indices, decoder_layer_indices)
-    identifier = "testAutoencoder_0pulseFineTuning"
-    autoencoder.to(device)
-    
-    autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs)
-
+    autoencoder.fine_tune(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, best_model_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")

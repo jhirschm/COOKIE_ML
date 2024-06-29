@@ -52,6 +52,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
             for param in self.decoder[idx].parameters():
                 param.requires_grad = True
     
+
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
         self.to(device)
         train_losses = []
@@ -235,6 +236,135 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         
 
         return avg_loss
+
+    def fine_tune(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, initial_weights_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1):
+        self.to(device)
+        self.load_state_dict(torch.load(best_model_path, map_location=device))
+    
+        # Freeze all layers
+        self.freeze_all_layers()
+
+    
+        self.unfreeze_layers(encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze)
+        self.to(device)
+
+        
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), lr=optimizer.param_groups[0]['lr'] * learning_rate_scale)
+        
+        train_losses = []
+        val_losses = []
+        best_val_loss = float('inf')
+        best_epoch = 0
+        start_epoch = 0
+
+        name = f"{model_save_dir}/{identifier}"+"_fine_tuning_info.txt"
+        with open(name, "a") as f:
+            f.write(f"Fine-tuning started at {datetime.datetime.now()}\n")
+
+            for epoch in range(max_epochs):
+                self.train()  # Set the model to training mode
+                running_train_loss = 0.0
+
+                for batch in train_dataloader:
+                    optimizer.zero_grad()  # Zero the parameter gradients
+
+                    inputs, labels = batch
+                    inputs = torch.unsqueeze(inputs, 1)
+                    inputs = inputs.to(device, torch.float32)
+                    
+                    outputs = self(inputs).to(device)
+                    outputs = outputs.squeeze()  # Remove channel dimension
+                    
+                    labels = labels.squeeze()
+                    labels = labels.to(device)
+                    loss = criterion(outputs, labels)
+
+                    # Regularization term
+                    reg_term = 0
+                    for name, param in self.named_parameters():
+                        if param.requires_grad:
+                            initial_param = torch.load(initial_weights_path)[name]
+                            reg_term += torch.sum((param - initial_param) ** 2)
+                    reg_term = 1e-5 * reg_term  # Regularization factor
+                    loss += reg_term
+
+                    loss.backward()
+                    
+                    # Gradient clipping
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), gradient_clipping_value)
+                    
+                    optimizer.step()
+
+                    running_train_loss += loss.item()
+
+                train_loss = running_train_loss / len(train_dataloader)
+                train_losses.append(train_loss)
+
+                # Validation loop
+                self.eval()  # Set the model to evaluation mode
+                running_val_loss = 0.0
+                
+                with torch.no_grad():
+                    for batch in val_dataloader:
+                        inputs, labels = batch
+                        inputs = torch.unsqueeze(inputs, 1)
+                        inputs = inputs.to(device, torch.float32)
+
+                        outputs = self(inputs).to(device)
+                        outputs = outputs.squeeze()
+
+                        labels = labels.squeeze()
+                        labels = labels.to(device)
+                        loss = criterion(outputs, labels)
+                        running_val_loss += loss.item()
+
+                val_loss = running_val_loss / len(val_dataloader)
+                val_losses.append(val_loss)
+
+                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+
+                # Update the scheduler
+                should_stop = scheduler.step(val_loss, epoch)
+
+                # Check if this is the best model so far
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_epoch = epoch
+                    best_model = self.state_dict().copy()
+
+                    # Save the best model with a specified name and path in the model_dir
+                    best_model_path = f"{model_save_dir}/{identifier}_fine_tuned_best_model.pth"
+                    torch.save(self.state_dict(), best_model_path)
+
+                f.flush()  # Flush the buffer to write to the file
+                
+                if should_stop:
+                    print(f"Early stopping at epoch {epoch+1}\n")
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
+                    break
+
+        # Save the output to the specified file
+        run_summary_path = f"{model_save_dir}/{identifier}" + "_fine_tuning_summary.txt"
+        with open(run_summary_path, "w") as file:
+            file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
+            file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
+            file.write("Final Validation Loss: {:.10f}\n".format(val_losses[-1]))
+
+        # Plot the training and validation losses
+        plt.figure()
+        plt.plot(train_losses, label='Train Loss')
+        plt.plot(val_losses, label='Validation Loss')
+        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Training and Validation Loss')
+        plt.legend()
+        losses_path = os.path.join(model_save_dir, identifier + "_fine_tuning_losses.pdf")
+        plt.savefig(losses_path)
+        plt.close()
+
+        return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
 def main():
 
