@@ -39,6 +39,19 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         x = self.decoder(x)
         return x
     
+    def freeze_all_layers(self):
+        for param in self.parameters():
+            param.requires_grad = False
+
+    def unfreeze_layers(self, encoder_layer_indices, decoder_layer_indices):
+        for idx in encoder_layer_indices:
+            for param in self.encoder[idx].parameters():
+                param.requires_grad = True
+        
+        for idx in decoder_layer_indices:
+            for param in self.decoder[idx].parameters():
+                param.requires_grad = True
+    
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
         self.to(device)
         train_losses = []
@@ -187,14 +200,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         with torch.no_grad():
             i = 0
             for batch in dataloader:
-                print(i)
                 inputs, labels = batch
                 inputs = torch.unsqueeze(inputs, 1)
-                print(inputs.shape)
                 inputs = inputs.to(device, torch.float32)
                 # labels = labels[0]
                 labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
-                print(labels.shape)
                 outputs = self(inputs)
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
