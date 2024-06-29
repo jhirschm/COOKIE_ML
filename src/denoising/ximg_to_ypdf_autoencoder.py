@@ -80,12 +80,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     
                     
 
-                    outputs = self(inputs)
+                    outputs = self(inputs).to(device)
                     outputs = outputs.squeeze()  # Remove channel dimension
                     
                     labels = labels.squeeze()
                     labels = labels.to(device)
-                    outputs = outputs.to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -101,15 +100,16 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 with torch.no_grad():
                     for batch in val_dataloader:
-
-                        if inputs.dim() == 3:
-                            inputs = torch.unsqueeze(inputs, 1)
+                        inputs, labels = batch
+                        inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
-                        # labels = labels[0]
-                        labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
-                        outputs = self(inputs)
+
+                        
+                        outputs = self(inputs).to(device)
                         outputs = outputs.squeeze()
-                        outputs = outputs.to(device)
+
+                        labels = labels.squeeze()
+                        labels = labels.to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
@@ -185,11 +185,20 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
 
         with torch.no_grad():
-            for i, batch in enumerate(dataloader):
+            i = 0
+            for batch in dataloader:
+                print(i)
                 inputs, labels = batch
-                inputs, labels = inputs.to(device), labels[0].to(device)
+                inputs = torch.unsqueeze(inputs, 1)
+                print(inputs.shape)
+                inputs = inputs.to(device, torch.float32)
+                # labels = labels[0]
+                labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
+                print(labels.shape)
                 outputs = self(inputs)
                 outputs = outputs.squeeze()
+                outputs = outputs.to(device)
+                labels = labels.squeeze()
                 loss = criterion(outputs, labels)
                 running_loss += loss.item()
 
@@ -198,19 +207,22 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     inputs_np = inputs.cpu().numpy()
                     outputs_np = outputs.cpu().numpy()
                     labels_np = labels.cpu().numpy()
-                    results[i] = (inputs_np, outputs_np, labels_np)
+                    results[i] = (inputs_np, outputs_np, labels_np, loss.item())
+                i+=1
 
         avg_loss = running_loss / len(dataloader)
 
         if save_results and results_dir and results_filename:
             results_filepath = f"{results_dir}/{results_filename}"
             with h5py.File(results_filepath, 'w') as h5file:
-                for batch_idx, (inputs_np, outputs_np, labels_np) in results.items():
+                for batch_idx, (inputs_np, outputs_np, labels_np, loss) in results.items():
                     for example_idx in range(inputs_np.shape[0]):
                         group = h5file.create_group(f"{batch_idx}_{example_idx}")
                         group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
                         group.create_dataset('output', data=outputs_np[example_idx].reshape(16, 512))
                         group.create_dataset('target', data=labels_np[example_idx].reshape(16, 512))
+                        group.attrs['loss'] = loss  # Store the loss as an attribute
+                        
 
         return avg_loss
 
