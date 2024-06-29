@@ -27,9 +27,6 @@ class DataMilking_SemiSkimmed(Dataset):
                     # print("input: ", shot)
                     # print("labels: ", list(f[shot].attrs.items()))
                     
-                    print("npulse: ",f[shot].attrs["npulses"])
-                    print(type(f[shot].attrs["npulses"]))
-                    print("max pulse: ", pulse_number_max)
                     if pulse_number is not None and pulse_number_max is None and pulse_number == f[shot].attrs["npulses"] :
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
@@ -58,7 +55,6 @@ class DataMilking_SemiSkimmed(Dataset):
                             self.inputs_arr.append(f[shot].attrs[self.input_name])                          
 
                         labels_temp = []
-                        print("labels: ", self.labels)
                         for label in self.labels:
                             
                             if label == "Ypdf" or label == "Ximg": #label is an image
@@ -73,8 +69,7 @@ class DataMilking_SemiSkimmed(Dataset):
         
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
-        print("lengt of labels_arr: ", (self.labels_arr.shape))
-        print("lengt of inputs_arr: ", (self.inputs_arr.shape))
+
         if len(self.labels_arr) == 1:
             print(self.labels_arr)
             self.labels_arr = self.labels_arr[0]
@@ -85,9 +80,7 @@ class DataMilking_SemiSkimmed(Dataset):
         return len(self.inputs_arr)
 
     def __getitem__(self, idx):
-        print("idx: ", idx)
-        print(len(self.labels_arr))
-        print(len(self.inputs_arr))
+        
         data_point = self.inputs_arr[idx]
         labels = self.labels_arr[idx]
         
