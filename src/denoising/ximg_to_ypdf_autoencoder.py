@@ -239,7 +239,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
     def fine_tune(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, initial_weights_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1):
         self.to(device)
-        self.load_state_dict(torch.load(best_model_path, map_location=device))
+        self.load_state_dict(torch.load(initial_weights_path, map_location=device))
     
         # Freeze all layers
         self.freeze_all_layers()
@@ -249,7 +249,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         self.to(device)
 
         
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), lr=optimizer.param_groups[0]['lr'] * learning_rate_scale)
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), lr=optimizer.param_groups[0]['lr'] * learning_rate_scale)
         
         train_losses = []
         val_losses = []
