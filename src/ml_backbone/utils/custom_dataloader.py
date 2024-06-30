@@ -15,7 +15,7 @@ class DataMilking_HalfAndHalf(Dataset):
     thorOtherwise will throw an exception.
     '''
     def __init__(self, root_dirs = [], input_name="Ypdf", labels = [], pulse_handler = None, transform=None, test_batch=None): #pulse_range is [min_pulses, max_pulses]
-        self.root_dir = root_dir
+        self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
         self.labels = labels
@@ -24,7 +24,7 @@ class DataMilking_HalfAndHalf(Dataset):
         self.test_batch = test_batch
 
         
-        for i, root_dir in enumerate(root_dirs):
+        for i, root_dir in enumerate(self.root_dirs):
             train_files = os.listdir(root_dir)
             train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
             if self.test_batch is not None:
