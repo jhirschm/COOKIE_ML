@@ -285,7 +285,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         if param.requires_grad:
                             initial_param = torch.load(initial_weights_path)[name]
                             reg_term += torch.sum((param - initial_param) ** 2)
-                    reg_term = 1e-5 * reg_term  # Regularization factor
+                    reg_term = 1e-3 * reg_term  # Regularization factor
                     loss += reg_term
 
                     loss.backward()

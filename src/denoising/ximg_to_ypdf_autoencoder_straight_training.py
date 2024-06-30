@@ -11,7 +11,7 @@ utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
-from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
+from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed, DataMilking_HalfAndHalf
 from utils import CustomScheduler
 
 # Check if CUDA (GPU support) is available
@@ -35,12 +35,15 @@ def main():
     # Load Dataset and Feed to Dataloader
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
-    # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
+    datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    datapaths = [datapath1, datapath2]
+    pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}, {"pulse_number": 0, "pulse_number_max": None}]
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
-    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=None)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -56,8 +59,8 @@ def main():
 
     # Create data loaders
     train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=8)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
+    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8)
 
 
     # Example usage
@@ -82,12 +85,12 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "testAutoencoder"
+    identifier = "autoencoder"
     autoencoder.to(device)
     autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs)
 
