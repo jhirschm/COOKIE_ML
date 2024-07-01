@@ -113,8 +113,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Training on single pulse and zero pulse. Adding in weighted error for zero pulses. This time using same datapath for both so scaling correct. Same number of 1 and 0 pulses as well. weighted_losses = losses * (1 + zero_mask * 19)  # Increase loss by a factor of 10 for zero labels
-\n")
+        f.write("Training on single pulse and zero pulse. Adding in weighted error for zero pulses. This time using same datapath for both so scaling correct. Same number of 1 and 0 pulses as well. weighted_losses = losses * (1 + zero_mask * 19)  # Increase loss by a factor of 10 for zero labels\n")
 
 
     
