@@ -99,7 +99,22 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     
                     labels = labels.squeeze()
                     labels = labels.to(device)
-                    loss = criterion(outputs, labels)
+                    
+                    # Set a small threshold value
+                    threshold = 1e-6
+
+                    # Create a mask for labels that are effectively zero
+                    zero_mask = (torch.sum(labels ** 2, dim=(1, 2)) < threshold).float()  # Assuming labels are 2D images in the batch
+
+                    # Calculate the loss for each sample in the batch
+                    losses = criterion(outputs, labels)
+                    
+                    # Apply the weighting for zero labels
+                    weighted_losses = losses * (1 + zero_mask * 9)  # Increase loss by a factor of 10 for zero labels
+                    
+                    # Compute the mean loss
+                    loss = torch.mean(weighted_losses)
+
                     loss.backward()
                     optimizer.step()
 
