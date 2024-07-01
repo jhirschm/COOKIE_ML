@@ -77,9 +77,9 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted/outputs_fromEvenDist_max10Pulses"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_2/outputs_fromEvenDist_max10Pulses/"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
-    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted/autoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_2/autoencoder_best_model.pth"
 
    
     autoencoder.to(device)
@@ -107,7 +107,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses\n")
+        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses. Just using trained on even 1 and 0.\n")
 
     
     
