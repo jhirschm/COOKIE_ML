@@ -110,7 +110,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     losses = criterion(outputs, labels)
                     
                     # Apply the weighting for zero labels
-                    weighted_losses = losses * (1 + zero_mask * 9)  # Increase loss by a factor of 10 for zero labels
+                    # weighted_losses = losses * (1 + zero_mask * 9)  # Increase loss by a factor of 10 for zero labels
+                    weighted_losses = losses * (1 + zero_mask * 19)  # Increase loss by a factor of 20 for zero labels
+
                     
                     # Compute the mean loss
                     loss = torch.mean(weighted_losses)
