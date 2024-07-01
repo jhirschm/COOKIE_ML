@@ -98,7 +98,7 @@ def main():
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")
         f.write("======================\n")
-        f.write(f"Data Path: {datapath}\n")
+        f.write(f"Data Path: {datapaths}\n")
         f.write(f"Model Save Directory: {model_save_dir}\n")
         f.write("\nModel Parameters and Hyperparameters\n")
         f.write("-----------------------------------\n")

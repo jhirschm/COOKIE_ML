@@ -8,7 +8,7 @@ utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
-from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
+from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed, DataMilking_HalfAndHalf
 from utils import CustomScheduler
 
 # Check if CUDA (GPU support) is available
@@ -35,7 +35,15 @@ def main():
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
+    # datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    # datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    # datapaths = [datapath1, datapath2]
+    # pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}, {"pulse_number": 0, "pulse_number_max": 10}]
 
+
+    # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
+    # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
+    # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=None)
     data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number_max=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -69,9 +77,9 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/outputs_fromEvenDist_max10Pulses_fineTuned0Pulse"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/denoising/run_06302024_singlePulseAndZeroPulse/outputs_fromEvenDist_max10Pulses"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
-    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse_fineTuned0Pulse/testAutoencoder_fineTuning0Pulse_fine_tuned_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse/autoencoder_best_model.pth"
 
    
     autoencoder.to(device)
