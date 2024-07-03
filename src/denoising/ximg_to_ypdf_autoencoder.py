@@ -56,6 +56,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         sum_of_points = torch.sum(x, dim=(2, 3), keepdim=True)  # Sum over img_dim_x and img_dim_y
         sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)  # Flatten to (batch_size, 1)
         side_output = self.side_network(sum_of_points)
+        side_output = side_output.view(-1, 1, 1, 1) 
         print("side_output shape:")
         print(side_output.shape)
         x = self.encoder(x)
