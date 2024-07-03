@@ -1,6 +1,15 @@
 from denoising_util import *
 from typing import List, Any
 
+class StepFunction(nn.Module):
+    def __init__(self, threshold: float = 0.5):
+        super(StepFunction, self).__init__()
+        self.threshold = threshold
+    
+    def forward(self, x):
+        return (x > self.threshold).float()
+
+
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
     def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
@@ -34,9 +43,29 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         for param in self.decoder.parameters():
             param.data = param.data.to(self.dtype)
 
+        # Side network for binary classification
+        self.side_network = nn.Sequential(
+            nn.Linear(1, 1),
+            StepFunction(threshold=0.5)  # Step function for binary output
+        )
+
     def forward(self, x):
+        print("initial shape of x:")
+        print(x.shape)
+        # Side network forward pass
+        sum_of_points = torch.sum(x, dim=(2, 3), keepdim=True)  # Sum over img_dim_x and img_dim_y
+        sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)  # Flatten to (batch_size, 1)
+        side_output = self.side_network(sum_of_points)
+        print("side_output shape:")
+        print(side_output.shape)
         x = self.encoder(x)
         x = self.decoder(x)
+        print("final shape of x:")
+        print(x.shape)
+
+        x = x*side_output
+
+        print(x.shape)
         return x
     
     def freeze_all_layers(self):
