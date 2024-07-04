@@ -437,10 +437,13 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 if zero_masking and zero_masking_model is not None:
-                    zero_mask = zero_masking_model.predict(inputs)
+                    zero_mask = zero_masking_model.predict(inputs).to(device)
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                    zero_mask = zero_mask.unsqueeze(1).unsqueeze(2).unsqueeze(3)
+                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = torch.unsqueeze(zero_mask,3)
+                    zero_mask = zero_mask.to(device, torch.float32)
+
                     outputs = outputs * zero_mask
 
 
