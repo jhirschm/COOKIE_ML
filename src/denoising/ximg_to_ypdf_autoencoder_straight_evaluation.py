@@ -117,6 +117,7 @@ def main():
 
     classifier.to(device)
     state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    print(state_dict.keys())
     classifier.load_state_dict(state_dict)
     
 
