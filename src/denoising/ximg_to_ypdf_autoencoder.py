@@ -52,6 +52,21 @@ class Zero_PulseClassifier(nn.Module):
         x = self.fc_layers(x)
 
         return x
+
+    def predict_binary_classification(logits):
+        """
+        Perform binary classification prediction from logits.
+
+        Args:
+        - logits (torch.Tensor): Tensor of logits from the model, shape (batch_size, 1)
+
+        Returns:
+        - probabilities (torch.Tensor): Probabilities after applying sigmoid activation, shape (batch_size, 1)
+        - predictions (torch.Tensor): Binary predictions (0 or 1), shape (batch_size, 1)
+        """
+        probabilities = torch.sigmoid(logits)  # apply sigmoid to convert logits to probabilities
+        predictions = (probabilities > 0.5).float()  # convert probabilities to 0 or 1
+        return probabilities, predictions
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
         self.to(device)
