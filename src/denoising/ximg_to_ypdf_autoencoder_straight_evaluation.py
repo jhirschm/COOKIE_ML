@@ -118,6 +118,11 @@ def main():
     classifier.to(device)
     state_dict = torch.load(best_model_zero_mask_path, map_location=device)
     print(state_dict.keys())
+    # Remove keys related to side_network
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+
+
     classifier.load_state_dict(state_dict)
     
 
