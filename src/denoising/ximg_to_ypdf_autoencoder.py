@@ -50,7 +50,10 @@ class Zero_PulseClassifier(nn.Module):
         x = self.conv_layers(x)
         x = x.view(x.size(0), -1)  # Flatten the output from conv layers
         x = self.fc_layers(x)
-        return x
+
+        probabilities = torch.nn.functional.softmax(x, dim=1)  # Apply softmax to get probabilities
+        predictions = torch.argmax(probabilities, dim=1)  # Get the index of the max probability
+        return predictions
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
         self.to(device)
