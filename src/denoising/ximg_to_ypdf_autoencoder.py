@@ -75,7 +75,7 @@ class Zero_PulseClassifier(nn.Module):
                     print(labels.shape)
 
 
-                    loss = criterion(outputs, labels[:,1]) #Labels one-hot encoded but not required here
+                    loss = criterion(outputs, labels[:,1:]) #Labels one-hot encoded but not required here
                     loss.backward()
                     optimizer.step()
 
@@ -104,7 +104,7 @@ class Zero_PulseClassifier(nn.Module):
                         outputs = self(sum_of_points).to(device)
                         #only use second element
 
-                        loss = criterion(outputs, labels[:,1])
+                        loss = criterion(outputs, labels[:,1:])
                         running_val_loss += loss.item()
 
                 val_loss = running_val_loss / len(val_dataloader)
