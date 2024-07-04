@@ -40,11 +40,6 @@ class Zero_PulseClassifier(nn.Module):
         for param in self.fc_layers.parameters():
             param.data = param.data.to(self.dtype)
 
-        # Side network for binary classification
-        self.side_network = nn.Sequential(
-            nn.Linear(1, 1),
-            StepFunction(threshold=0.5)  # Step function for binary output
-        )
 
     def forward(self, x):
         x = self.conv_layers(x)
@@ -249,11 +244,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         for param in self.decoder.parameters():
             param.data = param.data.to(self.dtype)
 
-        # Side network for binary classification
-        self.side_network = nn.Sequential(
-            nn.Linear(1, 1),
-            StepFunction(threshold=0.5)  # Step function for binary output
-        )
+        
 
     def forward(self, x):
         # Side network forward pass
@@ -324,22 +315,15 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     labels = labels.squeeze()
                     labels = labels.to(device)
                     
-                    # Set a small threshold value
-                    threshold = 1e-6
-
-                    # Create a mask for labels that are effectively zero
-                    zero_mask = (torch.sum(labels ** 2, dim=(1, 2)) < threshold).float()  # Assuming labels are 2D images in the batch
 
                     # Calculate the loss for each sample in the batch
                     losses = criterion(outputs, labels)
                     
                     # Apply the weighting for zero labels
-                    # weighted_losses = losses * (1 + zero_mask * 9)  # Increase loss by a factor of 10 for zero labels
-                    weighted_losses = losses * (1 + zero_mask * 19)  # Increase loss by a factor of 20 for zero labels
 
                     
                     # Compute the mean loss
-                    loss = torch.mean(weighted_losses)
+                    loss = torch.mean(losses)
 
                     loss.backward()
                     optimizer.step()
@@ -454,10 +438,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 outputs = outputs.to(device)
                 if zero_masking and zero_masking_model is not None:
                     zero_mask = zero_masking_model.predict(inputs)
-                # zero mask either 0 or 1
-                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                zero_mask = zero_mask.unsqueeze(1).unsqueeze(2).unsqueeze(3)
-                outputs = outputs * zero_mask
+                    # zero mask either 0 or 1
+                    # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                    zero_mask = zero_mask.unsqueeze(1).unsqueeze(2).unsqueeze(3)
+                    outputs = outputs * zero_mask
 
 
                 labels = labels.squeeze()
