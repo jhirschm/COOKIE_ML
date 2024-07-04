@@ -53,19 +53,22 @@ class Zero_PulseClassifier(nn.Module):
 
         return x
 
-    def predict_binary_classification(logits):
+    def predict(self, x):
         """
         Perform binary classification prediction from logits.
 
         Args:
-        - logits (torch.Tensor): Tensor of logits from the model, shape (batch_size, 1)
+        - x (torch.Tensor): Input tensor, shape (batch_size, 512)
 
         Returns:
         - probabilities (torch.Tensor): Probabilities after applying sigmoid activation, shape (batch_size, 1)
         - predictions (torch.Tensor): Binary predictions (0 or 1), shape (batch_size, 1)
         """
-        probabilities = torch.sigmoid(logits)  # apply sigmoid to convert logits to probabilities
-        predictions = (probabilities > 0.5).float()  # convert probabilities to 0 or 1
+        with torch.no_grad():
+            logits = self.forward(x)
+            probabilities = torch.sigmoid(logits)
+            predictions = (probabilities > 0.5).float()
+        
         return probabilities, predictions
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
@@ -429,12 +432,14 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, dataloader, criterion, device, save_results=False, results_dir=None, results_filename=None):
+    def evaluate_model(self, dataloader, criterion, device, save_results=False, results_dir=None, results_filename=None, zero_masking = False, zero_masking_model = None):
         # Calcualte the loss on the provided dataloader and save results if specified to H5 file including the input, output, and target
         self.eval()
         running_loss = 0.0
         results = {}
 
+        if zero_masking and zero_masking_model is None:
+            raise ValueError("zero_masking_model must be provided if zero_masking is True")
 
         with torch.no_grad():
             i = 0
@@ -447,6 +452,14 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 outputs = self(inputs)
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
+                if zero_masking and zero_masking_model is not None:
+                    zero_mask = zero_masking_model.predict(inputs)
+                # zero mask either 0 or 1
+                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                zero_mask = zero_mask.unsqueeze(1).unsqueeze(2).unsqueeze(3)
+                outputs = outputs * zero_mask
+
+
                 labels = labels.squeeze()
                 loss = criterion(outputs, labels)
                 running_loss += loss.item()
