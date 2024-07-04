@@ -71,6 +71,9 @@ class Zero_PulseClassifier(nn.Module):
 
                     outputs = self(sum_of_points).to(device)
 
+                    print(outputs.shape)
+                    print(labels.shape)
+
 
                     loss = criterion(outputs, labels[:,1]) #Labels one-hot encoded but not required here
                     loss.backward()
