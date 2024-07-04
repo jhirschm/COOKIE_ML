@@ -1,4 +1,5 @@
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
+from ximg_to_ypdf_autoencoder import Zero_PulseClassifier
 from denoising_util import *
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
