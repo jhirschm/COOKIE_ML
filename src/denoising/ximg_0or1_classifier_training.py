@@ -68,7 +68,7 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.BCEWithLogitsLoss()  # Binary Cross Entropy with Logits Loss
-    optimizer = torch.optim.Adam(classifier.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(classifier.parameters(), lr=0.1)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
@@ -96,8 +96,6 @@ def main():
         f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
         f.write("\nModel Architecture\n")
         f.write("------------------\n")
-        f.write(f"Encoder Layers: {encoder_layers}\n")
-        f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
         f.write("Training on even data. Any number of pulses. One hot encoding for 0 or 1+\n")

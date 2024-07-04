@@ -62,6 +62,8 @@ class Zero_PulseClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
+                    print(inputs)
+                    print(labels)
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     labels = labels.to(device, torch.float32)
