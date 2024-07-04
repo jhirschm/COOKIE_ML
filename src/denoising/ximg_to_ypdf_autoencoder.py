@@ -70,10 +70,11 @@ class Zero_PulseClassifier(nn.Module):
                     print(sum_of_points.shape)
 
                     outputs = self(sum_of_points).to(device)
+                    print(outputs.shape)
                     #only use second element
-                    outputs = outputs[:,1] #one-hot encoded initially. if second elemnt is a 1, then 1 or more pulses. If 0, then 0 pulses
+                    print(outputs[:,1].shape)
 
-                    loss = criterion(outputs, labels)
+                    loss = criterion(outputs[:,1], labels)
                     loss.backward()
                     optimizer.step()
 
