@@ -91,8 +91,8 @@ def main():
     classifier = Zero_PulseClassifier(conv_layers, fc_layers)
 
     # Define the loss function and optimizer
-    # criterion = nn.BCEWithLogitsLoss()  # Binary Cross Entropy with Logits Loss
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCEWithLogitsLoss()  # Binary Cross Entropy with Logits Loss
+    # criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(classifier.parameters(), lr=0.001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
