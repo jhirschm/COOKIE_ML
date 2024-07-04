@@ -10,22 +10,47 @@ class StepFunction(nn.Module):
         return (x > self.threshold).float()
 
 class Zero_PulseClassifier(nn.Module):
-    def __init__(self, threshold: float = 0.5):
+    def __init__(self, conv_layers: List[List[Any]], fc_layers: List[List[Any]], dtype=torch.float32):
         super(Zero_PulseClassifier, self).__init__()
-        self.linear = nn.Linear(1, 1)
-        self.step_function = StepFunction(threshold)
+        self.dtype = dtype
+        
+        # Create convolutional layers based on the provided layer configuration
+        conv_modules = []
+        for layer, activation in conv_layers:
+            conv_modules.append(layer)
+            if activation is not None:
+                conv_modules.append(activation)
+        
+        self.conv_layers = nn.Sequential(*conv_modules)
+        
+        # Cast conv layers weights to specified dtype
+        for param in self.conv_layers.parameters():
+            param.data = param.data.to(self.dtype)
+        
+        # Create fully connected layers based on the provided layer configuration
+        fc_modules = []
+        for layer, activation in fc_layers:
+            fc_modules.append(layer)
+            if activation is not None:
+                fc_modules.append(activation)
+        
+        self.fc_layers = nn.Sequential(*fc_modules)
+        
+        # Cast fc layers weights to specified dtype
+        for param in self.fc_layers.parameters():
+            param.data = param.data.to(self.dtype)
+
+        # Side network for binary classification
+        self.side_network = nn.Sequential(
+            nn.Linear(1, 1),
+            StepFunction(threshold=0.5)  # Step function for binary output
+        )
 
     def forward(self, x):
-        x = self.linear(x)
-        x = self.step_function(x)
+        x = self.conv_layers(x)
+        x = x.view(x.size(0), -1)  # Flatten the output from conv layers
+        x = self.fc_layers(x)
         return x
-
-    # def predict(self, img):
-    #     # Sum all points in the image over the image dimensions (dim=2 and dim=3)
-    #     sum_of_points = torch.sum(img, dim=(2, 3), keepdim=True)
-    #     # Flatten the sum to (batch_size, 1)
-    #     sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
-    #     return self.forward(sum_of_points)
     
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
         self.to(device)
@@ -66,13 +91,9 @@ class Zero_PulseClassifier(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     labels = labels.to(device, torch.float32)
-                    sum_of_points = torch.sum(inputs**2, dim=(2, 3), keepdim=True)
-                    # Flatten the sum to (batch_size, 1)
-                    sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
-                    sum_of_points = sum_of_points.to(device, torch.float32)
-                    print(sum_of_points)
+                    
 
-                    outputs = self(sum_of_points).to(device)
+                    outputs = self(inputs).to(device)
 
                 
 
@@ -103,13 +124,13 @@ class Zero_PulseClassifier(nn.Module):
                         inputs = inputs.to(device, torch.float32)
                         labels = labels.to(device, torch.float32)
 
-                        sum_of_points = torch.sum(inputs**2, dim=(2, 3), keepdim=True)
-                        # Flatten the sum to (batch_size, 1)
-                        sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
-                        sum_of_points = sum_of_points.to(device, torch.float32)
+                        # sum_of_points = torch.sum(inputs**2, dim=(2, 3), keepdim=True)
+                        # # Flatten the sum to (batch_size, 1)
+                        # sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
+                        # sum_of_points = sum_of_points.to(device, torch.float32)
 
 
-                        outputs = self(sum_of_points).to(device)
+                        outputs = self(inputs).to(device)
                         #only use second element
                         labels = labels[:,1:].to(device)
                         loss = criterion(outputs, labels)
@@ -218,11 +239,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
     def forward(self, x):
         # Side network forward pass
-        sum_of_points = torch.sum(x, dim=(2, 3), keepdim=True)  # Sum over img_dim_x and img_dim_y
-        sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)  # Flatten to (batch_size, 1)
-        side_output = self.side_network(sum_of_points)
-        side_output = side_output.view(-1, 1, 1, 1) 
-
+        
         x = self.encoder(x)
         x = self.decoder(x)
 
