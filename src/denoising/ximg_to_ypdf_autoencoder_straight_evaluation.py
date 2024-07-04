@@ -76,6 +76,32 @@ def main():
     
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
+    # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
+    ]
+
+    # Calculate the output size after conv layers
+    def get_conv_output_size(input_size, conv_layers):
+        x = torch.randn(input_size)
+        model = nn.Sequential(*[layer for layer_pair in conv_layers for layer in layer_pair if layer is not None])
+        x = model(x)
+        return x.shape
+
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    print(f"Output size after conv layers: {output_size}")
+
+    # Use the calculated size for the fully connected layer input
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
+
+    classifier = Zero_PulseClassifier(conv_layers, fc_layers)
+
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
@@ -87,6 +113,10 @@ def main():
     autoencoder.to(device)
     state_dict = torch.load(best_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
+
+    classifier.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    classifier.load_state_dict(state_dict)
     
 
     # Check if directory exists, otherwise create it
@@ -94,7 +124,7 @@ def main():
         os.makedirs(model_save_dir)
 
     identifier = "testAutoencoder_eval"
-    autoencoder.evaluate_model(test_dataloader, criterion, device, save_results=True, results_dir=model_save_dir, results_filename=f"{identifier}_results.h5", zero_masking = True, zero_masking_model=best_model_zero_mask_path)
+    autoencoder.evaluate_model(test_dataloader, criterion, device, save_results=True, results_dir=model_save_dir, results_filename=f"{identifier}_results.h5", zero_masking = True, zero_masking_model=classifier)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")
