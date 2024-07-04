@@ -5,7 +5,108 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+class DataMilking_MilkCurds(Dataset):
+    '''
+    HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 
+    For example, could pull all shots from directory 1, only shots with 1 pulse from directory 2, and only shots with 2 pulses from directory 3.
+    Pulse handler expects a list of dictionaries. If nothing is provided, it will pull all shots from all directories. If dictionary provided, expects only
+    pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
+    an exception will be thrown.
+    '''
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None): 
+        self.root_dirs = root_dirs
+        self.transform = transform
+        self.input_name = input_name
+        self.pulse_threshold = pulse_threshold
+        self.inputs_arr = []
+        self.labels_arr = []
+        self.test_batch = test_batch
 
+        
+        for i, root_dir in enumerate(self.root_dirs):
+            train_files = os.listdir(root_dir)
+            train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
+            if self.test_batch is not None:
+                train_files = train_files[:self.test_batch]
+
+            for file in train_files:
+                print("file: ", file)
+                with h5py.File(os.path.join(root_dir, file), 'r') as f:
+                    for shot in f.keys():
+                        # Check if exception
+                        if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None:
+                            #throw exception
+                            print("Both pulse_number and pulse_number_max specified. Only one should be specified.")
+                            exit(1)
+                        # Process all shots
+                        if pulse_handler is None or (pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is None):
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            else:
+                                encode_pulses_temp[self.pulse_threshold] = 1
+                            self.labels_arr.append(encode_pulses_temp)
+                                   
+                        # Process shots with pulse_number
+                        elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            else:
+                                encode_pulses_temp[self.pulse_threshold] = 1
+                            self.labels_arr.append(encode_pulses_temp)
+                        
+                        # Process shots with pulse_number_max
+                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_number_max:
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            else:
+                                encode_pulses_temp[self.pulse_threshold] = 1
+                            self.labels_arr.append(encode_pulses_temp)
+
+
+
+        self.inputs_arr = np.array(self.inputs_arr)
+        self.labels_arr = np.array(self.labels_arr)
+
+        if len(self.labels_arr) == 1:
+            print(self.labels_arr)
+            self.labels_arr = self.labels_arr[0]
+                                
+            
+
+    def __len__(self):
+        return len(self.inputs_arr)
+
+    def __getitem__(self, idx):
+        
+        data_point = self.inputs_arr[idx]
+        labels = self.labels_arr[idx]
+        
+        if self.input_name == "Ypdf" or self.input_name == "Ximg": #input is an image
+            if self.transform:
+                data_point = self.transform(data_point)
+                
+        return data_point, labels
 class DataMilking_HalfAndHalf(Dataset):
     '''
     HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 
