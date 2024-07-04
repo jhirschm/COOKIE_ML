@@ -77,6 +77,12 @@ class Zero_PulseClassifier(nn.Module):
                     print(labels.shape)
 
                     labels = labels[:,1:].to(device)
+                    # Ensure outputs and labels require grad
+                    if not outputs.requires_grad:
+                        outputs.requires_grad_(True)
+                    if not labels.requires_grad:
+                        labels.requires_grad_(True)
+
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
