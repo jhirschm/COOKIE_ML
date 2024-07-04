@@ -62,7 +62,6 @@ class Zero_PulseClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    print(inputs)
                     print(labels)
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
@@ -71,6 +70,7 @@ class Zero_PulseClassifier(nn.Module):
                     # Flatten the sum to (batch_size, 1)
                     sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
                     sum_of_points = sum_of_points.to(device, torch.float32)
+                    print(sum_of_points)
 
                     outputs = self(sum_of_points).to(device)
 
