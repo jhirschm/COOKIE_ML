@@ -66,7 +66,7 @@ class Zero_PulseClassifier(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     labels = labels.to(device, torch.float32)
-                    sum_of_points = torch.sum(inputs, dim=(2, 3), keepdim=True)
+                    sum_of_points = torch.sum(inputs**2, dim=(2, 3), keepdim=True)
                     # Flatten the sum to (batch_size, 1)
                     sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
                     sum_of_points = sum_of_points.to(device, torch.float32)
@@ -103,7 +103,7 @@ class Zero_PulseClassifier(nn.Module):
                         inputs = inputs.to(device, torch.float32)
                         labels = labels.to(device, torch.float32)
 
-                        sum_of_points = torch.sum(inputs, dim=(2, 3), keepdim=True)
+                        sum_of_points = torch.sum(inputs**2, dim=(2, 3), keepdim=True)
                         # Flatten the sum to (batch_size, 1)
                         sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
                         sum_of_points = sum_of_points.to(device, torch.float32)
