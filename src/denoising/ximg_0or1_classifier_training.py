@@ -84,8 +84,8 @@ def main():
 
     # Use the calculated size for the fully connected layer input
     fc_layers = [
-        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 16), nn.ReLU()],
-        [nn.Linear(16, 1), None]
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
     ]
 
     classifier = Zero_PulseClassifier(conv_layers, fc_layers)
