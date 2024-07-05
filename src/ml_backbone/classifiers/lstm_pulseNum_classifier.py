@@ -113,7 +113,8 @@ class CustomLSTMClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    
+                    labels = labels.to(device) #indexing for access to the first element of the list
+
                     if denoising and denoise_model is not None and zero_mask_model is not None:
                         denoise_model.eval()
                         zero_mask_model.eval()
@@ -135,8 +136,6 @@ class CustomLSTMClassifier(nn.Module):
 
                     else: 
                         inputs = inputs.to(device, torch.float32)
-                        # labels = labels[0]
-                        labels = labels.to(device) #indexing for access to the first element of the list
                     
 
                     outputs = self(inputs).to(device)
@@ -156,6 +155,8 @@ class CustomLSTMClassifier(nn.Module):
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
+                        labels = labels.to(device) #indexing for access to the first element of the list
+
                         if denoising and denoise_model is not None and zero_mask_model is not None:
                             denoise_model.eval()
                             zero_mask_model.eval()
@@ -177,9 +178,7 @@ class CustomLSTMClassifier(nn.Module):
 
                         else: 
                             inputs = inputs.to(device, torch.float32)
-                            # labels = labels[0]
-                            labels = labels.to(device) #indexing for access to the first element of the list
-                    
+                            
 
                         outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
