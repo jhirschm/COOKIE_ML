@@ -152,7 +152,7 @@ def main():
 
     zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
     autoencoder.to(device)
-    state_dict = torch.load(best_model_path, map_location=device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
     zero_model.to(device)
