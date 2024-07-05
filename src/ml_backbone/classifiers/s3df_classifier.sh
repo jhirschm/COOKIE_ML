@@ -32,7 +32,7 @@ case "$1" in
         ;;
     
     evaluation)
-        python3 python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/lstm_pulseNum_classifier_straight_evaluation.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/lstm_pulseNum_classifier_straight_evaluation.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
