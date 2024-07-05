@@ -130,7 +130,7 @@ class CustomLSTMClassifier(nn.Module):
                         zero_mask = zero_mask.to(device, torch.float32)
 
                         outputs = outputs * zero_mask
-                        inputs = outputs
+                        inputs = outputs.to(device, torch.float32)
 
                     else: 
                         inputs = inputs.to(device, torch.float32)
@@ -172,7 +172,7 @@ class CustomLSTMClassifier(nn.Module):
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            inputs = outputs
+                            inputs = outputs.to(device, torch.float32)
 
                         else: 
                             inputs = inputs.to(device, torch.float32)
