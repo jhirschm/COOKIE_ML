@@ -42,7 +42,7 @@ def main():
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4)
+    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4,test_batch=1)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -170,9 +170,9 @@ def main():
     zero_model.to(device)
     classModel.to(device)
 
-    autoencoder = nn.DataParallel(autoencoder)
-    zero_model = nn.DataParallel(zero_model)
-    classModel = nn.DataParallel(classModel)
+    # autoencoder = nn.DataParallel(autoencoder)
+    # zero_model = nn.DataParallel(zero_model)
+    # classModel = nn.DataParallel(classModel)
     classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
