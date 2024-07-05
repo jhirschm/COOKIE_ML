@@ -187,10 +187,11 @@ class CustomLSTMClassifier(nn.Module):
                 val_loss = running_val_loss / len(val_dataloader)
                 val_losses.append(val_loss)
 
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}")
+                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
                 # Update the scheduler
-                scheduler.step(val_loss)
+                should_stop = scheduler.step(val_loss, epoch)
 
                 # Check if this is the best model so far
                 if val_loss < best_val_loss:
@@ -202,7 +203,7 @@ class CustomLSTMClassifier(nn.Module):
                     best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
                     torch.save(self.state_dict(), best_model_path)
 
-                # Save checkpoint
+                ## Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
                         'epoch': epoch,
@@ -215,15 +216,18 @@ class CustomLSTMClassifier(nn.Module):
                         'best_epoch': best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
-
+                
                 # Early stopping check
-                if scheduler.should_stop():
-                    print(f"Early stopping at epoch {epoch+1}")
+                # if scheduler.should_stop():
+                #     print(f"Early stopping at epoch {epoch+1}")
+                #     break
+                if should_stop:
+                    print(f"Early stopping at epoch {epoch+1}\n")
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-
-
+                f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}" + "_run_summary.txt"
+        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
             file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
             file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
