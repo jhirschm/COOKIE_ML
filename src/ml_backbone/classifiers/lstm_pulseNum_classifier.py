@@ -83,6 +83,7 @@ class CustomLSTMClassifier(nn.Module):
         best_epoch = 0
         start_epoch = 0
 
+        self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
         if denoising and denoise_model is None and zero_mask_model is None:
