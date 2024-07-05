@@ -83,6 +83,8 @@ class CustomLSTMClassifier(nn.Module):
         best_epoch = 0
         start_epoch = 0
 
+        if torch.cude.device_count() > 1:
+            self = nn.DataParallel(self)
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
@@ -116,6 +118,12 @@ class CustomLSTMClassifier(nn.Module):
                     labels = labels.to(device) #indexing for access to the first element of the list
 
                     if denoising and denoise_model is not None and zero_mask_model is not None:
+                        if torch.cuda.device_count() > 1:
+                            denoise_model = nn.DataParallel(denoise_model)
+                            zero_mask_model = nn.DataParallel(zero_mask_model)
+                        denoise_model = denoise_model.to(device)
+                        zero_mask_model = zero_mask_model.to(device)
+
                         denoise_model.eval()
                         zero_mask_model.eval()
                         inputs = torch.unsqueeze(inputs, 1)
@@ -124,7 +132,7 @@ class CustomLSTMClassifier(nn.Module):
                         outputs = denoise_model(inputs)
                         outputs = outputs.squeeze()
                         outputs = outputs.to(device)
-                        probs, zero_mask  = zero_mask_model.predict(inputs)
+                        probs, zero_mask  = zero_mask_model.module.predict(inputs)
                         zero_mask = zero_mask.to(device)
                         # zero mask either 0 or 1
                         # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
