@@ -76,13 +76,15 @@ class CustomLSTMClassifier(nn.Module):
 
         return nn.Sequential(*layers), fc_layers[-1]  # Last fully connected layer's output size
     
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, denoise_model = None, zero_mask_model = None):
+    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, denoise_model = None, zero_mask_model = None, parallel=True):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
         best_epoch = 0
         start_epoch = 0
 
+        if parallel:
+            self = nn.DataParallel(self)
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
