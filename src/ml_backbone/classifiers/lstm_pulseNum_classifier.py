@@ -248,32 +248,59 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, filename, model_dir, run_summary_path, device, pre_models=None):
+    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None):
         # Lists to store true and predicted values for pulses
+        true_1_pred_1 = []
+        true_1_pred_2 = []
+        true_2_pred_1 = []
+        true_2_pred_2 = []
+        true_2_pred_3 = []
+        true_3_pred_2 = []
+        true_3_pred_3 = []
+        true_3_pred_4p = []
+
         true_pulses = []
         predicted_pulses = []
 
+        self.to(device)
+
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
-        for inputs, labels in test_dataloader:
-            # Move data to the GPU
-            inputs, labels = inputs.to(device), labels.to(device)
+        with torch.no_grad():
+            for inputs, labels in test_dataloader:
+                # Move data to the GPU
+                inputs, labels = inputs.to(device), labels.to(device)
 
-            # Pass inputs through pre-trained models if provided
-            if pre_models is not None:
-                for pre_model in pre_models:
-                    pre_model.eval()  # Set pre-trained models to evaluation mode
-                    with torch.no_grad():
-                        inputs = pre_model(inputs)
+                if denoising and denoise_model is not None and zero_mask_model is not None:
+                    denoise_model.eval()
+                    zero_mask_model.eval()
+                    inputs = torch.unsqueeze(inputs, 1)
+                    inputs = inputs.to(device, torch.float32)
+                    # labels = labels[0]
+                    outputs = denoise_model(inputs)
+                    outputs = outputs.squeeze()
+                    outputs = outputs.to(device)
+                    probs, zero_mask  = zero_mask_model.predict(inputs)
+                    zero_mask = zero_mask.to(device)
+                    # zero mask either 0 or 1
+                    # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = zero_mask.to(device, torch.float32)
 
-            # Forward pass
-            outputs = self(inputs)
+                    outputs = outputs * zero_mask
+                    inputs = outputs.to(device, torch.float32)
 
-            # Get the predicted class (index with the highest probability)
-            _, predicted = torch.max(outputs, 1)
+                else: 
+                    inputs = inputs.to(device, torch.float32)
+                
+                probs, preds = self.predict(inputs)
+                preds = preds.to(device)
 
-            true_pulses.extend(labels.cpu().numpy())
-            predicted_pulses.extend(predicted.cpu().numpy())
+                
+                true_pulses.extend(labels.cpu().numpy())
+                predicted_pulses.extend(preds.cpu().numpy())
 
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
@@ -310,13 +337,14 @@ class CustomLSTMClassifier(nn.Module):
         # Add axis labels
         plt.xlabel('Predicted')
         plt.ylabel('True')
-        plot_path = os.path.join(model_dir, filename + "_confusion_matrix.pdf")
+        plot_path = os.path.join(model_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
         plt.savefig(plot_path)
         plt.close()
 
         # Print and display metrics
         # Redirect output to the same log file used during training
+        run_summary_path = f"{model_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "a") as file:
             file.write(f"Accuracy: {accuracy:.2f}%\n")
             file.write(f"Precision: {precision:.2f}%\n")
@@ -331,7 +359,23 @@ class CustomLSTMClassifier(nn.Module):
                 file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
 
         return accuracy, precision, recall, f1, normalized_cm, plot_path
-    
+    def predict(self, x):
+        """
+        Perform binary classification prediction from logits.
+
+        Args:
+        - x (torch.Tensor): Input tensor, shape (batch_size, 512)
+
+        Returns:
+        - probabilities (torch.Tensor): Probabilities after applying sigmoid activation, shape (batch_size, 1)
+        - predictions (torch.Tensor): Binary predictions (0 or 1), shape (batch_size, 1)
+        """
+        with torch.no_grad():
+            logits = self.forward(x)
+            probabilities = torch.sigmoid(logits)
+            predictions = (probabilities > 0.5).float()
+        
+        return probabilities, predictions
     
 def create_model_from_json(json_file_path, input_size, num_classes, ignore_output_layer = True, load_weights = True):
     with open(json_file_path, 'r') as f:
