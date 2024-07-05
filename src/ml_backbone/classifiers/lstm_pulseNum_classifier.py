@@ -298,9 +298,11 @@ class CustomLSTMClassifier(nn.Module):
                 probs, preds = self.predict(inputs)
                 preds = preds.to(device)
 
-                
-                true_pulses.extend(labels.cpu().numpy())
-                predicted_pulses.extend(preds.cpu().numpy())
+                true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
+                predicted_pulse_single_label = np.argmax(preds.cpu().numpy(), axis=1)
+
+                true_pulses.extend(true_pulse_single_label)
+                predicted_pulses.extend(predicted_pulse_single_label)
 
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
