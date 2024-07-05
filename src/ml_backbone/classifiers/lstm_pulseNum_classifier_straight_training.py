@@ -166,13 +166,8 @@ def main():
     zero_model.load_state_dict(state_dict)
 
     identifier = "testLSTM"
-    autoencoder.to(device)
-    zero_model.to(device)
-    classModel.to(device)
 
-    # autoencoder = nn.DataParallel(autoencoder)
-    # zero_model = nn.DataParallel(zero_model)
-    # classModel = nn.DataParallel(classModel)
+   
     classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
