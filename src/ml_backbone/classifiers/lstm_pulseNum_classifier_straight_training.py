@@ -42,7 +42,7 @@ def main():
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1)
+    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -100,7 +100,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07042024_test/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07042024_1/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -173,7 +173,7 @@ def main():
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")
         f.write("======================\n")
-        f.write(f"Data Path: {datapath}\n")
+        f.write(f"Data Path: {datapath2}\n")
         f.write(f"Model Save Directory: {model_save_dir}\n")
         f.write("\nModel Parameters and Hyperparameters\n")
         f.write("-----------------------------------\n")
@@ -188,7 +188,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("First trial on S3DF for Denoising.\n")
+        f.write("First trial on S3DF for LSTM trained on denoised data.\n")
 
     
     
