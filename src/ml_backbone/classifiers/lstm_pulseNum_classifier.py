@@ -76,7 +76,7 @@ class CustomLSTMClassifier(nn.Module):
 
         return nn.Sequential(*layers), fc_layers[-1]  # Last fully connected layer's output size
     
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, pre_models=None):
+    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, denoise_model = None, zero_mask_model = None):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -84,6 +84,9 @@ class CustomLSTMClassifier(nn.Module):
         start_epoch = 0
 
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
         
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
@@ -109,15 +112,31 @@ class CustomLSTMClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
+                    
+                    if denoising and denoise_model is not None and zero_mask_model is not None:
+                        denoise_model.eval()
+                        zero_mask_model.eval()
+                        inputs = torch.unsqueeze(inputs, 1)
+                        inputs = inputs.to(device, torch.float32)
+                        # labels = labels[0]
+                        outputs = denoise_model(inputs)
+                        outputs = outputs.squeeze()
+                        outputs = outputs.to(device)
+                        probs, zero_mask  = zero_mask_model.predict(inputs)
+                        zero_mask = zero_mask.to(device)
+                        # zero mask either 0 or 1
+                        # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                        zero_mask = torch.unsqueeze(zero_mask,2)
+                        zero_mask = zero_mask.to(device, torch.float32)
 
-                    # Pass inputs through pre-trained models if provided
-                    if pre_models is not None:
-                        for model in pre_models:
-                            model.eval()  # Set pre-trained models to evaluation mode
-                            with torch.no_grad():
-                                inputs = model(inputs)
+                        outputs = outputs * zero_mask
+                        inputs = outputs
+
+                    else: 
+                        inputs = inputs.to(device, torch.float32)
+                        # labels = labels[0]
+                        labels = labels.to(device) #indexing for access to the first element of the list
+                    
 
                     outputs = self(inputs)
                     loss = criterion(outputs, labels)
@@ -136,13 +155,30 @@ class CustomLSTMClassifier(nn.Module):
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
-                        inputs, labels = inputs.to(device), labels.to(device)
+                        if denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            # labels = labels[0]
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            probs, zero_mask  = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            # zero mask either 0 or 1
+                            # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                            zero_mask = torch.unsqueeze(zero_mask,2)
+                            zero_mask = zero_mask.to(device, torch.float32)
 
-                        # Pass inputs through pre-trained models if provided
-                        if pre_models is not None:
-                            for model in pre_models:
-                                model.eval()
-                                inputs = model(inputs)
+                            outputs = outputs * zero_mask
+                            inputs = outputs
+
+                        else: 
+                            inputs = inputs.to(device, torch.float32)
+                            # labels = labels[0]
+                            labels = labels.to(device) #indexing for access to the first element of the list
+                    
 
                         outputs = self(inputs)
                         loss = criterion(outputs, labels)
