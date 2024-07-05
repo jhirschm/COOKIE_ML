@@ -139,7 +139,7 @@ class CustomLSTMClassifier(nn.Module):
                         labels = labels.to(device) #indexing for access to the first element of the list
                     
 
-                    outputs = self(inputs)
+                    outputs = self(inputs).to(device)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
@@ -181,7 +181,7 @@ class CustomLSTMClassifier(nn.Module):
                             labels = labels.to(device) #indexing for access to the first element of the list
                     
 
-                        outputs = self(inputs)
+                        outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
