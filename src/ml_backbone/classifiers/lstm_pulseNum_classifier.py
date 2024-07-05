@@ -82,17 +82,17 @@ class CustomLSTMClassifier(nn.Module):
         best_val_loss = float('inf')
         best_epoch = 0
         start_epoch = 0
-
-        print("Made it here")
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
             self = nn.DataParallel(self)
-        print("Made it here 2")
-
+            if denoising and denoise_model is not None and zero_mask_model is not None:
+                denoise_model = nn.DataParallel(denoise_model)
+        denoise_model.to(device)
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
-        if denoising and denoise_model is None and zero_mask_model is None:
-            raise ValueError("Denoising is enabled but no denoising model is provided")
+        
         
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
@@ -121,6 +121,7 @@ class CustomLSTMClassifier(nn.Module):
                     labels = labels.to(device) #indexing for access to the first element of the list
 
                     if denoising and denoise_model is not None and zero_mask_model is not None:
+                       
                         denoise_model.eval()
                         zero_mask_model.eval()
                         inputs = torch.unsqueeze(inputs, 1)
