@@ -83,8 +83,11 @@ class CustomLSTMClassifier(nn.Module):
         best_epoch = 0
         start_epoch = 0
 
+        print("Made it here")
         if parallel:
             self = nn.DataParallel(self)
+        print("Made it here 2")
+
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
