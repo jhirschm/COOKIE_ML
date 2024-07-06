@@ -95,12 +95,7 @@ def main():
     )
     classModel.to(device)
 
-    # Define the loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
-    max_epochs = 200
-    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
-    # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+        # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07052024_2/evalOutputs"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
@@ -114,6 +109,15 @@ def main():
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07052024_2/testLSTM_best_model.pth"
    
     state_dict = torch.load(best_mode_classifier, map_location=device)
+    def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+    state_dict = remove_module_prefix(state_dict)
     classModel.load_state_dict(state_dict)
 
     # Example usage
