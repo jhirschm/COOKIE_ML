@@ -177,7 +177,10 @@ class CustomLSTMClassifier(nn.Module):
                             outputs = denoise_model(inputs)
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
-                            probs, zero_mask  = zero_mask_model.predict(inputs)
+                            if parallel:
+                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask  = zero_mask_model.predict(inputs)
                             zero_mask = zero_mask.to(device)
                             # zero mask either 0 or 1
                             # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
