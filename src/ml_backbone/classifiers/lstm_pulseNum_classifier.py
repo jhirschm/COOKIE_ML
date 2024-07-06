@@ -88,7 +88,9 @@ class CustomLSTMClassifier(nn.Module):
             self = nn.DataParallel(self)
             if denoising and denoise_model is not None and zero_mask_model is not None:
                 denoise_model = nn.DataParallel(denoise_model)
-        denoise_model.to(device)
+                zero_mask_model = nn.DataParallel(zero_mask_model)
+                denoise_model.to(device)
+                zero_mask_model.to(device)
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
@@ -130,7 +132,10 @@ class CustomLSTMClassifier(nn.Module):
                         outputs = denoise_model(inputs)
                         outputs = outputs.squeeze()
                         outputs = outputs.to(device)
-                        probs, zero_mask  = zero_mask_model.predict(inputs)
+                        if parallel:
+                            probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                        else:
+                            probs, zero_mask  = zero_mask_model.predict(inputs)
                         zero_mask = zero_mask.to(device)
                         # zero mask either 0 or 1
                         # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
