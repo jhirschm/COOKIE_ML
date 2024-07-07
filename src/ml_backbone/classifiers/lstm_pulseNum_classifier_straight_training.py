@@ -69,7 +69,7 @@ def main():
         "hidden_size": 64,
         "num_lstm_layers": 2,
         "bidirectional": True,
-        "fc_layers": [32, 64],
+        "fc_layers": [16, 32],
         "dropout": 0.2,
         "lstm_dropout": 0.2,
         "layerNorm": False,
@@ -100,7 +100,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07062024_1/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07062024_2/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
