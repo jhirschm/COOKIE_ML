@@ -65,8 +65,19 @@ def main():
 
     # Define the model
     # Create CustomLSTMClassifier model
+    # data = {
+    #     "hidden_size": 64,
+    #     "num_lstm_layers": 3,
+    #     "bidirectional": True,
+    #     "fc_layers": [32, 64],
+    #     "dropout": 0.2,
+    #     "lstm_dropout": 0.2,
+    #     "layerNorm": False,
+    #     # Other parameters are default or not provided in the example
+    # }   
+
     data = {
-        "hidden_size": 64,
+        "hidden_size": 128,
         "num_lstm_layers": 3,
         "bidirectional": True,
         "fc_layers": [32, 64],
