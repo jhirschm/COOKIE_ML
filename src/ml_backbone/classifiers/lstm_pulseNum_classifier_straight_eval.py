@@ -42,7 +42,7 @@ def main():
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1)
+    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -75,9 +75,8 @@ def main():
     #     "layerNorm": False,
     #     # Other parameters are default or not provided in the example
     # }   
-
     data = {
-        "hidden_size": 128,
+        "hidden_size": 64,
         "num_lstm_layers": 3,
         "bidirectional": True,
         "fc_layers": [32, 64],
@@ -107,7 +106,7 @@ def main():
     classModel.to(device)
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07062024_3/evalOutputs"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07252024_noDenoising/evalOutputs"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -117,7 +116,7 @@ def main():
 
     best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
-    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07062024_3/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07252024_noDenoising/testLSTM_best_model.pth"
    
     state_dict = torch.load(best_mode_classifier, map_location=device)
     def remove_module_prefix(state_dict):
@@ -188,7 +187,7 @@ def main():
     identifier = "testLSTM"
     autoencoder.to(device)
     zero_model.to(device)
-    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model)
+    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=False, denoise_model = autoencoder, zero_mask_model = zero_model)
     # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     # with open(results_file, 'w') as f:
     #     f.write("Model Training Results\n")
