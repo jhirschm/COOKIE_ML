@@ -10,7 +10,8 @@
 #SBATCH --time=0-10:00:00
 ##SBATCH --gpus 3
 source ~/conda.sh
-
+export PYTHONUNBUFFERED=1
+export PYTHONIOENCODING=utf-8
 # Define paths to your data files and scalers
 FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/"
 SCALER_NAME="min_max_scaler"
