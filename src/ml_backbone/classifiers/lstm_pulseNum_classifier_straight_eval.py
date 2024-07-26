@@ -128,6 +128,8 @@ def main():
                 new_state_dict[k] = v
         return new_state_dict
     state_dict = remove_module_prefix(state_dict)
+    for key in state_dict.keys():
+        print(key, state_dict[key].shape)
     classModel.load_state_dict(state_dict)
 
     # Example usage
