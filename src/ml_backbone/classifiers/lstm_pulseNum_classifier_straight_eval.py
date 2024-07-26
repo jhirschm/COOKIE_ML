@@ -77,7 +77,7 @@ def main():
     # }   
     data = {
         "hidden_size": 128,
-        "num_lstm_layers": 2,
+        "num_lstm_layers": 3,
         "bidirectional": True,
         "fc_layers": [32, 64],
         "dropout": 0.2,
