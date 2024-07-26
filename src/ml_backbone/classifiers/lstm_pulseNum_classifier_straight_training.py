@@ -48,9 +48,9 @@ def main():
 
     print(len(data_train))
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data))
-    val_size = int(0.2 * len(data))
-    test_size = len(data) - train_size - val_size
+    train_size = int(0.8 * len(data_train))
+    val_size = int(0.2 * len(data_train))
+    test_size = len(data_train) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
     print(f"Validation size: {val_size}")
