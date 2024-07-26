@@ -76,8 +76,8 @@ def main():
     #     # Other parameters are default or not provided in the example
     # }   
     data = {
-        "hidden_size": 64,
-        "num_lstm_layers": 3,
+        "hidden_size": 128,
+        "num_lstm_layers": 2,
         "bidirectional": True,
         "fc_layers": [32, 64],
         "dropout": 0.2,
