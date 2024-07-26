@@ -127,7 +127,7 @@ def analyze_data():
     phase_differences = np.array(phase_differences)
     abs_phase_differences = np.abs(phase_differences)
 
-    cos_2_phase_differences = np.cos(phase_differences)**2
+    cos_phase_differences = np.cos(phase_differences)
 
     # Plot the histogram of the absolute phase differences
     fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -137,9 +137,9 @@ def analyze_data():
     ax_hist1.set_ylabel('Frequency')
 
     # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
-    ax_hist2.hist(cos_2_phase_differences, bins=50, color='green', alpha=0.7)
-    ax_hist2.set_title('Histogram of cos^2(phase_diff)')
-    ax_hist2.set_xlabel('cos^2(phase_diff) ')
+    ax_hist2.hist(cos_phase_differences, bins=50, color='green', alpha=0.7)
+    ax_hist2.set_title('Histogram of cos(phase_diff)')
+    ax_hist2.set_xlabel('cos(phase_diff) ')
     ax_hist2.set_ylabel('Frequency')
 
     plt.tight_layout()
