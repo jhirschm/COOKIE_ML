@@ -33,6 +33,7 @@ class DataMilking_MilkCurds(Dataset):
                 print("file: ", file)
                 with h5py.File(os.path.join(root_dir, file), 'r') as f:
                     for shot in f.keys():
+                        print(pulse_handler[i]["pulse_number"])
                         # Check if exception
                         if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None:
                             #throw exception
@@ -83,7 +84,7 @@ class DataMilking_MilkCurds(Dataset):
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
 
-
+                        print(encode_pulses_temp)
 
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
