@@ -40,7 +40,7 @@ def main():
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
     datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/train/"
 
-    datapaths = datapath_train
+    datapaths = [datapath_train]
     # datapaths = [datapath2]
     pulse_specification = None
 
