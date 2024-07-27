@@ -36,30 +36,34 @@ def main():
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
-    datapaths = [datapath2]
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/train/"
+    datapath_val = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/val/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/test/"
+
     pulse_specification = None
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
-    print(len(data))
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=True)
+    # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
+
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data))
-    val_size = int(0.1 * len(data))
-    test_size = len(data) - train_size - val_size
+    train_size = 0
+    val_size = 0
+    test_size = len(data_test) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
     print(f"Validation size: {val_size}")
     print(f"Test size: {test_size}")
 
     # Perform the split
-    train_dataset, val_dataset, test_dataset = random_split(data, [train_size, val_size, test_size])
+    train_dataset, val_dataset, test_dataset = random_split(data_test, [train_size, val_size, test_size])
 
 
     # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    # val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
@@ -106,7 +110,7 @@ def main():
     classModel.to(device)
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07252024_noDenoising/evalOutputs"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf/evalOutputs"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -116,7 +120,7 @@ def main():
 
     best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
-    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07252024_noDenoising/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf/testLSTM_best_model.pth"
    
     state_dict = torch.load(best_mode_classifier, map_location=device)
     def remove_module_prefix(state_dict):
