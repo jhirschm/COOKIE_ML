@@ -13,7 +13,7 @@ class DataMilking_MilkCurds(Dataset):
     pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
     an exception will be thrown.
     '''
-    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None): 
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False): 
         self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
@@ -52,8 +52,8 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
-                            print(f[shot].attrs["npulses"])
-                            print(encode_pulses_temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
                                    
                         # Process shots with pulse_number
                         elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
@@ -69,8 +69,8 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
-                            print(f[shot].attrs["npulses"])
-                            print(encode_pulses_temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
                         
                         # Process shots with pulse_number_max
                         elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
@@ -86,10 +86,12 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
-                            print(f[shot].attrs["npulses"])
-                            print(encode_pulses_temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
 
         self.inputs_arr = np.array(self.inputs_arr)
+        if zero_to_one_rescale:
+            self.inputs_arr = (self.inputs_arr+1)/2
         self.labels_arr = np.array(self.labels_arr)
 
         if len(self.labels_arr) == 1:
