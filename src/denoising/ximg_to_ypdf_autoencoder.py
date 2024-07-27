@@ -441,9 +441,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     zero_mask = zero_mask.to(device)
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                    print(zero_mask.shape)
+                    # print(zero_mask.shape)
                     zero_mask = torch.unsqueeze(zero_mask,2)
-                    print(zero_mask.shape)
+                    # print(zero_mask.shape)
                     zero_mask = zero_mask.to(device, torch.float32)
 
                     outputs = outputs * zero_mask
