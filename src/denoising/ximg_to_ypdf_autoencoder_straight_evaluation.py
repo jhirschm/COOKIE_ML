@@ -32,7 +32,9 @@ def main():
     # Load Dataset and Feed to Dataloader
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
+    
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
@@ -45,12 +47,12 @@ def main():
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=None)
-    data = DataMilking_HalfAndHalf(root_dirs=[datapath], pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
+    data = DataMilking_HalfAndHalf(root_dirs=[datapath_test], pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
 
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number_max=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data))
-    val_size = int(0.1 * len(data))
+    train_size = int(0 * len(data))
+    val_size = int(0 * len(data))
     test_size = int(len(data) - train_size - val_size)
 
     # Perform the split
@@ -68,10 +70,16 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
+    # decoder_layers = np.array([
+    #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+    #     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    # ])
     decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
     
@@ -106,11 +114,12 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_trainedOne1Pulse/outputs_fromEvenDist/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_trainedOne1Pulse/outputs_fromEvenDist/"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_3/autoencoder_best_model.pth"
-    best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
-   
+    # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
+    best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     autoencoder.to(device)
     state_dict = torch.load(best_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
@@ -146,7 +155,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses. Just using trained on even 1 and 0.\n")
+        f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses.\n")
 
     
     
