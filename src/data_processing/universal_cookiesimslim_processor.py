@@ -114,10 +114,10 @@ def main():
     print("Data File Paths:")
     print(data_file_paths)
     # Based on train_val_test_split, split the data into training, validation, and test sets and make subfolders in savepath for these
-    assert sum(args.train_val_test_split) == 1.0, "Split ratios must sum to 1."
+    assert sum(args.train_test_split) == 1.0, "Split ratios must sum to 1."
 
     # Calculate the number of samples for each set
-    train_ratio, test_ratio = args.train_val_test_split
+    train_ratio, test_ratio = args.train_test_split
     train_files, test_files = train_test_split(data_file_paths, test_size=(test_ratio))
 
     # Create subfolders for train, val, and test
