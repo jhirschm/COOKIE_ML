@@ -52,6 +52,8 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
+                            print(f[shot].attrs["npulses"])
+                            print(encode_pulses_temp)
                                    
                         # Process shots with pulse_number
                         elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
@@ -67,9 +69,11 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
+                            print(f[shot].attrs["npulses"])
+                            print(encode_pulses_temp)
                         
                         # Process shots with pulse_number_max
-                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_number_max:
+                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
                             if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                                 self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
                             else: #input is an attribute
@@ -77,13 +81,12 @@ class DataMilking_MilkCurds(Dataset):
                             
                             # Label num pulses
                             encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
-                            print(f[shot].attrs["npulses"])
                             if f[shot].attrs["npulses"] <= self.pulse_threshold:
                                     encode_pulses_temp[f[shot].attrs["npulses"]] = 1
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
-
+                            print(f[shot].attrs["npulses"])
                             print(encode_pulses_temp)
 
         self.inputs_arr = np.array(self.inputs_arr)
@@ -179,7 +182,7 @@ class DataMilking_HalfAndHalf(Dataset):
                             self.labels_arr.append(labels_temp)
                         
                         # Process shots with pulse_number_max
-                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_number_max:
+                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
                             if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                                 self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
                             else: #input is an attribute
