@@ -105,7 +105,7 @@ def main():
     parser.add_argument("--energy_elements", default=512, type=int, help="Number of energy elements in the data")
     parser.add_argument("--suffix", default="_processed", help="Suffix to append to the processed data filename")
     parser.add_argument("--test_mode", default=False, help="Run in test mode")
-    parser.add_argument("--train_val_test_split", type=float, nargs=3, default=[1.0, 0, 0], help="Train, validation, and test split")
+    parser.add_argument("--train_test_split", type=float, nargs=3, default=[1.0, 0], help="Train, validation, and test split")
     args = parser.parse_args()
 
     data_file_paths = [os.path.join(args.file_paths, file) for file in os.listdir(args.file_paths) if file.endswith('.h5')]
@@ -117,23 +117,18 @@ def main():
     assert sum(args.train_val_test_split) == 1.0, "Split ratios must sum to 1."
 
     # Calculate the number of samples for each set
-    train_ratio, val_ratio, test_ratio = args.train_val_test_split
-    train_files, temp_files = train_test_split(data_file_paths, test_size=(val_ratio + test_ratio))
-    val_files, test_files = train_test_split(temp_files, test_size=(test_ratio / (val_ratio + test_ratio)))
+    train_ratio, test_ratio = args.train_val_test_split
+    train_files, test_files = train_test_split(data_file_paths, test_size=(test_ratio))
 
     # Create subfolders for train, val, and test
     train_folder = os.path.join(args.savepath, 'train')
-    val_folder = os.path.join(args.savepath, 'val')
     test_folder = os.path.join(args.savepath, 'test')
     # Calculate and save the scalers
     if train_files != []:
         ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(train_files, train_folder, args.scaler_name)
         load_and_preprocess_data(train_files, ximg_scaler_load_path, ypdf_scaler_load_path, train_folder, args.energy_elements, args.suffix)
-    if val_files != []:
-        ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(data_file_paths, val_folder, args.scaler_name)
-        load_and_preprocess_data(val_files, ximg_scaler_load_path, ypdf_scaler_load_path, val_folder, args.energy_elements, args.suffix)
     if test_files != []:
-        ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(data_file_paths, test_folder, args.scaler_name)
+        ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(test_files, test_folder, args.scaler_name)
         load_and_preprocess_data(test_files, ximg_scaler_load_path, ypdf_scaler_load_path, test_folder, args.energy_elements, args.suffix)
 
     # # Load and preprocess the data
