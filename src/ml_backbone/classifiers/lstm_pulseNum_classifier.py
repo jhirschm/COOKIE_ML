@@ -262,7 +262,7 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None):
+    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False):
         # Lists to store true and predicted values for pulses
         true_1_pred_1 = []
         true_1_pred_2 = []
@@ -304,7 +304,11 @@ class CustomLSTMClassifier(nn.Module):
                     zero_mask = zero_mask.to(device, torch.float32)
 
                     outputs = outputs * zero_mask
+
+                    if rescale_0to1:
+                        inputs = (inputs +1)/2 
                     inputs = outputs.to(device, torch.float32)
+
 
                 else: 
                     inputs = inputs.to(device, torch.float32)
