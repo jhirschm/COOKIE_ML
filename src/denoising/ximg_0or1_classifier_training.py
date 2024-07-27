@@ -38,7 +38,10 @@ def main():
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
     datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
-    datapaths = [datapath2]
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/train/"
+
+    datapaths = datapath_train
+    # datapaths = [datapath2]
     pulse_specification = None
 
 
@@ -48,7 +51,7 @@ def main():
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
-    val_size = int(0.1 * len(data))
+    val_size = int(0.2 * len(data))
     test_size = len(data) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
@@ -97,7 +100,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -123,7 +126,7 @@ def main():
         f.write("------------------\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Training on even data. Any number of pulses. One hot encoding for 0 or 1+\n")
+        f.write("Training on even data but rescaled to 0 to 1.  One hot encoding for 0 or 1+\n")
 
 
     
