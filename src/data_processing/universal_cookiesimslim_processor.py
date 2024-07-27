@@ -105,7 +105,7 @@ def main():
     parser.add_argument("--energy_elements", default=512, type=int, help="Number of energy elements in the data")
     parser.add_argument("--suffix", default="_processed", help="Suffix to append to the processed data filename")
     parser.add_argument("--test_mode", default=False, help="Run in test mode")
-    parser.add_argument("--train_test_split", type=float, nargs=3, default=[1.0, 0], help="Train, validation, and test split")
+    parser.add_argument("--train_test_split", type=float, nargs=2, default=[1.0, 0], help="Train, validation, and test split")
     args = parser.parse_args()
 
     data_file_paths = [os.path.join(args.file_paths, file) for file in os.listdir(args.file_paths) if file.endswith('.h5')]
