@@ -37,17 +37,19 @@ def main():
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
     datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
     datapaths = [datapath2, datapath2]
     pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}, {"pulse_number": 0, "pulse_number_max": None}]
 
-
+    datapaths = [datapath_train]
+    pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}]
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
-    val_size = int(0.1 * len(data))
+    val_size = int(0.2 * len(data))
     test_size = len(data) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
@@ -69,10 +71,17 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
+    # decoder_layers = np.array([
+    #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Tanh activation
+    #     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    # ])
+    #Changing back to sigmoid since normalized outputs to be 0 to 1
     decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
 
@@ -85,7 +94,9 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
+    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse/"
+
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -113,7 +124,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Training on single pulse and zero pulse. Adding in weighted error for zero pulses. This time using same datapath for both so scaling correct. Same number of 1 and 0 pulses as well. weighted_losses = losses * (1 + zero_mask * 19)  # Increase loss by a factor of 10 for zero labels\n")
+        f.write("Training on single pulse.\n")
 
 
     
