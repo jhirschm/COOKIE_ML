@@ -45,7 +45,7 @@ def main():
     pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}]
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
+    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None)
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
@@ -95,7 +95,7 @@ def main():
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/"
 
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
