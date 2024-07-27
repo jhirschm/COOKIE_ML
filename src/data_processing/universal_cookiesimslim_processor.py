@@ -15,8 +15,12 @@ def calculate_scaler(file_paths, scaler_save_path, scaler_name):
     Returns:
     - scaler (MinMaxScaler): The trained MinMaxScaler.
     """
-    scaler_ximg = MinMaxScaler(feature_range=(-1, 1))
-    scaler_ypdf = MinMaxScaler(feature_range=(-1, 1))
+    # scaler_ximg = MinMaxScaler(feature_range=(-1, 1))
+    # scaler_ypdf = MinMaxScaler(feature_range=(-1, 1))
+
+    scaler_ximg = MinMaxScaler(feature_range=(0, 1))
+    scaler_ypdf = MinMaxScaler(feature_range=(0, 1))
+
 
     # Check if savepath exists, and create it if it doesn't
     if not os.path.exists(scaler_save_path):
