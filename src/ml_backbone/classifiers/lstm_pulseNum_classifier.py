@@ -264,7 +264,6 @@ class CustomLSTMClassifier(nn.Module):
 
                         outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
-                        loss.backward()
                         optimizer.step()
 
                         running_train_loss += loss.item()
