@@ -76,7 +76,7 @@ class CustomLSTMClassifier(nn.Module):
 
         return nn.Sequential(*layers), fc_layers[-1]  # Last fully connected layer's output size
     
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, denoise_model = None, zero_mask_model = None, parallel=True):
+    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, second_denoising=False, denoise_model = None, zero_mask_model = None, parallel=True, second_train_dataloader=None, second_val_dataloader=None):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -156,8 +156,46 @@ class CustomLSTMClassifier(nn.Module):
 
                     running_train_loss += loss.item()
 
-                train_loss = running_train_loss / len(train_dataloader)
+
+                # Training loop with second dataloader that requires denoising
+                if second_train_dataloader is not None and second_denoising:
+                    for batch in second_train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
+
+                        inputs, labels = batch
+                        labels = labels.to(device)
+
+                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            zero_mask = torch.unsqueeze(zero_mask, 2)
+                            zero_mask = zero_mask.to(device, torch.float32)
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+                        else:
+                            inputs = inputs.to(device, torch.float32)
+
+                        outputs = self(inputs).to(device)
+                        loss = criterion(outputs, labels)
+                        loss.backward()
+                        optimizer.step()
+
+                        running_train_loss += loss.item()
+
+
+                train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
                 train_losses.append(train_loss)
+               
 
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
@@ -197,8 +235,43 @@ class CustomLSTMClassifier(nn.Module):
                         outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
+                if second_val_dataloader is not None and second_denoising:
+                    for batch in second_train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
 
-                val_loss = running_val_loss / len(val_dataloader)
+                        inputs, labels = batch
+                        labels = labels.to(device)
+
+                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            zero_mask = torch.unsqueeze(zero_mask, 2)
+                            zero_mask = zero_mask.to(device, torch.float32)
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+                        else:
+                            inputs = inputs.to(device, torch.float32)
+
+                        outputs = self(inputs).to(device)
+                        loss = criterion(outputs, labels)
+                        loss.backward()
+                        optimizer.step()
+
+                        running_train_loss += loss.item()
+
+                # val_loss = running_val_loss / len(val_dataloader)
+                val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
+
                 val_losses.append(val_loss)
 
                 f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
