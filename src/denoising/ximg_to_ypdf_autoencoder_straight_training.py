@@ -50,7 +50,7 @@ def main():
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None)
-    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=2)
+    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=2)
 
     print(len(data))
     # Calculate the lengths for each split
