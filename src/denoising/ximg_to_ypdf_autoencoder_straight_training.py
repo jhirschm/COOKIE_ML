@@ -45,7 +45,7 @@ def main():
 
     datapaths = [datapath_train]
     pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}]
-    pulse_specification = [{"pulse_number": None, "pulse_number_max": 5}]
+    pulse_specification = [{"pulse_number": None, "pulse_number_max": 1}]
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
