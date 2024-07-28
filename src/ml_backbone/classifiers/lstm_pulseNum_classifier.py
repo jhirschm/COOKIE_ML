@@ -86,7 +86,7 @@ class CustomLSTMClassifier(nn.Module):
             raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
             self = nn.DataParallel(self)
-            if denoising and denoise_model is not None and zero_mask_model is not None:
+            if (denoising and denoise_model is not None or second_denoising and denoise_model is not None) and zero_mask_model is not None:
                 denoise_model = nn.DataParallel(denoise_model)
                 zero_mask_model = nn.DataParallel(zero_mask_model)
                 denoise_model.to(device)
