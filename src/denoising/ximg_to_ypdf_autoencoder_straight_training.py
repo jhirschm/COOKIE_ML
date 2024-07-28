@@ -38,7 +38,7 @@ def main():
     datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
     datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/train/"
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/train/"
 
     datapaths = [datapath2, datapath2]
     pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}, {"pulse_number": 0, "pulse_number_max": None}]
