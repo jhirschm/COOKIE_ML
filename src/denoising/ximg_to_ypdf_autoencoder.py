@@ -220,23 +220,26 @@ class Zero_PulseClassifier(nn.Module):
         
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
+
         with torch.no_grad():
-            for inputs, labels in test_dataloader:
-                # Move data to the GPU
-                inputs, labels = inputs.to(device), labels.to(device)
-
+            for batch in test_dataloader:
+                inputs, labels = batch
+                inputs = torch.unsqueeze(inputs, 1)
                 inputs = inputs.to(device, torch.float32)
-                
-                probs, preds = self.predict(inputs)
-                preds = preds.to(device)
+                labels = labels.to(device, torch.float32)
 
-                true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
-                predicted_pulse_single_label = np.argmax(preds.cpu().numpy(), axis=1)
+                        
+                outputs = self(inputs).to(device)
+                predictions = torch.round(outputs).cpu().numpy()
+                labels = labels[:,1:].to(device)
 
-                true_pulses.extend(true_pulse_single_label)
-                predicted_pulses.extend(predicted_pulse_single_label)
+                true_pulses.extend(labels.cpu().numpy())
+                predicted_pulses.extend(predictions)
 
-        num_classes_from_test = len(np.unique(true_pulses))
+        true_pulses = np.array(true_pulses)
+        predicted_pulses = np.array(predicted_pulses)
+
+        num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
         precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
