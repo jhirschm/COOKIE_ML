@@ -210,7 +210,88 @@ class Zero_PulseClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
- 
+    def evaluate_model(self, test_dataloader, identifier, model_save_dir, device):
+        
+        true_pulses = []
+        predicted_pulses = []
+
+        self.to(device)
+
+        
+        self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
+        # Iterate through the test data
+        with torch.no_grad():
+            for inputs, labels in test_dataloader:
+                # Move data to the GPU
+                inputs, labels = inputs.to(device), labels.to(device)
+
+                inputs = inputs.to(device, torch.float32)
+                
+                probs, preds = self.predict(inputs)
+                preds = preds.to(device)
+
+                true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
+                predicted_pulse_single_label = np.argmax(preds.cpu().numpy(), axis=1)
+
+                true_pulses.extend(true_pulse_single_label)
+                predicted_pulses.extend(predicted_pulse_single_label)
+
+        num_classes_from_test = len(np.unique(true_pulses))
+        # Calculate evaluation metrics as percentages
+        accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
+        precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
+        recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
+        f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
+        # Confusion matrix
+        cm = confusion_matrix(true_pulses, predicted_pulses)
+
+        # Normalize the confusion matrix based on percentages
+        row_sums = cm.sum(axis=1, keepdims=True)
+        normalized_cm = cm / row_sums.astype(float) * 100
+
+        # Create class labels based on the number of classes
+        class_labels = [f'{i} Pulse(s)' for i in range(num_classes_from_test)]
+
+        # Plot the normalized confusion matrix with class labels
+        plt.figure(figsize=(8, 6))
+        plt.imshow(normalized_cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
+
+        # Add class labels to the plot
+        plt.title('Normalized Confusion Matrix (%)')
+        plt.colorbar()
+        tick_marks = np.arange(len(class_labels))
+        plt.xticks(tick_marks, class_labels, rotation=45)
+        plt.yticks(tick_marks, class_labels)
+
+        for i in range(num_classes_from_test):
+            for j in range(num_classes_from_test):
+                text_label = f"{normalized_cm[i, j]:.2f}%"
+                plt.text(j, i, text_label, horizontalalignment="center", color="black")
+        # Add axis labels
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plot_path = os.path.join(model_save_dir, identifier + "_confusion_matrix.pdf")
+        # Display the plot
+        plt.savefig(plot_path)
+        plt.close()
+
+        # Print and display metrics
+        # Redirect output to the same log file used during training
+        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+        with open(run_summary_path, "a") as file:
+            file.write(f"Accuracy: {accuracy:.2f}%\n")
+            file.write(f"Precision: {precision:.2f}%\n")
+            file.write(f"Recall: {recall:.2f}%\n")
+            file.write(f"F1 Score: {f1:.2f}%\n")
+            for i in range(num_classes_from_test):
+                true_positives = cm[i, i]  # The diagonal of the confusion matrix
+                total_instances = np.sum(cm[i, :])  # Total instances in the true class
+                accuracy_class = true_positives / total_instances * 100
+
+                class_name = f"Class {i}"
+                file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
+
+        return accuracy, precision, recall, f1, normalized_cm, plot_path
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
     def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()

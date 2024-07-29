@@ -20,5 +20,11 @@ import joblib
 from torch.nn import init
 
 from sklearn.metrics import mean_squared_error
-
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+)
 import datetime
