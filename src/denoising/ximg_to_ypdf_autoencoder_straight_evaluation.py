@@ -114,9 +114,9 @@ def main():
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_trainedOne1Pulse/outputs_fromEvenDist/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/outputs_fromEvenDist/"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
-    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_3/evalOutputs_ximg0to1_2_denoisedMulti/autoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_3/autoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
