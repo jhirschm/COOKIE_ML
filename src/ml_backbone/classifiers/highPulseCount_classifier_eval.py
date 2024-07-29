@@ -37,7 +37,7 @@ def main():
 
 
     
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=None, pulse_min_binary=4, test_batch=1)
+    data_test = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=None, pulse_min_binary=4, test_batch=1)
     # Calculate the lengths for each split    # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
     # Calculate the lengths for each split
