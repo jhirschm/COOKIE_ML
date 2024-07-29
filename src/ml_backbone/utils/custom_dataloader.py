@@ -13,7 +13,7 @@ class DataMilking_MilkCurds(Dataset):
     pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
     an exception will be thrown.
     '''
-    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False): 
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None): 
         self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
@@ -34,7 +34,7 @@ class DataMilking_MilkCurds(Dataset):
                 with h5py.File(os.path.join(root_dir, file), 'r') as f:
                     for shot in f.keys():
                         # Check if exception
-                        if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None:
+                        if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None :
                             #throw exception
                             print("Both pulse_number and pulse_number_max specified. Only one should be specified.")
                             exit(1)
@@ -46,12 +46,20 @@ class DataMilking_MilkCurds(Dataset):
                                 self.inputs_arr.append(f[shot].attrs[self.input_name])
                             
                             # Label num pulses
-                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
-                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
-                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            if pulse_min_binary is not None:
+                                encode_pulses_temp = torch.zeros(2)
+                                if f[shot].attrs["npulses"] >= pulse_min_binary:
+                                    encode_pulses_temp[1] = 1
+                                else:
+                                    encode_pulses_temp[0] = 1
+                                self.labels_arr.append(encode_pulses_temp)
                             else:
-                                encode_pulses_temp[self.pulse_threshold] = 1
-                            self.labels_arr.append(encode_pulses_temp)
+                                encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                                if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                        encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                                else:
+                                    encode_pulses_temp[self.pulse_threshold] = 1
+                                self.labels_arr.append(encode_pulses_temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
                                    
@@ -88,6 +96,7 @@ class DataMilking_MilkCurds(Dataset):
                             self.labels_arr.append(encode_pulses_temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
+
 
         self.inputs_arr = np.array(self.inputs_arr)
         if zero_to_one_rescale:

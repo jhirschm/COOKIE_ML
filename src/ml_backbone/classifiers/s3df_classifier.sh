@@ -28,14 +28,14 @@ export PYTHONIOENCODING=utf-8
 
 case "$1" in
     training)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/lstm_pulseNum_classifier_straight_training.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/highPulseCount_classifier.py
         ;;
     
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/lstm_pulseNum_classifier_straight_eval.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/classifiers/highPulseCount_classifier.py
         ;;
     *)
-        echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
+        echo "Invalid script specified. Usage: sbatch this_script.sh [training|evaluation]"
         exit 1
         ;;
 esac
