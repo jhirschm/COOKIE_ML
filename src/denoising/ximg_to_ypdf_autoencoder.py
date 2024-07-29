@@ -231,7 +231,10 @@ class Zero_PulseClassifier(nn.Module):
                         
                 outputs = self(inputs).to(device)
                 predictions = torch.round(outputs).cpu().numpy()
+                print(predictions)
                 labels = labels[:,1:].to(device)
+                print("labels")
+                print(labels)
 
                 true_pulses.extend(labels.cpu().numpy())
                 predicted_pulses.extend(predictions)
