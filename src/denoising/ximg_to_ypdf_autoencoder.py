@@ -238,10 +238,14 @@ class Zero_PulseClassifier(nn.Module):
 
         true_pulses = np.array(true_pulses)
         predicted_pulses = np.array(predicted_pulses)
+        print(np.sum(true_pulses))
+        print(np.sum(predicted_pulses))
+
 
         num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
-        # accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
+        accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
+        print(accuracy)
         # precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
         # recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
         # f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
