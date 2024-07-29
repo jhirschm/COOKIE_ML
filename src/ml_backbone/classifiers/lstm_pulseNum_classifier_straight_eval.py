@@ -134,7 +134,6 @@ def main():
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_4//testLSTM_best_model.pth"
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_5_extraClass/"
 
-   /sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_5_extraClass/
     state_dict = torch.load(best_mode_classifier, map_location=device)
     def remove_module_prefix(state_dict):
         new_state_dict = {}
