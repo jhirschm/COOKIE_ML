@@ -41,7 +41,7 @@ def main():
 
 
     
-    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=None, pulse_min_binary=4)
+    data = DataMilking_MilkCurds(root_dirs=datapaths, input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=None, pulse_min_binary=4, test_batch=1)
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
     val_size = int(0.2 * len(data))
