@@ -241,10 +241,10 @@ class Zero_PulseClassifier(nn.Module):
 
         num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
-        accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
-        precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
-        recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
-        f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
+        # accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
+        # precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
+        # recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
+        # f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
         # Confusion matrix
         cm = confusion_matrix(true_pulses, predicted_pulses)
 
@@ -280,21 +280,21 @@ class Zero_PulseClassifier(nn.Module):
 
         # Print and display metrics
         # Redirect output to the same log file used during training
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
-        with open(run_summary_path, "a") as file:
-            file.write(f"Accuracy: {accuracy:.2f}%\n")
-            file.write(f"Precision: {precision:.2f}%\n")
-            file.write(f"Recall: {recall:.2f}%\n")
-            file.write(f"F1 Score: {f1:.2f}%\n")
-            for i in range(num_classes_from_test):
-                true_positives = cm[i, i]  # The diagonal of the confusion matrix
-                total_instances = np.sum(cm[i, :])  # Total instances in the true class
-                accuracy_class = true_positives / total_instances * 100
+        # run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+        # with open(run_summary_path, "a") as file:
+        #     file.write(f"Accuracy: {accuracy:.2f}%\n")
+        #     file.write(f"Precision: {precision:.2f}%\n")
+        #     file.write(f"Recall: {recall:.2f}%\n")
+        #     file.write(f"F1 Score: {f1:.2f}%\n")
+        #     for i in range(num_classes_from_test):
+        #         true_positives = cm[i, i]  # The diagonal of the confusion matrix
+        #         total_instances = np.sum(cm[i, :])  # Total instances in the true class
+        #         accuracy_class = true_positives / total_instances * 100
 
-                class_name = f"Class {i}"
-                file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
+        #         class_name = f"Class {i}"
+        #         file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
 
-        return accuracy, precision, recall, f1, normalized_cm, plot_path
+        # return accuracy, precision, recall, f1, normalized_cm, plot_path
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
     def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
