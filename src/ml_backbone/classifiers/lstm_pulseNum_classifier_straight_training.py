@@ -91,7 +91,7 @@ def main():
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
-    num_classes = 5   # Example number of classes
+    num_classes = 6   # Example number of classes
 
     # Instantiate the CustomLSTMClassifier
     classModel = CustomLSTMClassifier(
