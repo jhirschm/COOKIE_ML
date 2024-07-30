@@ -388,6 +388,7 @@ class CustomLSTMClassifier(nn.Module):
                 
                 probs, preds = self.predict(inputs)
                 preds = preds.to(device)
+                probs = probs.to(device)
                 print("preds raw----------------")
                 print(preds)
                 print("probs raw----------------")
@@ -399,7 +400,7 @@ class CustomLSTMClassifier(nn.Module):
                 print(true_pulse_single_label)
                 print("pred----------------")
 
-                predicted_pulse_single_label = np.argmax(preds.cpu().numpy(), axis=1)
+                predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
                 print(predicted_pulse_single_label)
 
 
