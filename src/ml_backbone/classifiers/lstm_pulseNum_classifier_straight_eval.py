@@ -47,7 +47,7 @@ def main():
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=True)
     # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False)
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=5, zero_to_one_rescale=False, test_batch=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -95,7 +95,7 @@ def main():
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
-    num_classes = 6   # Example number of classes
+    num_classes = 5   # Example number of classes
 
     # Instantiate the CustomLSTMClassifier
     classModel = CustomLSTMClassifier(
@@ -113,7 +113,7 @@ def main():
     classModel.to(device)
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_smaller/evalOutputs_ypdfTest/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test1/evalOutputs_ypdfTest/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -133,7 +133,7 @@ def main():
 
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_4/testLSTM_best_model.pth"
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_5_extraClass/testLSTM_best_model.pth"
-    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_smaller/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test1/testLSTM_best_model.pth"
 
     state_dict = torch.load(best_mode_classifier, map_location=device)
     def remove_module_prefix(state_dict):
