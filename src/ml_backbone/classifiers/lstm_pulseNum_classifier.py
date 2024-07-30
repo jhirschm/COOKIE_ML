@@ -121,7 +121,7 @@ class CustomLSTMClassifier(nn.Module):
 
                     inputs, labels = batch
                     labels = labels.to(device) #indexing for access to the first element of the list
-                    print(labels)
+                    # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
                        
                         denoise_model.eval()
@@ -150,7 +150,7 @@ class CustomLSTMClassifier(nn.Module):
                     
 
                     outputs = self(inputs).to(device)
-                    print(outputs)
+                    # print(outputs)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
