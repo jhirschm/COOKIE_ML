@@ -59,9 +59,9 @@ class DataMilking_MilkCurds(Dataset):
                                 if self.phases_labeled:
                                     temp = np.zeros(self.phases_labeled_max)
                                     if f[shot].attrs["npulses"] <= self.phases_labeled_max:
-                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phases"]*2*np.pi
                                     else:
-                                        temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                        temp = f[shot].attrs["phases"][0:self.phases_labeled_max]*2*np.pi
                                     self.phases_arr.append(temp)
                             else:
                                 encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
@@ -73,9 +73,9 @@ class DataMilking_MilkCurds(Dataset):
                                 if self.phases_labeled:
                                     temp = np.zeros(self.phases_labeled_max)
                                     if f[shot].attrs["npulses"] <= self.phases_labeled_max:
-                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phases"]*2*np.pi
                                     else:
-                                        temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                        temp = f[shot].attrs["phases"][0:self.phases_labeled_max]*2*np.pi
                                     self.phases_arr.append(temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
