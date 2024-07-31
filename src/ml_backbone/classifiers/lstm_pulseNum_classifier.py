@@ -432,7 +432,7 @@ class CustomLSTMClassifier(nn.Module):
             mean_phase_diff = np.mean(np.abs(np.diff(true_2_pred_1, axis=1)))
             std_phase_diff = np.std(np.abs(np.diff(true_2_pred_1, axis=1)))
             mean_sin_phase_diff = np.mean(np.sin(np.abs(np.diff(true_2_pred_1, axis=1))))
-            std_sin_phase_diff = np.std(np.sin(np.abs(np.diff(true_2_pred_1, axis=1)))
+            std_sin_phase_diff = np.std(np.sin(np.abs(np.diff(true_2_pred_1, axis=1))))
                                         
             print(f"Mean Phase Difference: {mean_phase_diff}")
             print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
