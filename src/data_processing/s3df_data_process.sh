@@ -13,9 +13,9 @@ source ~/conda.sh
 export PYTHONUNBUFFERED=1
 export PYTHONIOENCODING=utf-8
 # Define paths to your data files and scalers
-FILE_PATHS="/sdf/scratch/users/j/jhirschm/CookieSimSlimData/1-Pulse_03282024/"
+FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/"
 SCALER_NAME="min_max_scaler"
-SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1"
+SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024//Processed_07312024_0to1"
 ENERGY_ELEMENTS=512
 TEST_MODE=False
 
