@@ -335,7 +335,7 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False):
+    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False, two_pulse_analysis=False):
         # Lists to store true and predicted values for pulses
         true_1_pred_1 = []
         true_1_pred_2 = []
@@ -356,9 +356,14 @@ class CustomLSTMClassifier(nn.Module):
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
         with torch.no_grad():
-            for inputs, labels in test_dataloader:
+            for loader in test_dataloader:
                 # Move data to the GPU
-                inputs, labels = inputs.to(device), labels.to(device)
+                if two_pulse_analysis:
+                    inputs, labels, phases = loader
+                    inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                else:
+                    inputs, labels = loader
+                    inputs, labels = inputs.to(device), labels.to(device)
 
                 if denoising and denoise_model is not None and zero_mask_model is not None:
                     denoise_model.eval()
@@ -407,6 +412,33 @@ class CustomLSTMClassifier(nn.Module):
                 true_pulses.extend(true_pulse_single_label)
                 predicted_pulses.extend(predicted_pulse_single_label)
 
+                # Two pulse analysis
+                # For all true pulses that are predicted as 1 pulse save the phases to an array. Then for entire array calculate the mean and std deviation of the absolute value of the phase difference
+                # similarly calculate mean and standard deviation of the sin of the absolute value of the phase difference
+                if two_pulse_analysis:
+                    for i in range(len(true_pulse_single_label)):
+                        true_pulse = true_pulse_single_label[i]
+                        predicted_pulse = predicted_pulse_single_label[i]
+                        
+                        if true_pulse == 2 and predicted_pulse == 1:
+                            true_2_pred_1.append(phases[i].cpu().numpy())
+                
+            
+                        
+
+
+        if two_pulse_analysis:
+            true_2_pred_1 = np.array(true_2_pred_1)
+            mean_phase_diff = np.mean(np.abs(np.diff(true_2_pred_1, axis=1)))
+            std_phase_diff = np.std(np.abs(np.diff(true_2_pred_1, axis=1)))
+            mean_sin_phase_diff = np.mean(np.sin(np.abs(np.diff(true_2_pred_1, axis=1))))
+            std_sin_phase_diff = np.std(np.sin(np.abs(np.diff(true_2_pred_1, axis=1)))
+                                        
+            print(f"Mean Phase Difference: {mean_phase_diff}")
+            print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
+            print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
+            print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
+                                        
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100

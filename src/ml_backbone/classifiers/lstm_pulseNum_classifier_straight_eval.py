@@ -47,7 +47,11 @@ def main():
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=True)
     # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False)
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1)
+   
+    # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1, phases_labeled=True, phases_labeled_max=2)
+
+
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -212,7 +216,7 @@ def main():
     identifier = "testLSTM"
     autoencoder.to(device)
     zero_model.to(device)
-    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model)
+    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=True)
     # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     # with open(results_file, 'w') as f:
     #     f.write("Model Training Results\n")

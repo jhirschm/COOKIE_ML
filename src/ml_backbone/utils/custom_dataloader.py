@@ -13,14 +13,17 @@ class DataMilking_MilkCurds(Dataset):
     pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
     an exception will be thrown.
     '''
-    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None): 
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2): 
         self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
         self.pulse_threshold = pulse_threshold
         self.inputs_arr = []
         self.labels_arr = []
+        self.phases_arr = []
         self.test_batch = test_batch
+        self.phases_labeled = phases_labeled
+        self.phases_labeled_max = phases_labeled_max
 
         
         for i, root_dir in enumerate(self.root_dirs):
@@ -53,6 +56,13 @@ class DataMilking_MilkCurds(Dataset):
                                 else:
                                     encode_pulses_temp[0] = 1
                                 self.labels_arr.append(encode_pulses_temp)
+                                if self.phases_labeled:
+                                    temp = np.zeros(self.phases_labeled_max)
+                                    if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                    else:
+                                        temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                    self.phases_arr.append(temp)
                             else:
                                 encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
                                 if f[shot].attrs["npulses"] <= self.pulse_threshold:
@@ -60,6 +70,13 @@ class DataMilking_MilkCurds(Dataset):
                                 else:
                                     encode_pulses_temp[self.pulse_threshold] = 1
                                 self.labels_arr.append(encode_pulses_temp)
+                                if self.phases_labeled:
+                                    temp = np.zeros(self.phases_labeled_max)
+                                    if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                    else:
+                                        temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                    self.phases_arr.append(temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
                                    
@@ -77,6 +94,13 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
+                            if self.phases_labeled:
+                                temp = np.zeros(self.phases_labeled_max)
+                                if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                else:
+                                    temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                self.phases_arr.append(temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
                         
@@ -94,11 +118,20 @@ class DataMilking_MilkCurds(Dataset):
                             else:
                                 encode_pulses_temp[self.pulse_threshold] = 1
                             self.labels_arr.append(encode_pulses_temp)
+                            if self.phases_labeled:
+                                temp = np.zeros(self.phases_labeled_max)
+                                if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                else:
+                                    temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                self.phases_arr.append(temp)
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
 
 
         self.inputs_arr = np.array(self.inputs_arr)
+        if self.phases_labeled:
+            self.phases_arr = np.array(self.phases_arr)
         if zero_to_one_rescale:
             self.inputs_arr = (self.inputs_arr+1)/2
         self.labels_arr = np.array(self.labels_arr)
@@ -116,11 +149,15 @@ class DataMilking_MilkCurds(Dataset):
         
         data_point = self.inputs_arr[idx]
         labels = self.labels_arr[idx]
+        if self.phases_labeled:
+            phases = self.phases_arr[idx]
         
         if self.input_name == "Ypdf" or self.input_name == "Ximg": #input is an image
             if self.transform:
                 data_point = self.transform(data_point)
-                
+        
+        if self.phases_labeled:
+            return data_point, labels, phases
         return data_point, labels
 class DataMilking_HalfAndHalf(Dataset):
     '''
