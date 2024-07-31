@@ -428,16 +428,35 @@ class CustomLSTMClassifier(nn.Module):
 
 
         if two_pulse_analysis:
+            plot_path = os.path.join(model_dir, identifier + "_histograms.pdf")
             true_2_pred_1 = np.array(true_2_pred_1)
-            mean_phase_diff = np.mean(np.abs(np.diff(true_2_pred_1, axis=1)))
-            std_phase_diff = np.std(np.abs(np.diff(true_2_pred_1, axis=1)))
-            mean_sin_phase_diff = np.mean(np.sin(np.abs(np.diff(true_2_pred_1, axis=1))))
-            std_sin_phase_diff = np.std(np.sin(np.abs(np.diff(true_2_pred_1, axis=1))))
+            abs_phase_differences = np.abs(np.diff(true_2_pred_1, axis=1))
+            mean_phase_diff = np.mean(abs_phase_differences)
+            std_phase_diff = np.std(abs_phase_differences)
+            sin_abs_phase_diff = np.sin(abs_phase_differences%np.pi)
+            mean_sin_phase_diff = np.mean(sin_abs_phase_diff)
+            std_sin_phase_diff = np.std(sin_abs_phase_diff)
                                         
             print(f"Mean Phase Difference: {mean_phase_diff}")
             print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
             print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
             print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
+
+
+            # Plot the histogram of the absolute phase differences
+            fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
+            ax_hist1.hist(abs_phase_differences, bins=50, color='blue', alpha=0.7)
+            ax_hist1.set_title('Histogram of Absolute Phase Differences')
+            ax_hist1.set_xlabel('Phase Difference (radians)')
+            ax_hist1.set_ylabel('Frequency')
+
+            # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
+            ax_hist2.hist(sin_abs_phase_diff, bins=50, color='green', alpha=0.7)
+            ax_hist2.set_title('Histogram of sin(phase_diff%pi)')
+            ax_hist2.set_xlabel('sin(phase_diff%pi) ')
+            ax_hist2.set_ylabel('Frequency')
+
+            plt.savefig(plot_path)
                                         
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
