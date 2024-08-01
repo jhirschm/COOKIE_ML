@@ -198,7 +198,7 @@ def main():
     )
 
     fc_layers_fromEncoder = [
-        [encoder_output_size_flattened, 64, nn.ReLU()],
+        [nn.Linear(encoder_output_size_flattened,64), nn.ReLU()],
         [nn.Linear(64,8), nn.ReLU()],
         [nn.Linear(8,1), nn.ReLU()]    
     ]
