@@ -155,6 +155,10 @@ def main():
     output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
     print(f"Output size after conv layers: {output_size}")
 
+    encoder_output_size = get_conv_output_size((1, 1, 512, 16), encoder_layers)
+    encoder_output_size_flattened = encoder_output_size[1] * encoder_output_size[2] * encoder_output_size[3]
+    print(f"Output size after encoder layers: {encoder_output_size}")
+
     # Use the calculated size for the fully connected layer input
     fc_layers = [
         [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
@@ -168,7 +172,7 @@ def main():
     state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
     zero_model.load_state_dict(state_dict)
 
-    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
     autoencoder.to(device)
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
@@ -193,16 +197,28 @@ def main():
         dropout_rate=0.2
     )
 
+    fc_layers_fromEncoder = [
+        [encoder_output_size_flattened, 64, nn.ReLU()],
+        [nn.Linear(64,8), nn.ReLU()],
+        [nn.Linear(8,1), nn.ReLU()]    
+    ]
+    regression_model_fromEncoder = RegressionModel(
+        fc_layers=fc_layers_fromEncoder,
+        dtype=torch.float32,
+        use_dropout=True,
+        dropout_rate=0.2
+    )
+
     # Define the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    # identifier = "regression_model_fromDenoising"
-    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-    #                              denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parallel=True)
+    identifier = "regression_model_fromDenoising"
+    regression_model_fromEncoder.train_model_fromDenoise(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+                                 denoise_model =autoencoder, parallel=True)
 
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
