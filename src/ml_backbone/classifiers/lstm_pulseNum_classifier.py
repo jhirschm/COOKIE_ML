@@ -47,6 +47,7 @@ class CustomLSTMClassifier(nn.Module):
                 return out
         elif self.ignore_fc_layers:
             out = out[:, -1, :] #allows model to be constructed with fc layers but then ignore them
+            return out
         else:
             out = out[:, -1, :]
         
