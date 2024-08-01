@@ -14,6 +14,7 @@ denoise_dir = os.path.abspath(os.path.join(current_dir, '../..', 'denoising'))
 
 sys.path.append(utils_dir)
 sys.path.append(denoise_dir)
+sys.path.append(classifier_dir)
 from lstm_pulseNum_classifier import CustomLSTMClassifier
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
 
