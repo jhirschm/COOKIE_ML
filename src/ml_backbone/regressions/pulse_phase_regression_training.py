@@ -198,9 +198,9 @@ def main():
     )
 
     fc_layers_fromEncoder = [
-        [nn.Linear(encoder_output_size_flattened,64), nn.ReLU()],
-        [nn.Linear(64,8), nn.ReLU()],
-        [nn.Linear(8,1), nn.ReLU()]    
+        [nn.Linear(encoder_output_size_flattened,encoder_output_size_flattened*2), nn.ReLU()],
+        [nn.Linear(encoder_output_size_flattened*2,8), nn.ReLU()],
+        [nn.Linear(8,1), nn.Sigmoid()]    
     ]
     regression_model_fromEncoder = RegressionModel(
         fc_layers=fc_layers_fromEncoder,
