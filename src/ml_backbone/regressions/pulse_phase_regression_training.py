@@ -179,7 +179,7 @@ def main():
     fc_layers = [
         [nn.Linear(4*data["hidden_size"], 1*data["hidden_size"]), nn.ReLU()],
         [nn.Linear(1*data["hidden_size"], 32), nn.ReLU()],
-        [nn.Linear(32, 1), nn.Sigmoid()]
+        [nn.Linear(32, 1), nn.ReLU()]
     
     ]
     regression_model = RegressionModel(
@@ -191,7 +191,7 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
