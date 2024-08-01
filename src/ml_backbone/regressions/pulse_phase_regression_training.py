@@ -8,6 +8,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Construct the path to the utils directory relative to the current file's directory
 utils_dir = os.path.abspath(os.path.join(current_dir, '../..', 'ml_backbone'))
+classifier_dir = os.path.abspath(os.path.join(current_dir, '../../ml_backbone', 'classifiers'))
+
 denoise_dir = os.path.abspath(os.path.join(current_dir, '../..', 'denoising'))
 
 sys.path.append(utils_dir)
