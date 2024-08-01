@@ -48,7 +48,7 @@ class RegressionModel(nn.Module):
             raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
             self = nn.DataParallel(self)
-            if (denoising and denoise_model is not None or second_denoising and denoise_model is not None) and zero_mask_model is not None:
+            if denoising and denoise_model is not None and zero_mask_model is not None:
                 denoise_model = nn.DataParallel(denoise_model)
                 zero_mask_model = nn.DataParallel(zero_mask_model)
                 denoise_model.to(device)
@@ -113,7 +113,10 @@ class RegressionModel(nn.Module):
                     outputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
                     # print(outputs)
-                    loss = criterion(outputs, labels)
+                    print(phases.shape)
+                    phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                    loss = ((np.cos(outputs*2*np.pi)-np.cos(phases_differences*2*np.pi))**2 + (np.sin(outputs*2*np.pi)-np.sin(phases_differences*2*np.pi))**2).mean()
+                    # loss = criterion(outputs, phases)
                     loss.backward()
                     optimizer.step()
 
@@ -130,7 +133,7 @@ class RegressionModel(nn.Module):
                 running_val_loss = 0.0
 
                 with torch.no_grad():
-                    for batch in train_dataloader:
+                    for batch in val_dataloader:
                         optimizer.zero_grad()  # Zero the parameter gradients
 
                         inputs, labels, phases = batch
@@ -165,9 +168,9 @@ class RegressionModel(nn.Module):
                         outputs = lstm_pretrained_model(inputs)
                         outputs = self(inputs).to(device)
                         # print(outputs)
-                        loss = criterion(outputs, labels)
+                        phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                        loss = ((np.cos(outputs*2*np.pi)-np.cos(phases_differences*2*np.pi))**2 + (np.sin(outputs*2*np.pi)-np.sin(phases_differences*2*np.pi))**2).mean()
                         loss.backward()
-                        optimizer.step()
                         running_val_loss += loss.item()
             
                 val_loss = running_val_loss / len(val_dataloader)
