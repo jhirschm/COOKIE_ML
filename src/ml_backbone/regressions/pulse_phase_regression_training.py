@@ -177,7 +177,7 @@ def main():
 
     # Define regression network
     fc_layers = [
-        [nn.Linear(4*data["hidden_size"], 8*data["hidden_size"]), nn.ReLU()],
+        [nn.Linear(4*data["hidden_size"], 1*data["hidden_size"]), nn.ReLU()],
         [nn.Linear(8*data["hidden_size"], 32), nn.ReLU()],
         [nn.Linear(32, 1), nn.Sigmoid()]
     
