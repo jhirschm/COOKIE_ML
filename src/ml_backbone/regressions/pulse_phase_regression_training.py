@@ -177,8 +177,8 @@ def main():
 
     # Define regression network
     fc_layers = [
-        [nn.Linear(data["hidden_size"], 64), nn.ReLU()],
-        [nn.Linear(64, 32), nn.ReLU()],
+        [nn.Linear(4*data["hidden_size"], 8*data["hidden_size"]), nn.ReLU()],
+        [nn.Linear(8*data["hidden_size"], 32), nn.ReLU()],
         [nn.Linear(32, 1), nn.Sigmoid()]
     
     ]
@@ -198,7 +198,7 @@ def main():
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parallel=True)
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parallel=False)
     
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
