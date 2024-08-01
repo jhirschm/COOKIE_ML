@@ -257,4 +257,6 @@ def main():
         f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
 
 
-    
+        
+if __name__ == "__main__":
+    main()
