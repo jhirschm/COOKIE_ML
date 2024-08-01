@@ -182,6 +182,10 @@ def main():
         [nn.Linear(32, 1), nn.ReLU()]
     
     ]
+    fc_layers = [
+        [nn.Linear(4*data["hidden_size"], 8],
+        [nn.Linear(88,1), nn.ReLU()]    
+    ]
     regression_model = RegressionModel(
         fc_layers=fc_layers,
         dtype=torch.float32,
