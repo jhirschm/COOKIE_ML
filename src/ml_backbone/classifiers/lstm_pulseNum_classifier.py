@@ -46,7 +46,10 @@ class CustomLSTMClassifier(nn.Module):
             if self.ignore_output_layer:
                 return out
         elif self.ignore_fc_layers:
+            print(out.shape)
             out = out[:, -1, :] #allows model to be constructed with fc layers but then ignore them
+            print(out.shape)
+            print("here")
             return out
         else:
             out = out[:, -1, :]
