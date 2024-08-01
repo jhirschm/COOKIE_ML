@@ -32,7 +32,6 @@ class RegressionModel(nn.Module):
         # nn.init.constant_(self.output_layer.bias, 0)
 
     def forward(self, x):
-        print(x.shape)
         x = self.fc_layers(x)
 
         return x
