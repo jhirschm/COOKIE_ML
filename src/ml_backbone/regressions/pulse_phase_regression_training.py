@@ -12,9 +12,9 @@ denoise_dir = os.path.abspath(os.path.join(current_dir, '../..', 'denoising'))
 
 sys.path.append(utils_dir)
 sys.path.append(denoise_dir)
-
-
+from lstm_pulseNum_classifier import CustomLSTMClassifier
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
+
 from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed, DataMilking_HalfAndHalf, DataMilking_MilkCurds
 from utils import CustomScheduler
 
@@ -41,5 +41,183 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=2)
 
+    print(len(data_train))
+    # Calculate the lengths for each split
+    train_size = int(0.8 * len(data_train))
+    val_size = int(0.2 * len(data_train))
+    test_size = len(data_train) - train_size - val_size
+    #print sizes of train, val, and test
+    print(f"Train size: {train_size}")
+    print(f"Validation size: {val_size}")
+    print(f"Test size: {test_size}")
+
+    # Perform the split
+    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+
+
+
+    # Create data loaders
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08012024_regressionTest_1/"
+    # Check if directory exists, otherwise create it
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+    
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+    best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
+    # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
+    # Create LSTM and Denoiser Network that data will go through first before reaching regression network
+    # Define the model
+    # Create CustomLSTMClassifier model
+    data = {
+        "hidden_size": 128,
+        "num_lstm_layers": 3,
+        "bidirectional": True,
+        "fc_layers": [32, 64],
+        "dropout": 0.2,
+        "lstm_dropout": 0.2,
+        "layerNorm": False,
+        # Other parameters are default or not provided in the example
+    }   
+
+    # Assuming input_size and num_classes are defined elsewhere
+    input_size = 512  # Define your input size
+    num_classes = 6   # Example number of classes
+
+    # Instantiate the CustomLSTMClassifier
+    classModel = CustomLSTMClassifier(
+        input_size=input_size,
+        hidden_size=data['hidden_size'],
+        num_lstm_layers=data['num_lstm_layers'],
+        num_classes=num_classes,
+        bidirectional=data['bidirectional'],
+        fc_layers=data['fc_layers'],
+        dropout_p=data['dropout'],
+        lstm_dropout=data['lstm_dropout'],
+        layer_norm=data['layerNorm'],
+        ignore_output_layer=False,  # Set as needed based on your application
+        ignore_fc_layers=True
+    )
+
+    classModel.to(device)
+    state_dict = torch.load(best_mode_classifier, map_location=device)
+    def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+    state_dict = remove_module_prefix(state_dict)
+    for key in state_dict.keys():
+        print(key, state_dict[key].shape)
+    classModel.load_state_dict(state_dict)
+
+    # Example usage
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
+    
+
+    # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
+    ]
+
+    # Calculate the output size after conv layers
+    def get_conv_output_size(input_size, conv_layers):
+        x = torch.randn(input_size)
+        model = nn.Sequential(*[layer for layer_pair in conv_layers for layer in layer_pair if layer is not None])
+        x = model(x)
+        return x.shape
+
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    print(f"Output size after conv layers: {output_size}")
+
+    # Use the calculated size for the fully connected layer input
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
+
+    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    zero_model.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    zero_model.load_state_dict(state_dict)
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+    autoencoder.to(device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    autoencoder.load_state_dict(state_dict)
+
+
+
+    # Define regression network
+    fc_layers = [
+        [nn.Linear(data["hidden_size"], 64), nn.ReLU()],
+        [nn.Linear(64, 32), nn.ReLU()],
+        [nn.Linear(32, 1), nn.Sigmoid()]
+    
+    ]
+    regression_model = RegressionModel(
+        fc_layers=fc_layers,
+        dtype=torch.float32,
+        use_dropout=True,
+        dropout_rate=0.2
+    )
+
+    # Define the loss function and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
+    max_epochs = 200
+    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+
+    identifier = "regression_model"
+    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+    #                              denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel)
+    
+    # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    # with open(results_file, 'w') as f:
+    #     f.write("Model Training Results\n")
+    #     f.write("======================\n")
+    #     f.write(f"Data Path: {datapath2}\n")
+    #     f.write(f"Model Save Directory: {model_save_dir}\n")
+    #     f.write("\nModel Parameters and Hyperparameters\n")
+    #     f.write("-----------------------------------\n")
+    #     f.write(f"Patience: {scheduler.patience}\n")
+    #     f.write(f"Cooldown: {scheduler.cooldown}\n")
+    #     f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+    #     f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+    #     f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+    #     f.write("\nModel Architecture\n")
+    #     f.write("------------------\n")
+    #     f.write(f"Encoder Layers: {encoder_layers}\n")
+    #     f.write(f"Decoder Layers: {decoder_layers}\n")
+    #     f.write("------------------\n")
+    #     f.write(f"LSTM Architecture: {data}\n")
+    #     f.write("\nAdditional Notes\n")
+    #     f.write("----------------\n")
+    #     f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+
+    

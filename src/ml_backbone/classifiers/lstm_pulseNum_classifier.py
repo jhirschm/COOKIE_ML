@@ -1,9 +1,10 @@
 from classifiers_util import *
 
 class CustomLSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_lstm_layers, num_classes, bidirectional=False, fc_layers=None, dropout_p=0.5, lstm_dropout=0.2, layer_norm=False, ignore_output_layer=False):
+    def __init__(self, input_size, hidden_size, num_lstm_layers, num_classes, bidirectional=False, fc_layers=None, dropout_p=0.5, lstm_dropout=0.2, layer_norm=False, ignore_output_layer=False, ignore_fc_layers=False):
         super(CustomLSTMClassifier, self).__init__()
         self.ignore_output_layer = ignore_output_layer
+        self.ignore_fc_layers = ignore_fc_layers
 
         # LSTM layers with optional bidirectionality and dropout
         self.bidirectional = bidirectional
@@ -40,10 +41,12 @@ class CustomLSTMClassifier(nn.Module):
             out = self.layer_norm(out)
 
         # Apply fully connected layers (if defined)
-        if self.fc_layers is not None:
+        if self.fc_layers is not None and not self.ignore_fc_layers:
             out = self.fc_layers(out[:, -1, :])
             if self.ignore_output_layer:
                 return out
+        elif self.ignore_fc_layers:
+            out = out[:, -1, :] #allows model to be constructed with fc layers but then ignore them
         else:
             out = out[:, -1, :]
         
@@ -390,6 +393,10 @@ class CustomLSTMClassifier(nn.Module):
 
                 else: 
                     inputs = inputs.to(device, torch.float32)
+                
+                if self.ignore_fc_layers:
+                    probs = self(inputs)
+                    return probs
                 
                 probs, preds = self.predict(inputs)
                 preds = preds.to(device)

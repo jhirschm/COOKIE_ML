@@ -1,46 +1,68 @@
 from regression_util import *
 
+def __init__(self, conv_layers: List[List[Any]], fc_layers: List[List[Any]], dtype=torch.float32):
+        super(Zero_PulseClassifier, self).__init__()
+        self.dtype = dtype
+        
+        # Create convolutional layers based on the provided layer configuration
+        conv_modules = []
+        for layer, activation in conv_layers:
+            conv_modules.append(layer)
+            if activation is not None:
+                conv_modules.append(activation)
+        
+        self.conv_layers = nn.Sequential(*conv_modules)
+        
+        # Cast conv layers weights to specified dtype
+        for param in self.conv_layers.parameters():
+            param.data = param.data.to(self.dtype)
+        
+        # Create fully connected layers based on the provided layer configuration
+        fc_modules = []
+        for layer, activation in fc_layers:
+            fc_modules.append(layer)
+            if activation is not None:
+                fc_modules.append(activation)
+        
+        self.fc_layers = nn.Sequential(*fc_modules)
+        
+        # Cast fc layers weights to specified dtype
+        for param in self.fc_layers.parameters():
+            param.data = param.data.to(self.dtype)
     
 class RegressionModel(nn.Module):
-    def __init__(self, input_size, hidden_sizes, activations, use_batch_norm=False, batch_norm_momentum=0.1, use_dropout=False, dropout_rate=0.5):
+    def __init__(self, fc_layers: List[List[Any]], dtype=torch.float32, use_dropout=False, dropout_rate=0.5):
         super(RegressionModel, self).__init__()
-        self.hidden_layers = nn.ModuleList()
-        self.use_batch_norm = use_batch_norm
-        self.batch_norm_momentum = batch_norm_momentum
-        self.use_dropout = use_dropout
-        self.dropout_rate = dropout_rate
+        self.dtype = dtype
+        
+        fc_modules = []
+        for layer, activation in fc_layers:
+            fc_modules.append(layer)
+            if activation is not None:
+                fc_modules.append(activation)
+            if use_dropout:
+                fc_modules.append(nn.Dropout(p=dropout_rate))
+        
+        self.fc_layers = nn.Sequential(*fc_modules)
 
-        prev_size = input_size
-        for hidden_size, activation in zip(hidden_sizes, activations):
-            self.hidden_layers.append(nn.Linear(prev_size, hidden_size))
-            if self.use_batch_norm:
-                self.hidden_layers.append(nn.BatchNorm1d(hidden_size, momentum=self.batch_norm_momentum))
-            if activation == 'relu':
-                self.hidden_layers.append(nn.ReLU())
-            elif activation == 'sigmoid':
-                self.hidden_layers.append(nn.Sigmoid())
-            elif activation == 'tanh':
-                self.hidden_layers.append(nn.Tanh())
-            if self.use_dropout:
-                self.hidden_layers.append(nn.Dropout(self.dropout_rate))
-            prev_size = hidden_size
-        self.output_layer = nn.Linear(prev_size, 1)
+        # Cast fc layers weights to specified dtype
+        for param in self.fc_layers.parameters():
+            param.data = param.data.to(self.dtype)
 
-        # Initialize weights
-        for layer in self.hidden_layers:
-            if isinstance(layer, nn.Linear):
-                nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
+        # # Initialize weights
+        # for layer in self.hidden_layers:
+        #     if isinstance(layer, nn.Linear):
+        #         nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
 
-        # Initialize biases to zeros
-        for layer in self.hidden_layers:
-            if isinstance(layer, nn.Linear):
-                nn.init.constant_(layer.bias, 0)
-        nn.init.constant_(self.output_layer.bias, 0)
+        # # Initialize biases to zeros
+        # for layer in self.hidden_layers:
+        #     if isinstance(layer, nn.Linear):
+        #         nn.init.constant_(layer.bias, 0)
+        # nn.init.constant_(self.output_layer.bias, 0)
 
     def forward(self, x):
-        for layer in self.hidden_layers:
-            x = layer(x)
-        x = self.output_layer(x)
+        x = self.fc_layers(x)
+
         return x
 
 
