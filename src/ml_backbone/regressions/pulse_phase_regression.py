@@ -114,7 +114,6 @@ class RegressionModel(nn.Module):
                     outputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
                     # print(outputs)
-                    print(phases.shape)
                     phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
                     loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                     # loss = criterion(outputs, phases)
@@ -171,7 +170,6 @@ class RegressionModel(nn.Module):
                         # print(outputs)
                         phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
                         loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
-                        loss.backward()
                         running_val_loss += loss.item()
             
                 val_loss = running_val_loss / len(val_dataloader)
