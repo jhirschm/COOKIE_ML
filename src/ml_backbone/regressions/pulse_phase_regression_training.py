@@ -183,8 +183,8 @@ def main():
     
     ]
     fc_layers = [
-        [nn.Linear(4*data["hidden_size"], 8],
-        [nn.Linear(88,1), nn.ReLU()]    
+        [nn.Linear(4*data["hidden_size"], 8), nn.ReLU()],
+        [nn.Linear(8,1), nn.ReLU()]    
     ]
     regression_model = RegressionModel(
         fc_layers=fc_layers,
@@ -198,6 +198,11 @@ def main():
     optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+
+    # identifier = "regression_model_fromDenoising"
+    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+    #                              denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parallel=True)
 
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
