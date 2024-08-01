@@ -39,12 +39,12 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
 
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=2)
 
     print(len(data_train))
     # Calculate the lengths for each split
@@ -196,31 +196,65 @@ def main():
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
     identifier = "regression_model"
-    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-    #                              denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel)
+    regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parellel=True)
     
-    # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
-    # with open(results_file, 'w') as f:
-    #     f.write("Model Training Results\n")
-    #     f.write("======================\n")
-    #     f.write(f"Data Path: {datapath2}\n")
-    #     f.write(f"Model Save Directory: {model_save_dir}\n")
-    #     f.write("\nModel Parameters and Hyperparameters\n")
-    #     f.write("-----------------------------------\n")
-    #     f.write(f"Patience: {scheduler.patience}\n")
-    #     f.write(f"Cooldown: {scheduler.cooldown}\n")
-    #     f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
-    #     f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
-    #     f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
-    #     f.write("\nModel Architecture\n")
-    #     f.write("------------------\n")
-    #     f.write(f"Encoder Layers: {encoder_layers}\n")
-    #     f.write(f"Decoder Layers: {decoder_layers}\n")
-    #     f.write("------------------\n")
-    #     f.write(f"LSTM Architecture: {data}\n")
-    #     f.write("\nAdditional Notes\n")
-    #     f.write("----------------\n")
-    #     f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+    results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    with open(results_file, 'w') as f:
+        f.write("Model Training Results\n")
+        f.write("======================\n")
+        f.write(f"Data Path: {datapath_train}\n")
+        f.write(f"Model Save Directory: {model_save_dir}\n")
+        f.write("\nData Settings\n")
+        f.write("-------------\n")
+        f.write(f"Data Path: {datapath_train}\n")
+        f.write(f"Pulse Specification: {pulse_specification}\n")
+        f.write("\nModel Parameters and Hyperparameters\n")
+        f.write("-----------------------------------\n")
+        f.write(f"Patience: {scheduler.patience}\n")
+        f.write(f"Cooldown: {scheduler.cooldown}\n")
+        f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+        f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+        f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+        f.write(f"Max Epochs: {max_epochs}\n")
+        f.write("\nModel Architecture\n")
+        f.write("------------------\n")
+
+        f.write("Denoising Model:\n")
+        f.write("  Encoder Layers:\n")
+        for layer in encoder_layers:
+            f.write(f"    {layer}\n")
+        f.write("  Decoder Layers:\n")
+        for layer in decoder_layers:
+            f.write(f"    {layer}\n")
+        f.write(f"  Model Path: {best_autoencoder_model_path}\n")
+        
+        f.write("\nZero Pulse Classifier Model:\n")
+        f.write("  Convolutional Layers:\n")
+        for layer in conv_layers:
+            f.write(f"    {layer}\n")
+        f.write("  Fully Connected Layers:\n")
+        for layer in fc_layers:
+            f.write(f"    {layer}\n")
+        f.write(f"  Model Path: {best_model_zero_mask_path}\n")
+
+        f.write("\nLSTM Classifier Model:\n")
+        for key, value in data.items():
+            f.write(f"  {key}: {value}\n")
+        f.write(f"  Model Path: {best_mode_classifier}\n")
+        f.write(f"  Removed FC Layers\n")
+        
+        f.write("\nRegression Model:\n")
+        f.write("  Fully Connected Layers:\n")
+        for layer, activation in fc_layers:
+            f.write(f"    Layer: {layer}\n")
+            if activation is not None:
+                f.write(f"    Activation: {activation}\n")
+
+        f.write("\nAdditional Notes\n")
+        f.write("----------------\n")
+        f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+
 
     
