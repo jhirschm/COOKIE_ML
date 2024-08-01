@@ -116,7 +116,7 @@ class RegressionModel(nn.Module):
                     # print(outputs)
                     print(phases.shape)
                     phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
-                    loss = ((np.cos(outputs*2*np.pi)-np.cos(phases_differences*2*np.pi))**2 + (np.sin(outputs*2*np.pi)-np.sin(phases_differences*2*np.pi))**2).mean()
+                    loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                     # loss = criterion(outputs, phases)
                     loss.backward()
                     optimizer.step()
@@ -170,7 +170,7 @@ class RegressionModel(nn.Module):
                         outputs = self(inputs).to(device)
                         # print(outputs)
                         phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
-                        loss = ((np.cos(outputs*2*np.pi)-np.cos(phases_differences*2*np.pi))**2 + (np.sin(outputs*2*np.pi)-np.sin(phases_differences*2*np.pi))**2).mean()
+                        loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                         loss.backward()
                         running_val_loss += loss.item()
             
