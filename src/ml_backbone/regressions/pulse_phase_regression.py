@@ -308,9 +308,11 @@ class RegressionModel(nn.Module):
                     # outputs = outputs.view(outputs.size(0), -1)
                     
                         
+                    
                     inputs = outputs.to(device, torch.float32)
 
-                    
+                    print(inputs.shape)
+                    print(decoded.shape)
                     outputs = self(inputs).to(device)
                     # print(outputs)
                     phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
