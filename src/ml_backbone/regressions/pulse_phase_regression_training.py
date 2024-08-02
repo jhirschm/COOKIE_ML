@@ -213,7 +213,7 @@ def main():
     conv_layers_fromEncoder = [
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-        [nn.Conv2d(32, 32, kernel_size=4, stride=3, padding=1), nn.ReLU()]
+        [nn.Conv2d(128, 32, kernel_size=4, stride=3, padding=1), nn.ReLU()]
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
