@@ -197,10 +197,14 @@ def main():
         dropout_rate=0.2
     )
 
+    # conv_layers_fromEncoder = [
+    #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+    # ]
     conv_layers_fromEncoder = [
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()]
+        
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
