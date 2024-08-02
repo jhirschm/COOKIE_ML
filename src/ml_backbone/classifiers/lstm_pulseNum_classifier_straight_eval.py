@@ -118,7 +118,7 @@ def main():
     classModel.to(device)
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase_temp"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -217,7 +217,14 @@ def main():
     identifier = "testLSTM"
     autoencoder.to(device)
     zero_model.to(device)
-    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
+
+    # Calculate the total number of parameters
+    total_params = sum(param.numel() for param in classModel.parameters())
+
+    print(f'Total number of parameters: {total_params}')
+    # classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
+    
+    
     # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     # with open(results_file, 'w') as f:
     #     f.write("Model Training Results\n")
