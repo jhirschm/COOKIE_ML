@@ -305,7 +305,7 @@ class RegressionModel(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     outputs, decoded = denoise_model(inputs)
-                    outputs = outputs.view(outputs.size(0), -1)
+                    # outputs = outputs.view(outputs.size(0), -1)
                     
                         
                     inputs = outputs.to(device, torch.float32)
