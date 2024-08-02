@@ -231,7 +231,7 @@ def main():
 
     identifier = "regression_model_fromDenoising"
     regression_model_fromEncoder.train_model_fromDenoise(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=True)
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=False)
 
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
