@@ -206,7 +206,8 @@ def main():
         [nn.Conv2d(64, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
         [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
         [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-        [nn.Conv2d(64, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()]
+        [nn.Conv2d(64, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()]
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
@@ -214,8 +215,8 @@ def main():
     conv_output_size_encoded_flattened = conv_output_size_encoded[1] * conv_output_size_encoded[2] * conv_output_size_encoded[3]
     print(f"Output size after conv layers flattened: {conv_output_size_encoded_flattened}")
     fc_layers_fromEncoder = [
-        [nn.Linear(conv_output_size_encoded_flattened,128), nn.ReLU()],
-        [nn.Linear(128,64), nn.ReLU()],
+        [nn.Linear(conv_output_size_encoded_flattened,256), nn.ReLU()],
+        [nn.Linear(256,64), nn.ReLU()],
         [nn.Linear(64,1), nn.ReLU()]    
     ]
     regression_model_fromEncoder = RegressionModel(
@@ -228,7 +229,7 @@ def main():
 
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0005)
+    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
