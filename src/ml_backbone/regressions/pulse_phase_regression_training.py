@@ -203,9 +203,9 @@ def main():
     #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
     # ]
     conv_layers_fromEncoder = [
-        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],
-        
+        [nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
+        [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
+        [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()]  # Shrink spatial dimensions
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
@@ -213,9 +213,9 @@ def main():
     conv_output_size_encoded_flattened = conv_output_size_encoded[1] * conv_output_size_encoded[2] * conv_output_size_encoded[3]
 
     fc_layers_fromEncoder = [
-        [nn.Linear(conv_output_size_encoded_flattened,512), nn.ReLU()],
-        [nn.Linear(512,8), nn.ReLU()],
-        [nn.Linear(8,1), nn.Sigmoid()]    
+        [nn.Linear(conv_output_size_encoded_flattened,128), nn.ReLU()],
+        [nn.Linear(128,64), nn.ReLU()],
+        [nn.Linear(64,1), nn.Sigmoid()]    
     ]
     regression_model_fromEncoder = RegressionModel(
         fc_layers=fc_layers_fromEncoder,
