@@ -208,6 +208,7 @@ def main():
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
+    print(f"Output size after conv layers: {conv_output_size_encoded}")
     conv_output_size_encoded_flattened = conv_output_size_encoded[1] * conv_output_size_encoded[2] * conv_output_size_encoded[3]
 
     fc_layers_fromEncoder = [
