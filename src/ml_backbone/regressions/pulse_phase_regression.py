@@ -48,11 +48,8 @@ class RegressionModel(nn.Module):
     def forward(self, x):
         if self.has_conv_layers:
             x = self.conv_layers(x)
-            print("Conv layer")
-            print(x.shape)
             x = x.view(x.size(0), -1)
-            print("Reshaped")
-            print(x.shape)
+
         x = self.fc_layers(x)
 
         return x
@@ -314,9 +311,7 @@ class RegressionModel(nn.Module):
                         
                     
                     inputs = outputs.to(device, torch.float32)
-                    print("Denoised encoded shaped and decoded shape")
-                    print(inputs.shape)
-                    print(decoded.shape)
+                
                     outputs = self(inputs).to(device)
                     # print(outputs)
                     phases_differences = torch.abs(phases[:, 0] - phases[:, 1])

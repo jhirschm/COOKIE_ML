@@ -203,7 +203,8 @@ def main():
     #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
     # ]
     conv_layers_fromEncoder = [
-        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()]
+        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],
         
     ]
     print(f"Encoder output size: {encoder_output_size}")
@@ -212,8 +213,8 @@ def main():
     conv_output_size_encoded_flattened = conv_output_size_encoded[1] * conv_output_size_encoded[2] * conv_output_size_encoded[3]
 
     fc_layers_fromEncoder = [
-        [nn.Linear(conv_output_size_encoded_flattened,64), nn.ReLU()],
-        [nn.Linear(64,8), nn.ReLU()],
+        [nn.Linear(conv_output_size_encoded_flattened,512), nn.ReLU()],
+        [nn.Linear(512,8), nn.ReLU()],
         [nn.Linear(8,1), nn.Sigmoid()]    
     ]
     regression_model_fromEncoder = RegressionModel(
