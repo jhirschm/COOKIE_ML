@@ -217,6 +217,7 @@ def main():
     ]
     regression_model_fromEncoder = RegressionModel(
         fc_layers=fc_layers_fromEncoder,
+        conv_layers=conv_layers_fromEncoder,
         dtype=torch.float32,
         use_dropout=True,
         dropout_rate=0.2
