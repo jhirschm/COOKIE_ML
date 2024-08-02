@@ -2,10 +2,24 @@ from regression_util import *
 
 
 class RegressionModel(nn.Module):
-    def __init__(self, fc_layers: List[List[Any]], dtype=torch.float32, use_dropout=False, dropout_rate=0.5):
+    def __init__(self, fc_layers: List[List[Any]], conv_layers: List[List[Any]]=None, dtype=torch.float32, use_dropout=False, dropout_rate=0.5):
         super(RegressionModel, self).__init__()
         self.dtype = dtype
-        
+        self.has_conv_layers = conv_layers is not None
+        if conv_layers is not None:
+            # Create convolutional layers based on the provided layer configuration
+            conv_modules = []
+            for layer, activation in conv_layers:
+                conv_modules.append(layer)
+                if activation is not None:
+                    conv_modules.append(activation)
+            
+            self.conv_layers = nn.Sequential(*conv_modules)
+            
+            # Cast conv layers weights to specified dtype
+            for param in self.conv_layers.parameters():
+                param.data = param.data.to(self.dtype)
+
         fc_modules = []
         for layer, activation in fc_layers:
             fc_modules.append(layer)
@@ -32,6 +46,9 @@ class RegressionModel(nn.Module):
         # nn.init.constant_(self.output_layer.bias, 0)
 
     def forward(self, x):
+        if self.has_conv_layers:
+            x = self.conv_layers(x)
+            x = x.view(x.size(0), -1)
         x = self.fc_layers(x)
 
         return x
