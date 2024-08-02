@@ -202,13 +202,18 @@ def main():
     #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
     #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
     # ]
+    # conv_layers_fromEncoder = [
+    #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.Conv2d(32, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
+    #     [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
+    #     [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
+    #     [nn.Conv2d(64, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()],
+    #     [nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()]
+    # ]
     conv_layers_fromEncoder = [
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-        [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
-        [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-        [nn.Conv2d(64, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()]
+        [nn.Conv2d(32, 32, kernel_size=4, stride=3, padding=1), nn.ReLU()]
     ]
     print(f"Encoder output size: {encoder_output_size}")
     conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
