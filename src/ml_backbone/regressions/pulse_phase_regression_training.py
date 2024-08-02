@@ -203,7 +203,7 @@ def main():
     #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
     # ]
     conv_layers_fromEncoder = [
-        [nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
+        [nn.Conv2d(64, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
         [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
         [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()]  # Shrink spatial dimensions
     ]
