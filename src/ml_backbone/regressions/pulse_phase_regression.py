@@ -87,7 +87,7 @@ class RegressionModel(nn.Module):
 
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
-                    denoise_model=None, zero_mask_model=None, lstm_pretrained_model=None, parallel=True):
+                    denoise_model=None, zero_mask_model=None, lstm_pretrained_model=None, parallel=True, single_pulse=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -163,7 +163,10 @@ class RegressionModel(nn.Module):
                         inputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
                     # print(outputs)
-                    phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                    if single_pulse:
+                        phases_differences= phases
+                    else:   
+                        phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
                     loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                     # loss = criterion(outputs, phases)
                     loss.backward()
@@ -218,8 +221,12 @@ class RegressionModel(nn.Module):
                             inputs = lstm_pretrained_model(inputs)
                         outputs = self(inputs).to(device)
                         # print(outputs)
-                        phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                        if single_pulse:
+                            phases_differences= phases
+                        else:   
+                            phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
                         loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+
                         running_val_loss += loss.item()
             
                 val_loss = running_val_loss / len(val_dataloader)
