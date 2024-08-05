@@ -175,17 +175,17 @@ def main():
         [nn.Linear(4, 1), None]
     ]
 
-    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
-    zero_model.to(device)
-    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
-    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
-    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
-    zero_model.load_state_dict(state_dict)
+    # zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    # zero_model.to(device)
+    # state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    # keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    # state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    # zero_model.load_state_dict(state_dict)
 
-    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
-    autoencoder.to(device)
-    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
-    autoencoder.load_state_dict(state_dict)
+    # autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
+    # autoencoder.to(device)
+    # state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    # autoencoder.load_state_dict(state_dict)
 
 
 
