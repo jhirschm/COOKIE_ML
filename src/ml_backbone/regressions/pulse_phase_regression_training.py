@@ -44,7 +44,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=2)
 
     print(len(data_train))
     # Calculate the lengths for each split
@@ -66,7 +66,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08012024_regressionTest_1/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionLSTMTest_1/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -144,6 +144,13 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
     ]
+     # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
+    ]
 
     # Calculate the output size after conv layers
     def get_conv_output_size(input_size, conv_layers):
@@ -154,6 +161,9 @@ def main():
 
     output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
     print(f"Output size after conv layers: {output_size}")
+    conv_output_size_flattened = output_size[1] * output_size[2] * output_size[3]
+    print(f"Output size after conv layers flattened: {conv_output_size_flattened}")
+
 
     encoder_output_size = get_conv_output_size((1, 1, 512, 16), encoder_layers)
     encoder_output_size_flattened = encoder_output_size[1] * encoder_output_size[2] * encoder_output_size[3]
@@ -161,7 +171,7 @@ def main():
 
     # Use the calculated size for the fully connected layer input
     fc_layers = [
-        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 32), nn.ReLU()],
         [nn.Linear(4, 1), None]
     ]
 
@@ -233,6 +243,29 @@ def main():
         dropout_rate=0.2
     )
 
+
+
+    #Trying LSTM 
+    fc_layers = [
+    [nn.Linear(256, 128), nn.ReLU()],
+    [nn.Linear(128, 1), nn.ReLU()]  
+    ]
+
+    # Define LSTM configuration
+    lstm_config = {
+        'input_size': 512,  # Example input size for LSTM
+        'hidden_size': 256,
+        'num_layers': 2,
+        'bidirectional': False
+    }
+
+    # Create the RegressionModel instance
+    regression_model = RegressionModel(fc_layers=fc_layers, 
+                            conv_layers=None,  # No convolutional layers
+                            lstm_config=lstm_config, 
+                            dtype=torch.float32, 
+                            use_dropout=False, 
+                            dropout_rate=0.5)
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
@@ -240,13 +273,20 @@ def main():
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
     identifier = "regression_model_fromDenoising"
-    regression_model_fromEncoder.train_model_fromDenoise(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=False)
+    # regression_model_fromEncoder.train_model_fromDenoise(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=False)
 
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = classModel, parallel=True)
+                                 denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True)
+    print(summary(model=regression_model, 
+        input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"
+        # col_names=["input_size"], # uncomment for smaller output
+        col_names=["input_size", "output_size", "num_params", "trainable"],
+        col_width=20,
+        row_settings=["var_names"]
+))
     
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:

@@ -29,3 +29,4 @@ from sklearn.metrics import mean_squared_error
 
 import datetime
 from typing import List, Any
+from torchinfo import summary

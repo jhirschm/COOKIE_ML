@@ -2,10 +2,18 @@ from regression_util import *
 
 
 class RegressionModel(nn.Module):
-    def __init__(self, fc_layers: List[List[Any]], conv_layers: List[List[Any]]=None, dtype=torch.float32, use_dropout=False, dropout_rate=0.5):
+    def __init__(self, 
+                 fc_layers: List[List[Any]], 
+                 conv_layers: List[List[Any]] = None, 
+                 lstm_config: dict = None, 
+                 dtype=torch.float32, 
+                 use_dropout=False, 
+                 dropout_rate=0.5):
         super(RegressionModel, self).__init__()
         self.dtype = dtype
         self.has_conv_layers = conv_layers is not None
+        self.has_lstm_layers = lstm_config is not None
+
         if conv_layers is not None:
             # Create convolutional layers based on the provided layer configuration
             conv_modules = []
@@ -20,6 +28,18 @@ class RegressionModel(nn.Module):
             for param in self.conv_layers.parameters():
                 param.data = param.data.to(self.dtype)
 
+        if lstm_config is not None:
+            # Create LSTM layer based on the provided configuration
+            self.lstm_layers = nn.LSTM(input_size=lstm_config['input_size'], 
+                                       hidden_size=lstm_config['hidden_size'], 
+                                       num_layers=lstm_config['num_layers'], 
+                                       bidirectional=lstm_config['bidirectional'], 
+                                       batch_first=True)
+
+            # Cast LSTM layers weights to specified dtype
+            for param in self.lstm_layers.parameters():
+                param.data = param.data.to(self.dtype)
+        
         fc_modules = []
         for layer, activation in fc_layers:
             fc_modules.append(layer)
@@ -34,6 +54,17 @@ class RegressionModel(nn.Module):
         for param in self.fc_layers.parameters():
             param.data = param.data.to(self.dtype)
 
+    def forward(self, x):
+        if self.has_conv_layers:
+            x = self.conv_layers(x)
+        
+        if self.has_lstm_layers:
+            x, (hn, cn) = self.lstm_layers(x)
+            x = x[:, -1, :]  # Take the last output of the LSTM
+        
+        x = self.fc_layers(x)
+        return x
+
         # # Initialize weights
         # for layer in self.hidden_layers:
         #     if isinstance(layer, nn.Linear):
@@ -45,14 +76,14 @@ class RegressionModel(nn.Module):
         #         nn.init.constant_(layer.bias, 0)
         # nn.init.constant_(self.output_layer.bias, 0)
 
-    def forward(self, x):
-        if self.has_conv_layers:
-            x = self.conv_layers(x)
-            x = x.view(x.size(0), -1)
+    # def forward(self, x):
+    #     if self.has_conv_layers:
+    #         x = self.conv_layers(x)
+    #         x = x.view(x.size(0), -1)
 
-        x = self.fc_layers(x)
+    #     x = self.fc_layers(x)
 
-        return x
+    #     return x
 
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
@@ -127,8 +158,9 @@ class RegressionModel(nn.Module):
 
                     else: 
                         inputs = inputs.to(device, torch.float32)
-                    lstm_pretrained_model.eval()
-                    outputs = lstm_pretrained_model(inputs)
+                    if lstm_pretrained_model is not None:
+                        lstm_pretrained_model.eval()
+                        inputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
                     # print(outputs)
                     phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
@@ -181,8 +213,9 @@ class RegressionModel(nn.Module):
 
                         else: 
                             inputs = inputs.to(device, torch.float32)
-                        lstm_pretrained_model.eval()
-                        outputs = lstm_pretrained_model(inputs)
+                        if lstm_pretrained_model is not None:
+                            lstm_pretrained_model.eval()
+                            inputs = lstm_pretrained_model(inputs)
                         outputs = self(inputs).to(device)
                         # print(outputs)
                         phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
