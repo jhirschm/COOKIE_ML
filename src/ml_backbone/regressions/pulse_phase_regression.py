@@ -162,9 +162,11 @@ class RegressionModel(nn.Module):
                         lstm_pretrained_model.eval()
                         inputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
+                    print("outputs")
+                    print(outputs)
                     # print(outputs)
                     if single_pulse:
-                        phases_differences= phases
+                        phases_differences= phases/(2*np.pi)
                         print(phases)
                     else:   
                         phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
