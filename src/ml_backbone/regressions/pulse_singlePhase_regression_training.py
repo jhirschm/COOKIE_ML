@@ -247,8 +247,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(128, 256), nn.ReLU()],
-    [nn.Linear(256, 64), nn.ReLU()],
+    [nn.Linear(128, 512), nn.ReLU()],
+    [nn.Linear(512, 64), nn.ReLU()],
     [nn.Linear(64, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     [nn.Linear(8, 1), nn.ReLU()]  
@@ -258,7 +258,7 @@ def main():
     lstm_config = {
         'input_size': 512,  # Example input size for LSTM
         'hidden_size': 64,
-        'num_layers': 2,
+        'num_layers': 3,
         'bidirectional': True
     }
 
