@@ -244,10 +244,20 @@ def main():
     )
 
 
+     # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
+    ]
+    conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
+    print(f"Output size after conv layers: {conv_output_size_flattened}")
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(64, 128), nn.ReLU()],
+    [nn.Linear(conv_output_size_flattened, 128), nn.ReLU()],
     [nn.Linear(128, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     # [nn.Linear(32, 8), nn.ReLU()],
@@ -257,15 +267,15 @@ def main():
     # Define LSTM configuration
     lstm_config = {
         'input_size': 512,  # Example input size for LSTM
-        'hidden_size': 32,
+        'hidden_size': 256,
         'num_layers': 2,
-        'bidirectional': True
+        'bidirectional': False
     }
 
     # Create the RegressionModel instance
     regression_model = RegressionModel(fc_layers=fc_layers, 
-                            conv_layers=None,  # No convolutional layers
-                            lstm_config=lstm_config, 
+                            conv_layers=conv_layers,  # No convolutional layers
+                            lstm_config=None, 
                             dtype=torch.float32, 
                             use_dropout=False, 
                             dropout_rate=0.1)
