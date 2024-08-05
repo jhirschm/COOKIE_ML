@@ -162,14 +162,14 @@ class RegressionModel(nn.Module):
                         lstm_pretrained_model.eval()
                         inputs = lstm_pretrained_model(inputs)
                     outputs = self(inputs).to(device)
-                    print("outputs")
-                    print(outputs)
+                    # print("outputs")
+                    # print(outputs)
                     # print(outputs)
                     if single_pulse:
                         phases_differences= phases/(2*np.pi)
-                        print(phases)
+                        # print(phases)
                     else:   
-                        phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                        phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
                     loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                     # loss = criterion(outputs, phases)
                     loss.backward()
@@ -225,9 +225,10 @@ class RegressionModel(nn.Module):
                         outputs = self(inputs).to(device)
                         # print(outputs)
                         if single_pulse:
-                            phases_differences= phases
+                            phases_differences= phases/(2*np.pi)
+                            #    print(phases)
                         else:   
-                            phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
+                            phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
                         loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
 
                         running_val_loss += loss.item()
