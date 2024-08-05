@@ -165,6 +165,7 @@ class RegressionModel(nn.Module):
                     # print(outputs)
                     if single_pulse:
                         phases_differences= phases
+                        print(phases)
                     else:   
                         phases_differences = torch.abs(phases[:, 0] - phases[:, 1])
                     loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
