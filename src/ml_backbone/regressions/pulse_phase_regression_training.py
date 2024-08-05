@@ -247,15 +247,19 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(256, 128), nn.ReLU()],
-    [nn.Linear(128, 1), nn.ReLU()]  
+    [nn.Linear(128, 128), nn.ReLU()],
+    [nn.Linear(128, 128), nn.ReLU()],
+    [nn.Linear(128, 64), nn.ReLU()],
+    [nn.Linear(64, 32), nn.ReLU()],
+    [nn.Linear(32, 8), nn.ReLU()],
+    [nn.Linear(8, 1), nn.ReLU()]  
     ]
 
     # Define LSTM configuration
     lstm_config = {
         'input_size': 512,  # Example input size for LSTM
-        'hidden_size': 256,
-        'num_layers': 2,
+        'hidden_size': 128,
+        'num_layers': 1,
         'bidirectional': False
     }
 
@@ -265,7 +269,7 @@ def main():
                             lstm_config=lstm_config, 
                             dtype=torch.float32, 
                             use_dropout=False, 
-                            dropout_rate=0.5)
+                            dropout_rate=0.1)
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
