@@ -251,7 +251,7 @@ def main():
     [nn.Linear(256, 64), nn.ReLU()],
     [nn.Linear(64, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
-    [nn.Linear(8, 1), None]  
+    [nn.Linear(8, 1), nn.ReLU()]  
     ]
 
     # Define LSTM configuration
