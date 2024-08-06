@@ -504,7 +504,7 @@ class RegressionModel(nn.Module):
                 
                     denoise_model.eval()
                     zero_mask_model.eval()
-                    inputs = torch.unsqueeze(inputs, 1)
+                    # inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
 
                     outputs = denoise_model(inputs)
