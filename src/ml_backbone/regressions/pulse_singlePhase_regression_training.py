@@ -246,11 +246,10 @@ def main():
 
      # Example usage
     conv_layers = [
-        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
-        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
-    ]
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]]
+   
     conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
     conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
     print(f"Output size after conv layers: {conv_output_size_flattened}")
