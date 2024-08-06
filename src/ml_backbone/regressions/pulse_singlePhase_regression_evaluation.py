@@ -64,7 +64,7 @@ def main():
     # Create data loaders
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/evaluationXimg"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/evaluationXimgDenoised"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -122,6 +122,37 @@ def main():
         print(key, state_dict[key].shape)
     classModel.load_state_dict(state_dict)
 
+    # Example usage
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
+
+     # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
+    ]
+    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    zero_model.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    zero_model.load_state_dict(state_dict)
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
+    autoencoder.to(device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    autoencoder.load_state_dict(state_dict)
     
 
      # Example usage
@@ -177,8 +208,8 @@ def main():
 
     
     identifier = "regression_model"
-    regression_model.evaluate_model(test_dataloader, criterion, model_save_dir, identifier, device, denoising=False, 
-                                denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, single_pulse_analysis=True)
+    regression_model.evaluate_model(test_dataloader, criterion, model_save_dir, identifier, device, denoising=True, 
+                                denoise_model = autoencoder, zero_mask_model = zero_model, lstm_pretrained_model = None, parallel=True, single_pulse=True, single_pulse_analysis=True)
     print(summary(model=regression_model, 
         input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"
         # col_names=["input_size"], # uncomment for smaller output
