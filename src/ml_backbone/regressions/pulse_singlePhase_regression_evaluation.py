@@ -142,6 +142,13 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
     ]
+    
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    # Use the calculated size for the fully connected layer input
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 32), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
     zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
     zero_model.to(device)
     state_dict = torch.load(best_model_zero_mask_path, map_location=device)
