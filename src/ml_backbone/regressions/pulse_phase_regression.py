@@ -497,7 +497,7 @@ class RegressionModel(nn.Module):
 
                 inputs, labels, phases = batch
                 inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                print(inputs.shape)
+                # print(inputs.shape)
                 # phases = phases.to(self.module.dtype)
                 # print(labels)
                 if denoising and denoise_model is not None and zero_mask_model is not None:
@@ -555,8 +555,8 @@ class RegressionModel(nn.Module):
                 # Convert lists to NumPy arrays
             predicted_phase_difference_array = np.array(predicted_phase_differences_list)
             true_phase_differences_array = np.array(true_phase_differences_list)
-            print(f"Predicted Phase Differences: {predicted_phase_difference_array.shape}")
-            print(f"True Phase Differences: {true_phase_differences_array.shape}")
+            print(f"Predicted Phase Differences: {predicted_phase_difference_array[:10]}")
+            print(f"True Phase Differences: {true_phase_differences_array[:10]}")
               # Calculate the mean squared error                      
             
                         
