@@ -32,7 +32,7 @@ case "$1" in
         ;;
     
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_singlePhase_regression_eval.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_singlePhase_regression_evaluation.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|evaluation]"
