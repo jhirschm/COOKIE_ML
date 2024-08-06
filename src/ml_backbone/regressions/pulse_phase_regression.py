@@ -137,7 +137,7 @@ class RegressionModel(nn.Module):
 
                     inputs, labels, phases = batch
                     inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                    phases = phases.to(self.dtype)
+                    phases = phases.to(self.module.dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
                        
@@ -202,7 +202,7 @@ class RegressionModel(nn.Module):
 
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        phases = phases.to(self.dtype)
+                        phases = phases.to(self.module.dtype)
                         # print(labels)
                         if denoising and denoise_model is not None and zero_mask_model is not None:
                         
