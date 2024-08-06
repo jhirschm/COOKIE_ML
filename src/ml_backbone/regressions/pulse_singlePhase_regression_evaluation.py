@@ -77,38 +77,14 @@ def main():
     # Create LSTM and Denoiser Network that data will go through first before reaching regression network
     # Define the model
     # Create CustomLSTMClassifier model
-    data = {
-        "hidden_size": 128,
-        "num_lstm_layers": 3,
-        "bidirectional": True,
-        "fc_layers": [32, 64],
-        "dropout": 0.2,
-        "lstm_dropout": 0.2,
-        "layerNorm": False,
-        # Other parameters are default or not provided in the example
-    }   
+
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
     num_classes = 6   # Example number of classes
 
-    # Instantiate the CustomLSTMClassifier
-    classModel = CustomLSTMClassifier(
-        input_size=input_size,
-        hidden_size=data['hidden_size'],
-        num_lstm_layers=data['num_lstm_layers'],
-        num_classes=num_classes,
-        bidirectional=data['bidirectional'],
-        fc_layers=data['fc_layers'],
-        dropout_p=data['dropout'],
-        lstm_dropout=data['lstm_dropout'],
-        layer_norm=data['layerNorm'],
-        ignore_output_layer=False,  # Set as needed based on your application
-        ignore_fc_layers=True
-    )
-
-    classModel.to(device)
-    state_dict = torch.load(best_mode_classifier, map_location=device)
+    
+   
     def remove_module_prefix(state_dict):
         new_state_dict = {}
         for k, v in state_dict.items():
@@ -117,10 +93,10 @@ def main():
             else:
                 new_state_dict[k] = v
         return new_state_dict
-    state_dict = remove_module_prefix(state_dict)
-    for key in state_dict.keys():
-        print(key, state_dict[key].shape)
-    classModel.load_state_dict(state_dict)
+    
+    # for key in state_dict.keys():
+    #     print(key, state_dict[key].shape)
+  
 
     # Example usage
     encoder_layers = np.array([
@@ -206,8 +182,8 @@ def main():
     regression_model.to(device)
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
-    for key in state_dict.keys():
-        print(key, state_dict[key].shape)
+    # for key in state_dict.keys():
+    #     print(key, state_dict[key].shape)
     regression_model.load_state_dict(state_dict)
 
     # Define the loss function and optimizer
