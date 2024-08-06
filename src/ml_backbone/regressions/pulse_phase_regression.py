@@ -507,7 +507,7 @@ class RegressionModel(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
 
-                    outputs, decoded = denoise_model(inputs)
+                    encoded, outputs = denoise_model(inputs)
                     outputs = outputs.squeeze()
                     outputs = outputs.to(device)
                     probs, zero_mask  = zero_mask_model.predict(inputs)
