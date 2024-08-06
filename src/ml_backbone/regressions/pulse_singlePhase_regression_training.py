@@ -44,7 +44,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
     # data_train = DataMilking_HalfAndHalf(root_dirs=[datapath_train], input_name="Ypdf", labels = ["phases"], pulse_handler = None, transform=None, test_batch=2)
     print(len(data_train))
     # Calculate the lengths for each split
@@ -247,10 +247,10 @@ def main():
      # Example usage
     conv_layers = [
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2), None],
+        # [nn.MaxPool2d(kernel_size=2, stride=2), None],
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2), None]
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]
+        # [nn.MaxPool2d(kernel_size=2, stride=2), None]
         ]
    
     conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
@@ -284,7 +284,7 @@ def main():
     regression_model.to(device)
     # Define the loss function and optimizer
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(regression_model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(regression_model.parameters(), lr=0.01)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
