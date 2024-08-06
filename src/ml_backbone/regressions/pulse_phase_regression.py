@@ -56,7 +56,11 @@ class RegressionModel(nn.Module):
 
     def forward(self, x):
         if self.has_conv_layers:
+            print(x.shape)
             x = self.conv_layers(x)
+            if not self.has_lstm_layers:
+                x = x.view(x.size(0), -1)
+                
         
         if self.has_lstm_layers:
             x, (hn, cn) = self.lstm_layers(x)
