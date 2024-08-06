@@ -547,10 +547,10 @@ class RegressionModel(nn.Module):
                 
                 true_phases_differences = phases_differences.to(device)*2*np.pi
                 predicted_phases = outputs.cpu().numpy()
-                for output, true_phase in zip(outputs, phases_differences):
-                    predicted_phase_differences_list.append(output.item()*2*np.pi)  
+                for output, true_phase in zip(predicted_phases, true_phases_differences):
+                    predicted_phase_differences_list.append(output.item())  
                     true_phase_differences_list.append(true_phase.item())  
-                    print(f"Predicted: {output.item()*2*np.pi}, True: {true_phase.item()}")
+                    # print(f"Predicted: {output.item()*2*np.pi}, True: {true_phase.item()}")
 
                 # Convert lists to NumPy arrays
             predicted_phase_difference_array = np.array(predicted_phase_differences_list)
