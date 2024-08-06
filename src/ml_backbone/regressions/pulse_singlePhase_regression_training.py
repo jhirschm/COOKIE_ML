@@ -44,7 +44,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =10, phases_labeled=True, phases_labeled_max=1)
     # data_train = DataMilking_HalfAndHalf(root_dirs=[datapath_train], input_name="Ypdf", labels = ["phases"], pulse_handler = None, transform=None, test_batch=2)
     print(len(data_train))
     # Calculate the lengths for each split
@@ -66,7 +66,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_3/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
