@@ -56,7 +56,6 @@ class RegressionModel(nn.Module):
 
     def forward(self, x):
         if self.has_conv_layers:
-            print(x.shape)
             x = x.reshape(x.shape[0], 1, x.shape[1], x.shape[2])
             x = self.conv_layers(x)
             if not self.has_lstm_layers:
@@ -239,7 +238,7 @@ class RegressionModel(nn.Module):
                             #    print(phases)
                         else:   
                             phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
-                        phases_differences = phases_differences.to(device, self.dtype)
+                        phases_differences = phases_differences.to(device)
                         # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                         loss = criterion(outputs, phases)
                         running_val_loss += loss.item()
