@@ -44,8 +44,11 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =10, phases_labeled=True, phases_labeled_max=1)
-    # data_train = DataMilking_HalfAndHalf(root_dirs=[datapath_train], input_name="Ypdf", labels = ["phases"], pulse_handler = None, transform=None, test_batch=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =2, phases_labeled=True, phases_labeled_max=1)
+    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =2, phases_labeled=True, phases_labeled_max=1)
+
+    # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
+
     print(len(data_train))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data_train))
@@ -58,6 +61,7 @@ def main():
 
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+    train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
 
 
 
@@ -66,7 +70,11 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/"
+    train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
+    val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
+    test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
+
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08062024_regressionSingleLSTMTest/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -75,41 +83,18 @@ def main():
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/regression_model_best_model.pth"
     # Create LSTM and Denoiser Network that data will go through first before reaching regression network
     # Define the model
     # Create CustomLSTMClassifier model
-    data = {
-        "hidden_size": 128,
-        "num_lstm_layers": 3,
-        "bidirectional": True,
-        "fc_layers": [32, 64],
-        "dropout": 0.2,
-        "lstm_dropout": 0.2,
-        "layerNorm": False,
-        # Other parameters are default or not provided in the example
-    }   
+
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
     num_classes = 6   # Example number of classes
 
-    # Instantiate the CustomLSTMClassifier
-    classModel = CustomLSTMClassifier(
-        input_size=input_size,
-        hidden_size=data['hidden_size'],
-        num_lstm_layers=data['num_lstm_layers'],
-        num_classes=num_classes,
-        bidirectional=data['bidirectional'],
-        fc_layers=data['fc_layers'],
-        dropout_p=data['dropout'],
-        lstm_dropout=data['lstm_dropout'],
-        layer_norm=data['layerNorm'],
-        ignore_output_layer=False,  # Set as needed based on your application
-        ignore_fc_layers=True
-    )
-
-    classModel.to(device)
-    state_dict = torch.load(best_mode_classifier, map_location=device)
+    
+   
     def remove_module_prefix(state_dict):
         new_state_dict = {}
         for k, v in state_dict.items():
@@ -118,10 +103,10 @@ def main():
             else:
                 new_state_dict[k] = v
         return new_state_dict
-    state_dict = remove_module_prefix(state_dict)
-    for key in state_dict.keys():
-        print(key, state_dict[key].shape)
-    classModel.load_state_dict(state_dict)
+    
+    # for key in state_dict.keys():
+    #     print(key, state_dict[key].shape)
+  
 
     # Example usage
     encoder_layers = np.array([
@@ -135,7 +120,6 @@ def main():
         [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
-    
 
     # Example usage
     conv_layers = [
@@ -144,104 +128,26 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
     ]
-     # Example usage
-    conv_layers = [
-        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
-        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), nn.ReLU()]
-    ]
-
-    # Calculate the output size after conv layers
-    def get_conv_output_size(input_size, conv_layers):
-        x = torch.randn(input_size)
-        model = nn.Sequential(*[layer for layer_pair in conv_layers for layer in layer_pair if layer is not None])
-        x = model(x)
-        return x.shape
 
     output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
     print(f"Output size after conv layers: {output_size}")
-    conv_output_size_flattened = output_size[1] * output_size[2] * output_size[3]
-    print(f"Output size after conv layers flattened: {conv_output_size_flattened}")
-
-
-    encoder_output_size = get_conv_output_size((1, 1, 512, 16), encoder_layers)
-    encoder_output_size_flattened = encoder_output_size[1] * encoder_output_size[2] * encoder_output_size[3]
-    print(f"Output size after encoder layers: {encoder_output_size}")
 
     # Use the calculated size for the fully connected layer input
     fc_layers = [
-        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 32), nn.ReLU()],
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
         [nn.Linear(4, 1), None]
     ]
+    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    zero_model.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    zero_model.load_state_dict(state_dict)
 
-    # zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
-    # zero_model.to(device)
-    # state_dict = torch.load(best_model_zero_mask_path, map_location=device)
-    # keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
-    # state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
-    # zero_model.load_state_dict(state_dict)
-
-    # autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
-    # autoencoder.to(device)
-    # state_dict = torch.load(best_autoencoder_model_path, map_location=device)
-    # autoencoder.load_state_dict(state_dict)
-
-
-
-    # Define regression network
-    fc_layers = [
-        [nn.Linear(4*data["hidden_size"], 8*data["hidden_size"]), nn.ReLU()],
-        [nn.Linear(8*data["hidden_size"], 32), nn.ReLU()],
-        [nn.Linear(32, 1), nn.ReLU()]
-    
-    ]
-    fc_layers = [
-        [nn.Linear(4*data["hidden_size"], 8), nn.ReLU()],
-        [nn.Linear(8,1), nn.ReLU()]    
-    ]
-    regression_model = RegressionModel(
-        fc_layers=fc_layers,
-        dtype=torch.float32,
-        use_dropout=True,
-        dropout_rate=0.2
-    )
-
-    # conv_layers_fromEncoder = [
-    #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
-    # ]
-    # conv_layers_fromEncoder = [
-    #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.Conv2d(32, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-    #     [nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU()],  # Expand number of channels
-    #     [nn.Conv2d(256, 64, kernel_size=3, stride=2, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-    #     [nn.Conv2d(64, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()],
-    #     [nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1), nn.ReLU()]
-    # ]
-    conv_layers_fromEncoder = [
-        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 128, kernel_size=4, stride=3, padding=1), nn.ReLU()],  # Shrink spatial dimensions
-        [nn.Conv2d(128, 32, kernel_size=4, stride=3, padding=1), nn.ReLU()]
-    ]
-    print(f"Encoder output size: {encoder_output_size}")
-    conv_output_size_encoded = get_conv_output_size(encoder_output_size, conv_layers_fromEncoder)
-    print(f"Output size after conv layers: {conv_output_size_encoded}")
-    conv_output_size_encoded_flattened = conv_output_size_encoded[1] * conv_output_size_encoded[2] * conv_output_size_encoded[3]
-    print(f"Output size after conv layers flattened: {conv_output_size_encoded_flattened}")
-    fc_layers_fromEncoder = [
-        [nn.Linear(conv_output_size_encoded_flattened,256), nn.ReLU()],
-        [nn.Linear(256,64), nn.ReLU()],
-        [nn.Linear(64,1), nn.ReLU()]    
-    ]
-    regression_model_fromEncoder = RegressionModel(
-        fc_layers=fc_layers_fromEncoder,
-        conv_layers=conv_layers_fromEncoder,
-        dtype=torch.float32,
-        use_dropout=True,
-        dropout_rate=0.2
-    )
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
+    autoencoder.to(device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    autoencoder.load_state_dict(state_dict)
 
 
      # Example usage
@@ -298,6 +204,10 @@ def main():
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
                                  denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True)
+    regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+                                 denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, second_denoising=True,
+                                 second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
     print(summary(model=regression_model, 
         input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"
         # col_names=["input_size"], # uncomment for smaller output

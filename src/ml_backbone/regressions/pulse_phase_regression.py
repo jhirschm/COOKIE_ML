@@ -91,7 +91,8 @@ class RegressionModel(nn.Module):
 
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
-                    denoise_model=None, zero_mask_model=None, lstm_pretrained_model=None, parallel=True, single_pulse=False):
+                    denoise_model=None, zero_mask_model=None, lstm_pretrained_model=None, parallel=True, single_pulse=False,
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -184,9 +185,63 @@ class RegressionModel(nn.Module):
                     optimizer.step()
 
                     running_train_loss += loss.item()
+                if second_train_dataloader is not None and second_denoising:
+                    for batch in train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
+
+                        inputs, labels, phases = batch
+                        inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                        phases = phases.to(self.module.dtype)
+                        # print(labels)
+                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                        
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            # labels = labels[0]
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask  = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            # zero mask either 0 or 1
+                            # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                            zero_mask = torch.unsqueeze(zero_mask,2)
+                            zero_mask = zero_mask.to(device, torch.float32)
+
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+
+                        else: 
+                            inputs = inputs.to(device, torch.float32)
+                        if lstm_pretrained_model is not None:
+                            lstm_pretrained_model.eval()
+                            inputs = lstm_pretrained_model(inputs)
+                        outputs = self(inputs).to(device)
+                        # print("outputs")
+                        # print(outputs)
+                        # print(outputs)
+                        if single_pulse:
+                            phases_differences= phases/(2*np.pi)
+                            # print(phases)
+                        else:   
+                            phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
+                        # print(phases_differences)
+                        # print(outputs)
+                        # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+                        phases_differences = phases_differences.to(device)
+                        loss = criterion(outputs, phases)
+                        loss.backward()
+                        optimizer.step()
+
+                    running_train_loss += loss.item()
 
                 # train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
-                train_loss = running_train_loss / (len(train_dataloader))
+                train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
 
                 train_losses.append(train_loss)
                
@@ -197,8 +252,6 @@ class RegressionModel(nn.Module):
 
                 with torch.no_grad():
                     for batch in val_dataloader:
-                        optimizer.zero_grad()  # Zero the parameter gradients
-
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
                         phases = phases.to(self.module.dtype)
@@ -242,8 +295,55 @@ class RegressionModel(nn.Module):
                         # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                         loss = criterion(outputs, phases)
                         running_val_loss += loss.item()
+                    
+                    if second_val_dataloader is not None and second_denoising:
+                        for batch in val_dataloader:
+
+                            inputs, labels, phases = batch
+                            inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                            phases = phases.to(self.module.dtype)
+                            # print(labels)
+                            if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            
+                                denoise_model.eval()
+                                zero_mask_model.eval()
+                                inputs = torch.unsqueeze(inputs, 1)
+                                inputs = inputs.to(device, torch.float32)
+                                # labels = labels[0]
+                                outputs = denoise_model(inputs)
+                                outputs = outputs.squeeze()
+                                outputs = outputs.to(device)
+                                if parallel:
+                                    probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                                else:
+                                    probs, zero_mask  = zero_mask_model.predict(inputs)
+                                zero_mask = zero_mask.to(device)
+                                # zero mask either 0 or 1
+                                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                                zero_mask = torch.unsqueeze(zero_mask,2)
+                                zero_mask = zero_mask.to(device, torch.float32)
+
+                                outputs = outputs * zero_mask
+                                inputs = outputs.to(device, torch.float32)
+
+                            else: 
+                                inputs = inputs.to(device, torch.float32)
+                            if lstm_pretrained_model is not None:
+                                lstm_pretrained_model.eval()
+                                inputs = lstm_pretrained_model(inputs)
+                            outputs = self(inputs).to(device)
+                            # print(outputs)
+                            if single_pulse:
+                                phases_differences= phases/(2*np.pi)
+                                #    print(phases)
+                            else:   
+                                phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
+                            phases_differences = phases_differences.to(device)
+                            # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+                            loss = criterion(outputs, phases)
+                            running_val_loss += loss.item()
             
-                val_loss = running_val_loss / len(val_dataloader)
+                val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
                 # val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
 
                 val_losses.append(val_loss)
