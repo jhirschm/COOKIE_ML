@@ -48,8 +48,8 @@ def main():
     # data_train = DataMilking_HalfAndHalf(root_dirs=[datapath_train], input_name="Ypdf", labels = ["phases"], pulse_handler = None, transform=None, test_batch=2)
     print(len(data_train))
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data_train))
-    val_size = int(0.2 * len(data_train))
+    train_size = 0*int(0.8 * len(data_train))
+    val_size = 0*int(0.2 * len(data_train))
     test_size = len(data_train) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
