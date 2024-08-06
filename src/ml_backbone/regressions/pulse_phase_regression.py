@@ -508,10 +508,12 @@ class RegressionModel(nn.Module):
                     inputs = inputs.to(device, torch.float32)
                     # labels = labels[0]
                     outputs = denoise_model(inputs)
-                    outputs = outputs.squeeze()
+                    print(outputs.shape)
+                    # outputs = outputs.squeeze() 
                     outputs = outputs.to(device)
                     if parallel:
                         probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                        print(zero_mask.shape)
                     else:
                         probs, zero_mask  = zero_mask_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
