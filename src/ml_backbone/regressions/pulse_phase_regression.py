@@ -506,16 +506,11 @@ class RegressionModel(nn.Module):
                     zero_mask_model.eval()
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
-                    # labels = labels[0]
+
                     outputs = denoise_model(inputs)
-                    print(outputs.shape)
-                    # outputs = outputs.squeeze() 
+                    outputs = outputs.squeeze()
                     outputs = outputs.to(device)
-                    if parallel:
-                        probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                        print(zero_mask.shape)
-                    else:
-                        probs, zero_mask  = zero_mask_model.predict(inputs)
+                    probs, zero_mask  = zero_mask_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
@@ -523,6 +518,8 @@ class RegressionModel(nn.Module):
                     zero_mask = zero_mask.to(device, torch.float32)
 
                     outputs = outputs * zero_mask
+
+                    
                     inputs = outputs.to(device, torch.float32)
 
                 else: 
