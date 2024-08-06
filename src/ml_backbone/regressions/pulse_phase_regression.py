@@ -511,13 +511,13 @@ class RegressionModel(nn.Module):
                     outputs = outputs.squeeze()
                     outputs = outputs.to(device)
                     probs, zero_mask  = zero_mask_model.predict(inputs)
-                    zero_mask = zero_mask.to(device)
-                    # zero mask either 0 or 1
-                    # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                    zero_mask = torch.unsqueeze(zero_mask,2)
-                    zero_mask = zero_mask.to(device, torch.float32)
+                    # zero_mask = zero_mask.to(device)
+                    # # zero mask either 0 or 1
+                    # # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                    # zero_mask = torch.unsqueeze(zero_mask,2)
+                    # zero_mask = zero_mask.to(device, torch.float32)
 
-                    outputs = outputs * zero_mask
+                    # outputs = outputs * zero_mask
 
                     
                     inputs = outputs.to(device, torch.float32)
