@@ -136,7 +136,8 @@ class RegressionModel(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels, phases = batch
-                    inputs, labels, phases = inputs.to(device, self.dtype), labels.to(device, self.dtype), phases.to(device, self.dtype)
+                    inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                    phases = phases.to(self.dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
                        
@@ -178,6 +179,7 @@ class RegressionModel(nn.Module):
                     # print(phases_differences)
                     # print(outputs)
                     # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+                    phases_differences = phases_differences.to(device)
                     loss = criterion(outputs, phases)
                     loss.backward()
                     optimizer.step()
@@ -199,7 +201,8 @@ class RegressionModel(nn.Module):
                         optimizer.zero_grad()  # Zero the parameter gradients
 
                         inputs, labels, phases = batch
-                        inputs, labels, phases = inputs.to(device, self.dtype), labels.to(device,self.dtype), phases.to(device, self.dtype)
+                        inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                        phases = phases.to(self.dtype)
                         # print(labels)
                         if denoising and denoise_model is not None and zero_mask_model is not None:
                         
