@@ -547,12 +547,15 @@ class RegressionModel(nn.Module):
                 true_phases_differences = phases_differences.to(device)*2*np.pi
                 predicted_phases = outputs.cpu().numpy()
                 for output, true_phase in zip(outputs, phases_differences):
-                    predicted_phase_differences_list.append(output.item())  
+                    predicted_phase_differences_list.append(output.item()*2*np.pi)  
                     true_phase_differences_list.append(true_phase.item())  
+                    print(f"Predicted: {output.item()*2*np.pi}, True: {true_phase.item()}")
 
                 # Convert lists to NumPy arrays
             predicted_phase_difference_array = np.array(predicted_phase_differences_list)
             true_phase_differences_array = np.array(true_phase_differences_list)
+            print(f"Predicted Phase Differences: {predicted_phase_difference_array.shape}")
+            print(f"True Phase Differences: {true_phase_differences_array.shape}")
               # Calculate the mean squared error                      
             
                         
