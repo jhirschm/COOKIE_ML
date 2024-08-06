@@ -478,3 +478,134 @@ class RegressionModel(nn.Module):
 
 
 
+    def evaluate_model(self, test_dataloader, criterion, model_save_dir, identifier, device, denoising=False, 
+                       denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, single_pulse_analysis=False):
+        # Lists to store true and predicted values for pulses
+        test_losses = []
+        true_phase_differences_list = []
+        predicted_phase_differences_list = []
+        running_test_loss = 0
+        self.to(device)
+
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
+        self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
+        # Iterate through the test data
+        
+        with torch.no_grad():
+            for batch in test_dataloader:
+
+                inputs, labels, phases = batch
+                inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                phases = phases.to(self.module.dtype)
+                # print(labels)
+                if denoising and denoise_model is not None and zero_mask_model is not None:
+                
+                    denoise_model.eval()
+                    zero_mask_model.eval()
+                    inputs = torch.unsqueeze(inputs, 1)
+                    inputs = inputs.to(device, torch.float32)
+                    # labels = labels[0]
+                    outputs = denoise_model(inputs)
+                    outputs = outputs.squeeze()
+                    outputs = outputs.to(device)
+                    if parallel:
+                        probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                    else:
+                        probs, zero_mask  = zero_mask_model.predict(inputs)
+                    zero_mask = zero_mask.to(device)
+                    # zero mask either 0 or 1
+                    # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = zero_mask.to(device, torch.float32)
+
+                    outputs = outputs * zero_mask
+                    inputs = outputs.to(device, torch.float32)
+
+                else: 
+                    inputs = inputs.to(device, torch.float32)
+                if lstm_pretrained_model is not None:
+                    lstm_pretrained_model.eval()
+                    inputs = lstm_pretrained_model(inputs)
+                outputs = self(inputs).to(device)
+                # print(outputs)
+                if single_pulse:
+                    phases_differences= phases/(2*np.pi)
+                    #    print(phases)
+                else:   
+                    phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))/(2*np.pi)
+                phases_differences = phases_differences.to(device)
+                
+                # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+                loss = criterion(outputs, phases)
+                running_test_loss += loss.item()
+            
+                test_loss = running_test_loss / len(test_dataloader)
+
+                test_losses.append(test_loss)
+                
+                true_phases_differences = phases_differences.to(device)*2*np.pi
+                predicted_phases = outputs.cpu().numpy()
+                for output, true_phase in zip(outputs, phases_differences):
+                    predicted_phase_differences_list.append(output.item())  
+                    true_phase_differences_list.append(true_phase.item())  
+
+                # Convert lists to NumPy arrays
+            predicted_phase_difference_array = np.array(predicted_phase_differences_list)
+            true_phase_differences_array = np.array(true_phase_differences_list)
+              # Calculate the mean squared error                      
+            
+                        
+
+
+        if single_pulse_analysis:
+            plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
+            # Plot the values
+            plt.figure(figsize=(10, 6))
+            plt.scatter(true_phase_differences_array, predicted_phase_difference_array, color='blue', label='Predicted vs True')
+            plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
+                    [true_phase_differences_array.min(), true_phase_differences_array.max()], 
+                    color='red', linestyle='--', label='Ideal Prediction')
+            plt.xlabel('True Phase Differences')
+            plt.ylabel('Predicted Phase Differences')
+            plt.title('True vs Predicted Phase Differences')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+            plt.savefig(plot_path)
+
+            plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
+            # Plot the values
+            plt.figure(figsize=(10, 6))
+            plt.scatter(np.sin(true_phase_differences_array), np.sin(predicted_phase_difference_array), color='blue', label='Predicted vs True')
+            # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
+            #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
+            #         color='red', linestyle='--', label='Ideal Prediction')
+            plt.xlabel('True Phase Differences')
+            plt.ylabel('Predicted Phase Differences')
+            plt.title('True vs Predicted Phase Differences')
+            plt.legend()
+            plt.grid(True)
+            plt.show()
+            plt.savefig(plot_path)
+                                        
+        
+
+        # Print and display metrics
+        # Redirect output to the same log file used during training
+        # run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+        # with open(run_summary_path, "a") as file:
+        #     file.write(f"Accuracy: {accuracy:.2f}%\n")
+        #     file.write(f"Precision: {precision:.2f}%\n")
+        #     file.write(f"Recall: {recall:.2f}%\n")
+        #     file.write(f"F1 Score: {f1:.2f}%\n")
+        #     for i in range(num_classes_from_test):
+        #         true_positives = cm[i, i]  # The diagonal of the confusion matrix
+        #         total_instances = np.sum(cm[i, :])  # Total instances in the true class
+        #         accuracy_class = true_positives / total_instances * 100
+
+        #         class_name = f"Class {i}"
+        #         file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
+
+        # return accuracy, precision, recall, f1, normalized_cm, plot_path
+        return 1
