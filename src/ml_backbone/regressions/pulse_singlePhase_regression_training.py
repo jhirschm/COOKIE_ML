@@ -44,7 +44,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =1, phases_labeled=True, phases_labeled_max=1)
     # data_train = DataMilking_HalfAndHalf(root_dirs=[datapath_train], input_name="Ypdf", labels = ["phases"], pulse_handler = None, transform=None, test_batch=2)
     print(len(data_train))
     # Calculate the lengths for each split
@@ -66,7 +66,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_2/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_3/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -247,10 +247,11 @@ def main():
      # Example usage
     conv_layers = [
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-        # [nn.MaxPool2d(kernel_size=2, stride=2), None],
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]
-        # [nn.MaxPool2d(kernel_size=2, stride=2), None]
+        [nn.MaxPool2d(kernel_size=2, stride=2), None],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()]
+        [nn.MaxPool2d(kernel_size=2, stride=2), None]
         ]
    
     conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
@@ -259,7 +260,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(conv_output_size_flattened, 128), nn.ReLU()],
+    [nn.Linear(conv_output_size_flattened, 256), nn.ReLU()],
+    [nn.Linear(256, 128), nn.ReLU()],
     [nn.Linear(128, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     # [nn.Linear(32, 8), nn.ReLU()],
