@@ -44,8 +44,8 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =2, phases_labeled=True, phases_labeled_max=1)
-    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =2, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =8, phases_labeled=True, phases_labeled_max=1)
+    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch =8, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -74,7 +74,7 @@ def main():
     val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
     test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08062024_regressionSingleLSTMTest/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08062024_regressionSingleLSTMTest_1/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -201,9 +201,9 @@ def main():
     #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=False)
 
     identifier = "regression_model"
-    regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True)
+    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+    #                              denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True)
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
                                  denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, second_denoising=True,
