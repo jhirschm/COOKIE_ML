@@ -82,7 +82,7 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    n_components = 512*16
+    n_components = 512*16-1
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
