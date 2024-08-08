@@ -57,7 +57,7 @@ def main():
     print(f"Test size: {test_size}")
 
     # # Perform the split
-    # train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
     # train_size = int(0.8 * len(data_train_2))
     # val_size = int(0.2 * len(data_train_2))
     # test_size = len(data_train_2) - train_size - val_size
