@@ -82,8 +82,8 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-
-    def apply_pca(train_loader, n_components=100):
+    n_components = 100
+    def apply_pca(train_loader, n_components=n_components):
         flattened_images = []
         
         for images, temp1, temp2 in train_loader:
@@ -102,6 +102,27 @@ def main():
 # Apply PCA to the training images
     train_pca, pca_model = apply_pca(train_dataloader, n_components=100)
     print(train_pca.shape)
+
+    eigenvalues = pca_model.explained_variance_
+    print(eigenvalues)
+
+    # plt.figure(figsize=(8, 6))
+    # plt.plot(np.arange(1, n_components + 1), eigenvalues, 'o-', linewidth=2)
+    # plt.title('Scree Plot')
+    # plt.xlabel('Principal Component')
+    # plt.ylabel('Eigenvalue (Explained Variance)')
+    # plt.show()
+
+    # cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+
+    # # Plot cumulative explained variance
+    # plt.figure(figsize=(8, 6))
+    # plt.plot(np.arange(1, n_components + 1), cumulative_variance, 'o-', linewidth=2)
+    # plt.title('Cumulative Explained Variance')
+    # plt.xlabel('Number of Principal Components')
+    # plt.ylabel('Cumulative Explained Variance')
+    # plt.grid(True)
+    # plt.show()
 
 if __name__ == "__main__":
     main()
