@@ -101,3 +101,4 @@ def main():
 
 # Apply PCA to the training images
     train_pca, pca_model = apply_pca(train_dataloader, n_components=100)
+    print(train_pca.shape)
