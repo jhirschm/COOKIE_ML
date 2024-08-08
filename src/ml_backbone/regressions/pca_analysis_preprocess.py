@@ -41,7 +41,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=2, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
     # data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1,zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
@@ -82,7 +82,7 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    n_components = 512*16-1
+    n_components = 512*16
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
