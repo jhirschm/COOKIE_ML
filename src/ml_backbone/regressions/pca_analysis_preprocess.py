@@ -83,7 +83,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     n_components = 512*16
-    def apply_pca(train_loader, n_components=n_components):
+    def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
         for images, temp1, temp2 in train_loader:
@@ -100,7 +100,7 @@ def main():
         return transformed_images, pca
 
 # Apply PCA to the training images
-    train_pca, pca_model = apply_pca(train_dataloader, n_components=100)
+    train_pca, pca_model = apply_pca(train_dataloader, n_components=n_components)
     print(train_pca.shape)
 
     eigenvalues = pca_model.explained_variance_
