@@ -39,7 +39,7 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/test/"
 
     pulse_specification = None
 
