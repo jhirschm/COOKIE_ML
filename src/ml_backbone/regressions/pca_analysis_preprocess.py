@@ -42,7 +42,7 @@ def main():
 
 
     data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
-    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1,zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    # data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1,zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -56,16 +56,16 @@ def main():
     print(f"Validation size: {val_size}")
     print(f"Test size: {test_size}")
 
-    # Perform the split
-    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
-    train_size = int(0.8 * len(data_train_2))
-    val_size = int(0.2 * len(data_train_2))
-    test_size = len(data_train_2) - train_size - val_size
-    #print sizes of train, val, and test
-    print(f"Train size: {train_size}")
-    print(f"Validation size: {val_size}")
-    print(f"Test size: {test_size}")
-    train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
+    # # Perform the split
+    # train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+    # train_size = int(0.8 * len(data_train_2))
+    # val_size = int(0.2 * len(data_train_2))
+    # test_size = len(data_train_2) - train_size - val_size
+    # #print sizes of train, val, and test
+    # print(f"Train size: {train_size}")
+    # print(f"Validation size: {val_size}")
+    # print(f"Test size: {test_size}")
+    # train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
 
 
 
@@ -74,9 +74,9 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
-    val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
-    test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
+    # train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
+    # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
+    # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08082024_regressionSingleLSTMTest_2/"
     # Check if directory exists, otherwise create it
@@ -102,3 +102,6 @@ def main():
 # Apply PCA to the training images
     train_pca, pca_model = apply_pca(train_dataloader, n_components=100)
     print(train_pca.shape)
+
+if __name__ == "__main__":
+    main()
