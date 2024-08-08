@@ -111,7 +111,7 @@ def main():
     plt.title('Scree Plot')
     plt.xlabel('Principal Component')
     plt.ylabel('Eigenvalue (Explained Variance)')
-    plt.show()
+    # plt.show()
     plt.savefig('scree_plot.png')
 
     # cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
