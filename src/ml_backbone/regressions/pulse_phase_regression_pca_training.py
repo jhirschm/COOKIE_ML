@@ -16,6 +16,10 @@ warnings.filterwarnings(
 )
 
 
+import warnings
+warnings.filterwarnings('ignore')
+
+
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,7 +61,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=10, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=5, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
     # data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1,zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
@@ -207,8 +211,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(pca_output_shape, 512), nn.ReLU()],
-    [nn.Linear(512, 128), nn.ReLU()],
+    [nn.Linear(pca_output_shape, 128), nn.ReLU()],
+    [nn.Linear(128, 128), nn.ReLU()],
     [nn.Linear(128, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     # [nn.Linear(32, 8), nn.ReLU()],
