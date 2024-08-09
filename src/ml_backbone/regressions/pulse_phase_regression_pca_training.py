@@ -96,7 +96,7 @@ def main():
     # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
     # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
-    n_components = 2000#2000
+    n_components = 2048#2000
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
@@ -212,8 +212,8 @@ def main():
     [nn.Linear(pca_output_shape, 4096), nn.ReLU()],
     [nn.Linear(4096, 512), nn.ReLU()],
     [nn.Linear(512, 32), nn.ReLU()],
-    # [nn.Linear(32, 8), nn.ReLU()],
-    [nn.Linear(32, 1), nn.ReLU()]  
+    [nn.Linear(32, 8), nn.ReLU()],
+    [nn.Linear(8, 1), nn.ReLU()]  
     ]
 
     # Define LSTM configuration
@@ -229,7 +229,7 @@ def main():
                             conv_layers=None,  # No convolutional layers
                             lstm_config=None, 
                             dtype=torch.float32, 
-                            use_dropout=True, 
+                            use_dropout=False, 
                             dropout_rate=0.1)
     regression_model.to(device)
     # Define the loss function and optimizer
