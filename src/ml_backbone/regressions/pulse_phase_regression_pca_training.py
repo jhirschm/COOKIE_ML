@@ -2,7 +2,18 @@ from regression_util import *
 from sklearn.decomposition import PCA
 
 from pulse_phase_regression import RegressionModel
+import warnings
 
+# Suppress specific warnings
+warnings.filterwarnings(
+    'ignore',
+    message='.*Epoch parameter is deprecated and will be removed in a future release.*'
+)
+
+warnings.filterwarnings(
+    'ignore',
+    message='.*`torch.cuda.amp.autocast(args...)` is deprecated.*'
+)
 
 
 # Get the directory of the currently running file
@@ -196,8 +207,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(pca_output_shape, 256), nn.ReLU()],
-    [nn.Linear(256, 128), nn.ReLU()],
+    [nn.Linear(pca_output_shape, 512), nn.ReLU()],
+    [nn.Linear(512, 128), nn.ReLU()],
     [nn.Linear(128, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     # [nn.Linear(32, 8), nn.ReLU()],
@@ -239,7 +250,7 @@ def main():
                                  denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, second_denoising=False,
                                  pca_model=pca_model)
     print(summary(model=regression_model, 
-        input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"
+        input_size=(32, pca_output_shape), # make sure this is "input_size", not "input_shape"
         # col_names=["input_size"], # uncomment for smaller output
         col_names=["input_size", "output_size", "num_params", "trainable"],
         col_width=20,
