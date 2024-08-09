@@ -209,8 +209,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(pca_output_shape, 128), nn.ReLU()],
-    [nn.Linear(128, 128), nn.ReLU()],
+    [nn.Linear(pca_output_shape, 256), nn.ReLU()],
+    [nn.Linear(256, 128), nn.ReLU()],
     [nn.Linear(128, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     # [nn.Linear(32, 8), nn.ReLU()],
