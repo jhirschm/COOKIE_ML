@@ -230,7 +230,7 @@ def main():
                             conv_layers=None,  # No convolutional layers
                             lstm_config=None, 
                             dtype=torch.float32, 
-                            use_dropout=False, 
+                            use_dropout=True, 
                             dropout_rate=0.1)
     regression_model.to(device)
     # Define the loss function and optimizer
