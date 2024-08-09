@@ -61,7 +61,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=5, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
     # data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1,zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
@@ -98,7 +98,7 @@ def main():
     # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
     # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
-    n_components = 2000
+    n_components = 1000#2000
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
