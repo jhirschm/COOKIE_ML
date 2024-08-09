@@ -96,7 +96,7 @@ def main():
     # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
     # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
-    n_components = 1000#2000
+    n_components = 2000#2000
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
