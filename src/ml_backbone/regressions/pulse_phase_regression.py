@@ -169,7 +169,8 @@ class RegressionModel(nn.Module):
                         inputs = inputs.to(device, torch.float32)
                     if pca_model is not None:
                         inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
-                        inputs = pca_model.transform(inputs)
+                        inputs = pca_model.transform(inputs.cpu().numpy())
+                        inputs = torch.from_numpy(inputs).to(device)
                     if lstm_pretrained_model is not None:
                         lstm_pretrained_model.eval()
                         inputs = lstm_pretrained_model(inputs)
@@ -229,7 +230,8 @@ class RegressionModel(nn.Module):
                             inputs = lstm_pretrained_model(inputs)
                         if pca_model is not None:
                             inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
-                            inputs = pca_model.transform(inputs)
+                            inputs = pca_model.transform(inputs.cpu().numpy())
+                            inputs = torch.from_numpy(inputs).to(device)
                         outputs = self(inputs).to(device)
                         # print("outputs")
                         # print(outputs)
@@ -295,7 +297,8 @@ class RegressionModel(nn.Module):
                             inputs = lstm_pretrained_model(inputs)
                         if pca_model is not None:
                             inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
-                            inputs = pca_model.transform(inputs)
+                            inputs = pca_model.transform(inputs.cpu().numpy())
+                            inputs = torch.from_numpy(inputs).to(device)
                         outputs = self(inputs).to(device)
                         # print(outputs)
                         if single_pulse:
@@ -345,7 +348,8 @@ class RegressionModel(nn.Module):
                                 inputs = lstm_pretrained_model(inputs)
                             if pca_model is not None:
                                 inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
-                                inputs = pca_model.transform(inputs)
+                                inputs = pca_model.transform(inputs.cpu().numpy())
+                                inputs = torch.from_numpy(inputs).to(device)
                             outputs = self(inputs).to(device)
                             # print(outputs)
                             if single_pulse:
