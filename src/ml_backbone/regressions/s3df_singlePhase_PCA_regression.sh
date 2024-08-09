@@ -28,7 +28,7 @@ export PYTHONIOENCODING=utf-8
 
 case "$1" in
     training)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_pca_training.py
+        python3 -W ignore /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_pca_training.py
         ;;
     
     evaluation)
