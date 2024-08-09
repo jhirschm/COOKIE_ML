@@ -117,7 +117,7 @@ def main():
     train_pca, pca_model = apply_pca(train_dataloader, n_components=n_components)
     pca_output_shape = train_pca.shape[1]
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08082024_regressionSingle_PCA_2/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08082024_regressionSingle_PCA_3/"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
