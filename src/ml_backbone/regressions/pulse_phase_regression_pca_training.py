@@ -96,7 +96,7 @@ def main():
     # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
     # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
-    n_components = 2048#2000
+    n_components = 1024#2000
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
@@ -209,8 +209,8 @@ def main():
 
     #Trying LSTM 
     fc_layers = [
-    [nn.Linear(pca_output_shape, 4096), nn.ReLU()],
-    [nn.Linear(4096, 512), nn.ReLU()],
+    [nn.Linear(pca_output_shape, 2048), nn.ReLU()],
+    [nn.Linear(2048, 512), nn.ReLU()],
     [nn.Linear(512, 32), nn.ReLU()],
     [nn.Linear(32, 8), nn.ReLU()],
     [nn.Linear(8, 1), nn.ReLU()]  
