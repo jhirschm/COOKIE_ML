@@ -92,7 +92,7 @@ class RegressionModel(nn.Module):
     def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, lstm_pretrained_model=None, parallel=True, single_pulse=False,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, pca_model=None):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -132,6 +132,7 @@ class RegressionModel(nn.Module):
                 self.train()  # Set the model to training mode
                 running_train_loss = 0.0
 
+
                 for batch in train_dataloader:
                     optimizer.zero_grad()  # Zero the parameter gradients
 
@@ -143,9 +144,11 @@ class RegressionModel(nn.Module):
                        
                         denoise_model.eval()
                         zero_mask_model.eval()
+                        
                         inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
                         # labels = labels[0]
+                        
                         outputs = denoise_model(inputs)
                         outputs = outputs.squeeze()
                         outputs = outputs.to(device)
@@ -164,6 +167,9 @@ class RegressionModel(nn.Module):
 
                     else: 
                         inputs = inputs.to(device, torch.float32)
+                    if pca_model is not None:
+                        inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
+                        inputs = pca_model.transform(inputs)
                     if lstm_pretrained_model is not None:
                         lstm_pretrained_model.eval()
                         inputs = lstm_pretrained_model(inputs)
@@ -221,6 +227,9 @@ class RegressionModel(nn.Module):
                         if lstm_pretrained_model is not None:
                             lstm_pretrained_model.eval()
                             inputs = lstm_pretrained_model(inputs)
+                        if pca_model is not None:
+                            inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
+                            inputs = pca_model.transform(inputs)
                         outputs = self(inputs).to(device)
                         # print("outputs")
                         # print(outputs)
@@ -284,6 +293,9 @@ class RegressionModel(nn.Module):
                         if lstm_pretrained_model is not None:
                             lstm_pretrained_model.eval()
                             inputs = lstm_pretrained_model(inputs)
+                        if pca_model is not None:
+                            inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
+                            inputs = pca_model.transform(inputs)
                         outputs = self(inputs).to(device)
                         # print(outputs)
                         if single_pulse:
@@ -331,6 +343,9 @@ class RegressionModel(nn.Module):
                             if lstm_pretrained_model is not None:
                                 lstm_pretrained_model.eval()
                                 inputs = lstm_pretrained_model(inputs)
+                            if pca_model is not None:
+                                inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
+                                inputs = pca_model.transform(inputs)
                             outputs = self(inputs).to(device)
                             # print(outputs)
                             if single_pulse:
