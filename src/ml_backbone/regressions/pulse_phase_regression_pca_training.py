@@ -17,7 +17,7 @@ warnings.filterwarnings(
 
 
 import warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore',message='*')
 
 
 # Get the directory of the currently running file
