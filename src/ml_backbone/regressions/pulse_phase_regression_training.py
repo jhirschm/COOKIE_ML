@@ -281,7 +281,7 @@ def main():
 
     identifier = "regression_model"
     regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising=True 
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising= 
                                  denoise_model =autoencoder , zero_mask_model = zero_model, lstm_pretrained_model = None, parallel=True)
     print(summary(model=regression_model, 
         input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"

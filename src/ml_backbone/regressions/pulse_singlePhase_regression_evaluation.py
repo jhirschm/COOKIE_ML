@@ -74,7 +74,7 @@ def main():
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/regression_model_best_model.pth"
-    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08072024_regressionSingleLSTMTest_1/regression_model_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08062024_regressionSingleLSTMTest_2/regression_model_best_model.pth"
     # Create LSTM and Denoiser Network that data will go through first before reaching regression network
     # Define the model
     # Create CustomLSTMClassifier model

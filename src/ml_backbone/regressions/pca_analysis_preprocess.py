@@ -82,7 +82,7 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    n_components = 512*16
+    n_components = 2000
     def apply_pca(train_loader, n_components=100):
         flattened_images = []
         
@@ -112,7 +112,7 @@ def main():
     plt.xlabel('Principal Component')
     plt.ylabel('Eigenvalue (Explained Variance)')
     # plt.show()
-    plt.savefig('scree_plot.png')
+    plt.savefig('~/scree_plot.png')
 
     # cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
 

@@ -353,7 +353,6 @@ class RegressionModel(nn.Module):
                                 inputs = inputs.view(inputs.size(0), inputs.size(1)*inputs.size(2))
                                 inputs = pca_model.transform(inputs.cpu().numpy())
                                 inputs = torch.from_numpy(inputs).to(device)
-                                inputs = inputs.to(self.module.dtype)
                             outputs = self(inputs).to(device)
                             # print(outputs)
                             if single_pulse:

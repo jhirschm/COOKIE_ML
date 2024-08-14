@@ -28,11 +28,11 @@ export PYTHONIOENCODING=utf-8
 
 case "$1" in
     training)
-        python3 -/sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_pca_training.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_training.py
         ;;
     
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_pca_evaluation.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_evaluation.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|evaluation]"
