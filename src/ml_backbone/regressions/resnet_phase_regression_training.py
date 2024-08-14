@@ -100,7 +100,6 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                     inputs, labels, phases = batch
                     inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                    print(inputs.shape)
                     # phases = phases.to(dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
@@ -135,16 +134,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    print(outputs)
-                    print(outputs.requires_grad)
                     outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                    print(outputs.requires_grad)
                     phases = phases.to(torch.float32)
-                    print(outputs)
-                    print(phases)
                     loss = criterion(outputs, phases)
-                    print(loss)
-                    print(loss.requires_grad)
                     loss.backward()
                     optimizer.step()
 
