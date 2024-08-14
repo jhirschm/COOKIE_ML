@@ -394,6 +394,10 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            print(f"Parameter {name} does not require gradients!")
+
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet34_1"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
