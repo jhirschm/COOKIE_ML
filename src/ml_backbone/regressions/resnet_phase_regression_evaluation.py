@@ -167,6 +167,8 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
         plt.grid(True)
         plt.show()
         plt.savefig(plot_path)
+
+        return 1
                 
 
 
@@ -178,66 +180,7 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
 
 
 
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-
-                # Update the scheduler
-                should_stop = scheduler.step(val_loss, epoch)
-
-                # Check if this is the best model so far
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_epoch = epoch
-                    best_model = model.state_dict().copy()
-
-                    # Save the best model with a specified name and path in the model_dir
-                    best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
-                    torch.save(model.state_dict(), best_model_path)
-
-                ## Save checkpoint
-                if checkpoints_enabled:
-                    checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'scheduler_state_dict': scheduler.state_dict(),
-                        'train_losses': train_losses,
-                        'val_losses': val_losses,
-                        'best_val_loss': best_val_loss,
-                        'best_epoch': best_epoch,
-                    }
-                    torch.save(checkpoint, checkpoint_path)
                 
-                # Early stopping check
-                # if scheduler.should_stop():
-                #     print(f"Early stopping at epoch {epoch+1}")
-                #     break
-                if should_stop:
-                    print(f"Early stopping at epoch {epoch+1}\n")
-                    f.write(f"Early stopping at epoch {epoch+1}\n")
-                    break
-                f.flush() # Flush the buffer to write to the file
-        # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
-        with open(run_summary_path, "w") as file:
-            file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
-            file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
-            file.write("Final Validation Loss: {:.10f}\n".format(val_losses[-1]))
-
-        # Plot the training and validation losses
-        plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
-        plt.legend()
-        losses_path = os.path.join(model_save_dir, identifier + "_losses.pdf")
-        plt.savefig(losses_path)
-        plt.close()
-
-        return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
 def main():
     
