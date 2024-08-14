@@ -87,7 +87,8 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
 
             inputs, labels, phases = batch
             inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-            
+            print(inputs.shape)
+            print(torch.unsqueeze(inputs, 1).shape)
             if denoising and denoise_model is not None and zero_mask_model is not None:
                 
                 denoise_model.eval()
@@ -113,6 +114,7 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
                 outputs = outputs * zero_mask
                 inputs = torch.unsqueeze(inputs, 1)
                 inputs = outputs.to(device, torch.float32)
+                print(inputs.shape)
 
             else: 
                 inputs = torch.unsqueeze(inputs, 1)
