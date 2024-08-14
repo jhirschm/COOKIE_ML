@@ -34,18 +34,22 @@ else:
     print("MPS is not available. Using CPU.")
 import torch.nn.functional as F
 def get_phase(outputs, num_classes, max_val=2*torch.pi):
-    # Step 1: Convert the model outputs to probabilities using softmax
+    # Convert the model outputs to probabilities using softmax
     probabilities = F.softmax(outputs, dim=1)
+    
+    # Calculate a weighted sum of the class indices
+    indices = torch.arange(num_classes, device=outputs.device, dtype=outputs.dtype)
+    phase_values = torch.sum(probabilities * indices, dim=1)
 
-    # Step 2: Get the index of the highest probability class
-    max_prob_idx = torch.argmax(probabilities, dim=1)
-
-    # Step 3: Map the class index to a phase value between 0 and 2*pi
-    phase_values = max_prob_idx * (max_val / num_classes)
-    phase_values = torch.unsqueeze(phase_values,1)
+    # Map the weighted sum to a phase value between 0 and 2*pi
+    phase_values = phase_values * (max_val / num_classes)
+    
+    # Add an extra dimension to match expected output shape
+    phase_values = torch.unsqueeze(phase_values, 1)
     phase_values = phase_values.to(torch.float32)
-
     return phase_values
+    
+
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
