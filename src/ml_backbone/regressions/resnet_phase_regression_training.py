@@ -353,7 +353,7 @@ def main():
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 1000
-    model = resnet34(num_classes=num_classes)
+    model = resnet18(num_classes=num_classes)
     model = model.to(device).to(dtype)
 
 
@@ -409,7 +409,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "resNetregression"
+    identifier = "resNetregression_18"
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
