@@ -353,8 +353,8 @@ def main():
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 100
-    model = resnet152(num_classes=num_classes)
-    # model = resnet18(num_classes=num_classes)
+    # model = resnet152(num_classes=num_classes)
+    model = resnet18(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
