@@ -353,7 +353,9 @@ def main():
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 1000
-    model = resnet18(num_classes=num_classes)
+    model = resnet152(num_classes=num_classes)
+    # model = resnet18(num_classes=num_classes)
+
     model = model.to(device).to(dtype)
 
 
@@ -363,6 +365,7 @@ def main():
     except Exception as e:
         print("Error:", e)
 
+    # print(summary(model, input_size=(1, 1, 512, 16)))
     seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
@@ -401,7 +404,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet18_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet152_1"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
@@ -414,5 +417,13 @@ def main():
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
                                  denoise_model =None , zero_mask_model = None, parallel=True, second_denoising=False, num_classes=num_classes)
+    # print(summary(model=model, 
+    #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
+    #     # col_names=["input_size"], # uncomment for smaller output
+    #     col_names=["input_size", "output_size", "num_params", "trainable"],
+    #     col_width=20,
+    #     row_settings=["var_names"]
+    # ))
+    print(summary(model, input_size=(1, 1, 512, 16)))
 if __name__ == "__main__":
     main()
