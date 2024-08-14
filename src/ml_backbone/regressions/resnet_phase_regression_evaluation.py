@@ -72,6 +72,13 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
 
     if denoising and denoise_model is None and zero_mask_model is None:
         raise ValueError("Denoising is enabled but no denoising model is provided")
+    if parallel:
+        model = nn.DataParallel(model)
+        if denoising and denoise_model is not None and zero_mask_model is not None:
+            denoise_model = nn.DataParallel(denoise_model)
+            zero_mask_model = nn.DataParallel(zero_mask_model)
+            denoise_model.to(device)
+            zero_mask_model.to(device)
     model.eval()  # Set the model to evaluation mode, ensures no dropout is applied
     # Iterate through the test data
         
@@ -80,15 +87,11 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
 
             inputs, labels, phases = batch
             inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                
+            
             if denoising and denoise_model is not None and zero_mask_model is not None:
                 
                 denoise_model.eval()
                 zero_mask_model.eval()
-
-                if parallel:
-                    denoise_model = nn.DataParallel(denoise_model)
-                    zero_mask_model = nn.DataParallel(zero_mask_model)
                 
                 inputs = torch.unsqueeze(inputs, 1)
                 inputs = inputs.to(device, torch.float32)
@@ -108,6 +111,7 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
                 zero_mask = zero_mask.to(device, torch.float32)
 
                 outputs = outputs * zero_mask
+                inputs = torch.unsqueeze(inputs, 1)
                 inputs = outputs.to(device, torch.float32)
 
             else: 
