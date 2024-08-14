@@ -5,7 +5,7 @@ import time
 import json
 
 # # External library imports
-# import numpy as np
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
