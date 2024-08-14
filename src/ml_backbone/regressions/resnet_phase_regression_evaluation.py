@@ -273,7 +273,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
