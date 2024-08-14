@@ -85,6 +85,10 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
                 
                 denoise_model.eval()
                 zero_mask_model.eval()
+
+                if parallel:
+                    denoise_model = nn.DataParallel(denoise_model)
+                    zero_mask_model = nn.DataParallel(zero_mask_model)
                 
                 inputs = torch.unsqueeze(inputs, 1)
                 inputs = inputs.to(device, torch.float32)
