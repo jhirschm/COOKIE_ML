@@ -248,7 +248,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
-    identifier = "resNetregression_18_2000classes_Ximg"
+    identifier = "resNetregression_18_2000classes_XimgDenoised"
     criterion = nn.MSELoss()
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
@@ -301,8 +301,8 @@ def main():
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
-    test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =None,
-                zero_mask_model = None, parallel=True, num_classes=num_classes)
+    test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=True, denoise_model =autoencoder,
+                zero_mask_model = zero_model, parallel=True, num_classes=num_classes)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
