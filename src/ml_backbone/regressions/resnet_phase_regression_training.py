@@ -94,7 +94,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                     inputs, labels, phases = batch
                     inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                    phases = phases.to(model.module.dtype)
+                    # phases = phases.to(dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
                        
@@ -139,7 +139,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        phases = phases.to(model.module.dtype)
+                        # phases = phases.to(model.module.dtype)
                         # print(labels)
                         if second_denoising and denoise_model is not None and zero_mask_model is not None:
                         
@@ -190,7 +190,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     for batch in val_dataloader:
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        phases = phases.to(model.module.dtype)
+                        # phases = phases.to(model.module.dtype)
                         # print(labels)
                         if denoising and denoise_model is not None and zero_mask_model is not None:
                         
@@ -228,7 +228,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                             inputs, labels, phases = batch
                             inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                            phases = phases.to(model.module.dtype)
+                            # phases = phases.to(model.module.dtype)
                             # print(labels)
                             if second_denoising and denoise_model is not None and zero_mask_model is not None:
                             
