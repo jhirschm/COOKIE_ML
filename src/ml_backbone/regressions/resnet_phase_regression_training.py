@@ -42,6 +42,8 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
 
     # Step 3: Map the class index to a phase value between 0 and 2*pi
     phase_values = max_prob_idx * (max_val / num_classes)
+    phase_values = torch.unsqueeze(phase_values,1)
+    phase_values = phase_values.to(torch.float32)
 
     return phase_values
 
@@ -132,6 +134,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     print(outputs)
           
                     outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                    phases = phases.to(torch.float32)
                     print(outputs)
                     print(phases)
                     loss = criterion(outputs, phases)
@@ -178,6 +181,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        phases = phases.to(torch.float32)
                         loss = criterion(outputs, phases)
                         loss.backward()
                         optimizer.step()
@@ -269,6 +273,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                             outputs = model(inputs).to(device)
                             outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            phases = phases.to(torch.float32)
 
                             # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
                             loss = criterion(outputs, phases)
