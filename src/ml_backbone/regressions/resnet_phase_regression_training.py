@@ -103,7 +103,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     # phases = phases.to(dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
-                       
+                
                         denoise_model.eval()
                         zero_mask_model.eval()
                         
@@ -125,7 +125,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         zero_mask = zero_mask.to(device, torch.float32)
 
                         outputs = outputs * zero_mask
-                        inputs = outputs.to(device, torch.float32)
+                        inputs = torch.unsqueeze(outputs, 1)
+                        inputs = inputs.to(device, torch.float32)
 
                     else: 
                         inputs = torch.unsqueeze(inputs, 1)
@@ -153,9 +154,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                             denoise_model.eval()
                             zero_mask_model.eval()
+                            
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             # labels = labels[0]
+                            
                             outputs = denoise_model(inputs)
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
@@ -170,7 +173,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            inputs = outputs.to(device, torch.float32)
+                            inputs = torch.unsqueeze(outputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+
 
                         else: 
                             inputs = torch.unsqueeze(inputs, 1)
@@ -206,9 +211,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                             denoise_model.eval()
                             zero_mask_model.eval()
+                            
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             # labels = labels[0]
+                            
                             outputs = denoise_model(inputs)
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
@@ -223,7 +230,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            inputs = outputs.to(device, torch.float32)
+                            inputs = torch.unsqueeze(outputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+
 
                         else: 
                             inputs = torch.unsqueeze(inputs, 1)
@@ -246,9 +255,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                                 denoise_model.eval()
                                 zero_mask_model.eval()
+                                
                                 inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
                                 # labels = labels[0]
+                                
                                 outputs = denoise_model(inputs)
                                 outputs = outputs.squeeze()
                                 outputs = outputs.to(device)
@@ -263,7 +274,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 zero_mask = zero_mask.to(device, torch.float32)
 
                                 outputs = outputs * zero_mask
-                                inputs = outputs.to(device, torch.float32)
+                                inputs = torch.unsqueeze(outputs, 1)
+                                inputs = inputs.to(device, torch.float32)
 
                             else: 
                                 inputs = torch.unsqueeze(inputs, 1)
@@ -377,7 +389,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=5, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -404,7 +416,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgTrained"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgDenoisedTrained"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
@@ -412,11 +424,57 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "resNetregression_18_2000classes_Ximg"
+    identifier = "resNetregression_18_2000classes_XimgDenoised"
+
+    '''
+    denoising
+    '''
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+    best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
+    
+    # Example usage
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
+
+    # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
+    ]
+
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+
+    # Use the calculated size for the fully connected layer input
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
+    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    zero_model.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    zero_model.load_state_dict(state_dict)
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=False)
+    autoencoder.to(device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    autoencoder.load_state_dict(state_dict)
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =None , zero_mask_model = None, parallel=True, second_denoising=False, num_classes=num_classes)
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, 
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
