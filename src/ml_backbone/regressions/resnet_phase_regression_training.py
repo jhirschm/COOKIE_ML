@@ -384,7 +384,8 @@ def main():
 
 
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet34_1"
-
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     max_epochs = 200
