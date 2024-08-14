@@ -132,7 +132,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     outputs = model(inputs).to(device)
                     print(outputs)
-          
+                    print(outputs.requires_grad)
                     outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                     print(outputs.requires_grad)
                     phases = phases.to(torch.float32)
