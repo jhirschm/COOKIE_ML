@@ -230,12 +230,11 @@ class ResNet(nn.Module):
         # print("Avgpool output shape:", x.shape)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        print("FC output shape:", x.shape)
+        # print("FC output shape:", x.shape)
 
         return x
 
     def forward(self, x):
-        print("Input shape:", x.shape)
         return self._forward_impl(x)
 
 
