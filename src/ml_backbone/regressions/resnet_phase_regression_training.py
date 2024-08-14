@@ -94,6 +94,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                     inputs, labels, phases = batch
                     inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                    print(inputs.shape)
                     # phases = phases.to(dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
@@ -122,7 +123,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         inputs = outputs.to(device, torch.float32)
 
                     else: 
+                        inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
+                        
                     
                     
                     outputs = model(inputs).to(device)
@@ -165,6 +168,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             inputs = outputs.to(device, torch.float32)
 
                         else: 
+                            inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                         
                         
@@ -216,7 +220,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             inputs = outputs.to(device, torch.float32)
 
                         else: 
+                            inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
+                            
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
@@ -254,6 +260,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 inputs = outputs.to(device, torch.float32)
 
                             else: 
+                                inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
                             
                             outputs = model(inputs).to(device)
