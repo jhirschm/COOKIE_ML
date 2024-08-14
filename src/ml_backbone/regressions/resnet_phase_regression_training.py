@@ -383,7 +383,7 @@ def main():
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet34_1/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08132024_regressionResnet34_1"
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
