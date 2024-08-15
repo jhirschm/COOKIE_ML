@@ -26,16 +26,48 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 export PYTHONUNBUFFERED=1
 export PYTHONIOENCODING=utf-8
 
-case "$1" in
+
+if [[ $# -ne 2 ]]; then
+    echo "Invalid number of arguments. Usage: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
+    exit 1
+fi
+
+action="$1"
+pulse_type="$2"
+
+case "$action" in
     training)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_training.py
+        case "$pulse_type" in
+            single_pulse)
+                python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_training.py
+                ;;
+            double_pulse)
+                python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_2pulse_phase_regression_training.py
+                ;;
+            *)
+                echo "Invalid pulse type specified. Usage: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
+                exit 1
+                ;;
+        esac
         ;;
     
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_evaluation.py
+        case "$pulse_type" in
+            single_pulse)
+                python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_evaluation.py
+                ;;
+            double_pulse)
+                python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_2pulse_phase_regression_evaluation.py
+                ;;
+            *)
+                echo "Invalid pulse type specified. Usage: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
+                exit 1
+                ;;
+        esac
         ;;
+    
     *)
-        echo "Invalid script specified. Usage: sbatch this_script.sh [training|evaluation]"
+        echo "Invalid action specified. Usage: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
         exit 1
         ;;
 esac
