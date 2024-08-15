@@ -138,6 +138,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                     phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                     phases_differences = phases_differences.to(torch.float32)
+                    print(phases_differences)
+                    print(outputs)
                     loss = criterion(outputs, phases_differences)
                     loss.backward()
                     optimizer.step()
@@ -370,7 +372,7 @@ def main():
     fake_input = torch.randn(1, 1, 512, 16, device=device, dtype=dtype)
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 100
+    num_classes = 10
     # model = resnet152(num_classes=num_classes)
     model = resnet18(num_classes=num_classes)
 
