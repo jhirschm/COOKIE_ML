@@ -370,9 +370,9 @@ def main():
     fake_input = torch.randn(1, 1, 512, 16, device=device, dtype=dtype)
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 2000
+    num_classes = 100
     # model = resnet152(num_classes=num_classes)
-    model = resnet34(num_classes=num_classes)
+    model = resnet18(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -430,7 +430,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "resNetregression_34_2Pulse_2000classes_Ximg_2"
+    identifier = "resNetregression_18_2Pulse_2000classes_Ximg_2"
 
     '''
     denoising
