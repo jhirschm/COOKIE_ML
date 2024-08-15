@@ -376,7 +376,7 @@ def main():
     fake_input = torch.randn(1, 1, 512, 16, device=device, dtype=dtype)
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 100
+    num_classes = 1000
     # model = resnet152(num_classes=num_classes)
     model = resnet18(num_classes=num_classes)
 
