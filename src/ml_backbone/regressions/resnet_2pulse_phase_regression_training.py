@@ -60,6 +60,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
         best_val_loss = float('inf')
         best_epoch = 0
         start_epoch = 0
+        w1 = 1
+        w2 = 0
         if denoising and denoise_model is None and zero_mask_model is None:
             raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
@@ -154,9 +156,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     # print(outputs)
                     # loss = criterion(outputs, phases_differences)
                     # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                    loss1 = criterion(outputs_1, phases[:,0])
-                    loss2 = criterion(outputs_2, phases[:,1])
-                    loss = (loss1 + loss2)/2
+                    loss1 = criterion(outputs_1, phases[:,0:1])
+                    loss2 = criterion(outputs_2, phases[:,1:])
+                    loss = (w1*loss1 + w2*loss2)
                     loss.backward()
                     optimizer.step()
 
@@ -212,9 +214,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         # print(outputs)
                         # loss = criterion(outputs, phases_differences)
                         # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                        loss1 = criterion(outputs_1, phases[:,0])
-                        loss2 = criterion(outputs_2, phases[:,1])
-                        loss = (loss1 + loss2)/2
+                        loss1 = criterion(outputs_1, phases[:,0:1])
+                        loss2 = criterion(outputs_2, phases[:,1:])
+                        loss = (w1*loss1 + w2*loss2)
                         loss.backward()
                         optimizer.step()
 
@@ -283,9 +285,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         # print(outputs)
                         # loss = criterion(outputs, phases_differences)
                         # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                        loss1 = criterion(outputs_1, phases[:,0])
-                        loss2 = criterion(outputs_2, phases[:,1])
-                        loss = (loss1 + loss2)/2
+                        loss1 = criterion(outputs_1, phases[:,0:1])
+                        loss2 = criterion(outputs_2, phases[:,1:])
+                        loss = (w1*loss1 + w2*loss2)
                         running_val_loss += loss.item()
                     
                     if second_val_dataloader is not None and second_denoising:
@@ -336,9 +338,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             # print(outputs)
                             # loss = criterion(outputs, phases_differences)
                             # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                            loss1 = criterion(outputs_1, phases[:,0])
-                            loss2 = criterion(outputs_2, phases[:,1])
-                            loss = (loss1 + loss2)/2
+                            loss1 = criterion(outputs_1, phases[:,0:1])
+                            loss2 = criterion(outputs_2, phases[:,1:])
+                            loss = (w1*loss1 + w2*loss2)
                             running_val_loss += loss.item()
             
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
@@ -441,7 +443,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=1, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=1, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
