@@ -136,8 +136,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    if i == 0:
-                        print(outputs.shape)
+                    # if i == 0:
+                    #     print(outputs.shape)
                         
                     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -196,7 +196,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         
                         outputs = model(inputs).to(device)
-                        outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
                         phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
@@ -263,7 +263,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                         
                         outputs = model(inputs).to(device)
-                        outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                         if i == 0:
                             print(outputs.shape)
                             i+=1
@@ -320,7 +320,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 inputs = inputs.to(device, torch.float32)
                             
                             outputs = model(inputs).to(device)
-                            outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
                             phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
