@@ -154,8 +154,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     # print(outputs)
                     # loss = criterion(outputs, phases_differences)
                     # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                    loss1 = criterion(outputs_1, phases[:,0:outputs.shape[1]//2])
-                    loss2 = criterion(outputs_2, phases[:,outputs.shape[1]//2:])
+                    loss1 = criterion(outputs_1, phases[:,0])
+                    loss2 = criterion(outputs_2, phases[:,1])
                     loss = (loss1 + loss2)/2
                     loss.backward()
                     optimizer.step()
@@ -212,8 +212,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         # print(outputs)
                         # loss = criterion(outputs, phases_differences)
                         # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                        loss1 = criterion(outputs_1, phases[:,0:outputs.shape[1]//2])
-                        loss2 = criterion(outputs_2, phases[:,outputs.shape[1]//2:])
+                        loss1 = criterion(outputs_1, phases[:,0])
+                        loss2 = criterion(outputs_2, phases[:,1])
                         loss = (loss1 + loss2)/2
                         loss.backward()
                         optimizer.step()
@@ -283,8 +283,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         # print(outputs)
                         # loss = criterion(outputs, phases_differences)
                         # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                        loss1 = criterion(outputs_1, phases[:,0:outputs.shape[1]//2])
-                        loss2 = criterion(outputs_2, phases[:,outputs.shape[1]//2:])
+                        loss1 = criterion(outputs_1, phases[:,0])
+                        loss2 = criterion(outputs_2, phases[:,1])
                         loss = (loss1 + loss2)/2
                         running_val_loss += loss.item()
                     
@@ -336,8 +336,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             # print(outputs)
                             # loss = criterion(outputs, phases_differences)
                             # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                            loss1 = criterion(outputs_1, phases[:,0:outputs.shape[1]//2])
-                            loss2 = criterion(outputs_2, phases[:,outputs.shape[1]//2:])
+                            loss1 = criterion(outputs_1, phases[:,0])
+                            loss2 = criterion(outputs_2, phases[:,1])
                             loss = (loss1 + loss2)/2
                             running_val_loss += loss.item()
             
