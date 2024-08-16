@@ -87,6 +87,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
             best_epoch = checkpoint['best_epoch']
             best_model = None
         name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
+        i = 0
         with open(name, "a") as f:
             f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
 
@@ -135,8 +136,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
-                    outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
+                    if i == 0:
+                        print(outputs.shape)
+                        i += 1
+                    outputs_1 = get_phase(outputs[0:outputs.shape[0]//2], num_classes//2, max_val=2*torch.pi)
+                    outputs_2 = get_phase(outputs[outputs.shape[0]//2:], num_classes//2, max_val=2*torch.pi)
                     phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                     phases_differences = phases_differences.to(torch.float32)
                     phases = phases.to(torch.float32)
@@ -193,8 +197,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
+                        outputs_1 = get_phase(outputs[0:outputs.shape[0]//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[outputs.shape[0]//2:], num_classes//2, max_val=2*torch.pi)
                         phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                         phases_differences = phases_differences.to(torch.float32)
                         phases = phases.to(torch.float32)
@@ -260,8 +264,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
+                        outputs_1 = get_phase(outputs[0:outputs.shape[0]//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[outputs.shape[0]//2:], num_classes//2, max_val=2*torch.pi)
                         phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                         phases_differences = phases_differences.to(torch.float32)
                         phases = phases.to(torch.float32)
@@ -313,8 +317,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                             outputs = model(inputs).to(device)
                             outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                            outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
-                            outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
+                            outputs_1 = get_phase(outputs[0:outputs.shape[0]//2], num_classes//2, max_val=2*torch.pi)
+                            outputs_2 = get_phase(outputs[outputs.shape[0]//2:], num_classes//2, max_val=2*torch.pi)
                             phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                             phases_differences = phases_differences.to(torch.float32)
                             phases = phases.to(torch.float32)
