@@ -235,7 +235,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 running_val_loss = 0.0
 
                 with torch.no_grad():
-                    for batch in val_dataloader:
+                    for batch in train_dataloader: #val_dataloader:
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
                         # phases = phases.to(model.module.dtype)
