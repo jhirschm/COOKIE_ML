@@ -136,9 +136,15 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    # if i == 0:
-                    #     print(outputs.shape)
-                        
+                    if i == 0:
+                        print(outputs.shape)
+                        print(outputs.shape[1]//2)
+                        print(int(outputs.shape[1]/2))
+                        print(num_classes//2)
+
+                        print(get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi))
+                        print(get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi))
+                        i+=1
                     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
                     phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
