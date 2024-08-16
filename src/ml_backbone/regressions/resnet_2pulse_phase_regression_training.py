@@ -135,13 +135,18 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                    outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
+                    outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
                     phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                     phases_differences = phases_differences.to(torch.float32)
+                    phases = phases.to(torch.float32)
                     # print(phases_differences)
                     # print(outputs)
                     # loss = criterion(outputs, phases_differences)
-                    loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                    # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                    loss1 = criterion(outputs_1, phases[0:len(outputs)//2])
+                    loss2 = criterion(outputs_2, phases[len(outputs)//2:])
+                    loss = (loss1 + loss2)/2
                     loss.backward()
                     optimizer.step()
 
@@ -188,10 +193,18 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
                         phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                         phases_differences = phases_differences.to(torch.float32)
+                        phases = phases.to(torch.float32)
+                        # print(phases_differences)
+                        # print(outputs)
                         # loss = criterion(outputs, phases_differences)
-                        loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                        # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                        loss1 = criterion(outputs_1, phases[0:len(outputs)//2])
+                        loss2 = criterion(outputs_2, phases[len(outputs)//2:])
+                        loss = (loss1 + loss2)/2
                         loss.backward()
                         optimizer.step()
 
@@ -247,10 +260,18 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         outputs = model(inputs).to(device)
                         outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
                         phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                         phases_differences = phases_differences.to(torch.float32)
+                        phases = phases.to(torch.float32)
+                        # print(phases_differences)
+                        # print(outputs)
                         # loss = criterion(outputs, phases_differences)
-                        loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                        # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                        loss1 = criterion(outputs_1, phases[0:len(outputs)//2])
+                        loss2 = criterion(outputs_2, phases[len(outputs)//2:])
+                        loss = (loss1 + loss2)/2
                         running_val_loss += loss.item()
                     
                     if second_val_dataloader is not None and second_denoising:
@@ -292,13 +313,18 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                             outputs = model(inputs).to(device)
                             outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                            phases = phases.to(torch.float32)
-
-                            # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
+                            outputs_1 = get_phase(outputs[0:len(outputs)//2], num_classes//2, max_val=2*torch.pi)
+                            outputs_2 = get_phase(outputs[len(outputs)//2:], num_classes//2, max_val=2*torch.pi)
                             phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
                             phases_differences = phases_differences.to(torch.float32)
+                            phases = phases.to(torch.float32)
+                            # print(phases_differences)
+                            # print(outputs)
                             # loss = criterion(outputs, phases_differences)
-                            loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                            # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                            loss1 = criterion(outputs_1, phases[0:len(outputs)//2])
+                            loss2 = criterion(outputs_2, phases[len(outputs)//2:])
+                            loss = (loss1 + loss2)/2
                             running_val_loss += loss.item()
             
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
