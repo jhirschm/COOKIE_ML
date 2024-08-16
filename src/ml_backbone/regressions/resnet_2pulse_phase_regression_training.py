@@ -234,14 +234,128 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 model.eval()  # Set the model to evaluation mode
                 running_val_loss = 0.0
 
+                # with torch.no_grad():
+                #     for batch in train_dataloader: #val_dataloader:
+                #         inputs, labels, phases = batch
+                #         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                #         # phases = phases.to(model.module.dtype)
+                #         # print(labels)
+                #         if denoising and denoise_model is not None and zero_mask_model is not None:
+                        
+                #             denoise_model.eval()
+                #             zero_mask_model.eval()
+                            
+                #             inputs = torch.unsqueeze(inputs, 1)
+                #             inputs = inputs.to(device, torch.float32)
+                #             # labels = labels[0]
+                            
+                #             outputs = denoise_model(inputs)
+                #             outputs = outputs.squeeze()
+                #             outputs = outputs.to(device)
+                #             if parallel:
+                #                 probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                #             else:
+                #                 probs, zero_mask  = zero_mask_model.predict(inputs)
+                #             zero_mask = zero_mask.to(device)
+                #             # zero mask either 0 or 1
+                #             # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                #             zero_mask = torch.unsqueeze(zero_mask,2)
+                #             zero_mask = zero_mask.to(device, torch.float32)
+
+                #             outputs = outputs * zero_mask
+                #             inputs = torch.unsqueeze(outputs, 1)
+                #             inputs = inputs.to(device, torch.float32)
+
+
+                #         else: 
+                #             inputs = torch.unsqueeze(inputs, 1)
+                #             inputs = inputs.to(device, torch.float32)
+                            
+                        
+                #         outputs = model(inputs).to(device)
+                #         # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                #         if i == 0:
+                #             print(outputs.shape)
+                #             i+=1
+                        
+                #         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                #         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                #         # phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
+                #         # phases_differences = phases_differences.to(torch.float32)
+                #         phases = phases.to(torch.float32)
+                #         # print(phases_differences)
+                #         # print(outputs)
+                #         # loss = criterion(outputs, phases_differences)
+                #         # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                #         loss1 = criterion(outputs_1, phases[:,0:1])
+                #         loss2 = criterion(outputs_2, phases[:,0:1])
+                #         # loss2 = loss1
+                #         loss = (w1*loss1 + w2*loss2)
+                #         running_val_loss += loss.item()
+                    
+                #     if second_val_dataloader is not None and second_denoising:
+                #         for batch in val_dataloader:
+
+                #             inputs, labels, phases = batch
+                #             inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                #             # phases = phases.to(model.module.dtype)
+                #             # print(labels)
+                #             if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            
+                #                 denoise_model.eval()
+                #                 zero_mask_model.eval()
+                                
+                #                 inputs = torch.unsqueeze(inputs, 1)
+                #                 inputs = inputs.to(device, torch.float32)
+                #                 # labels = labels[0]
+                                
+                #                 outputs = denoise_model(inputs)
+                #                 outputs = outputs.squeeze()
+                #                 outputs = outputs.to(device)
+                #                 if parallel:
+                #                     probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                #                 else:
+                #                     probs, zero_mask  = zero_mask_model.predict(inputs)
+                #                 zero_mask = zero_mask.to(device)
+                #                 # zero mask either 0 or 1
+                #                 # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                #                 zero_mask = torch.unsqueeze(zero_mask,2)
+                #                 zero_mask = zero_mask.to(device, torch.float32)
+
+                #                 outputs = outputs * zero_mask
+                #                 inputs = torch.unsqueeze(outputs, 1)
+                #                 inputs = inputs.to(device, torch.float32)
+
+                #             else: 
+                #                 inputs = torch.unsqueeze(inputs, 1)
+                #                 inputs = inputs.to(device, torch.float32)
+                            
+                #             outputs = model(inputs).to(device)
+                #             # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                #             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                #             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                #             # phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
+                #             # phases_differences = phases_differences.to(torch.float32)
+                #             phases = phases.to(torch.float32)
+                #             # print(phases_differences)
+                #             # print(outputs)
+                #             # loss = criterion(outputs, phases_differences)
+                #             # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
+                #             loss1 = criterion(outputs_1, phases[:,0:1])
+                #             loss2 = criterion(outputs_2, phases[:,0:1])
+                #             # loss2 = loss1
+                #             loss = (w1*loss1 + w2*loss2)
+                #             running_val_loss += loss.item()
                 with torch.no_grad():
-                    for batch in train_dataloader: #val_dataloader:
+                    for batch in train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
+
                         inputs, labels, phases = batch
                         inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        # phases = phases.to(model.module.dtype)
+                        # phases = phases.to(dtype)
                         # print(labels)
                         if denoising and denoise_model is not None and zero_mask_model is not None:
-                        
+                    
                             denoise_model.eval()
                             zero_mask_model.eval()
                             
@@ -266,18 +380,22 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             inputs = torch.unsqueeze(outputs, 1)
                             inputs = inputs.to(device, torch.float32)
 
-
                         else: 
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             
                         
+                        
                         outputs = model(inputs).to(device)
-                        # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
                         if i == 0:
                             print(outputs.shape)
+                            print(outputs.shape[1]//2)
+                            print(int(outputs.shape[1]/2))
+                            print(num_classes//2)
+
+                            print(get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi))
+                            print(get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi))
                             i+=1
-                        
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
                         # phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
@@ -291,62 +409,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         loss2 = criterion(outputs_2, phases[:,0:1])
                         # loss2 = loss1
                         loss = (w1*loss1 + w2*loss2)
+
                         running_val_loss += loss.item()
-                    
-                    if second_val_dataloader is not None and second_denoising:
-                        for batch in val_dataloader:
-
-                            inputs, labels, phases = batch
-                            inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                            # phases = phases.to(model.module.dtype)
-                            # print(labels)
-                            if second_denoising and denoise_model is not None and zero_mask_model is not None:
-                            
-                                denoise_model.eval()
-                                zero_mask_model.eval()
-                                
-                                inputs = torch.unsqueeze(inputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-                                # labels = labels[0]
-                                
-                                outputs = denoise_model(inputs)
-                                outputs = outputs.squeeze()
-                                outputs = outputs.to(device)
-                                if parallel:
-                                    probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                                else:
-                                    probs, zero_mask  = zero_mask_model.predict(inputs)
-                                zero_mask = zero_mask.to(device)
-                                # zero mask either 0 or 1
-                                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                                zero_mask = torch.unsqueeze(zero_mask,2)
-                                zero_mask = zero_mask.to(device, torch.float32)
-
-                                outputs = outputs * zero_mask
-                                inputs = torch.unsqueeze(outputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-
-                            else: 
-                                inputs = torch.unsqueeze(inputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-                            
-                            outputs = model(inputs).to(device)
-                            # outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                            # phases_differences = (torch.abs(phases[:, 0] - phases[:, 1]))
-                            # phases_differences = phases_differences.to(torch.float32)
-                            phases = phases.to(torch.float32)
-                            # print(phases_differences)
-                            # print(outputs)
-                            # loss = criterion(outputs, phases_differences)
-                            # loss = ((torch.cos(outputs)-torch.cos(phases_differences))**2 + (torch.sin(outputs)-torch.sin(phases_differences))**2).mean()
-                            loss1 = criterion(outputs_1, phases[:,0:1])
-                            loss2 = criterion(outputs_2, phases[:,0:1])
-                            # loss2 = loss1
-                            loss = (w1*loss1 + w2*loss2)
-                            running_val_loss += loss.item()
-            
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
                 # val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
 
