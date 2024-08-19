@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+
 class DataMilking_MilkCurds(Dataset):
     '''
     HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 

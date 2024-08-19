@@ -218,7 +218,14 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         loss1 = criterion(outputs_1, phases[:,0:1])
                         loss2 = criterion(outputs_2, phases[:,1:])
                         # loss2 = loss1
-                        loss = (w1*loss1 + w2*loss2)
+                        loss_a = (w1*loss1 + w2*loss2)
+
+                        loss1 = criterion(outputs_2, phases[:,0:1])
+                        loss2 = criterion(outputs_1, phases[:,1:])
+                        # loss2 = loss1
+                        loss_b = (w1*loss1 + w2*loss2)
+
+                        loss = min(loss_a, loss_b)
                         loss.backward()
                         optimizer.step()
 
@@ -290,7 +297,14 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         loss1 = criterion(outputs_1, phases[:,0:1])
                         loss2 = criterion(outputs_2, phases[:,1:])
                         # loss2 = loss1
-                        loss = (w1*loss1 + w2*loss2)
+                        loss_a = (w1*loss1 + w2*loss2)
+
+                        loss1 = criterion(outputs_2, phases[:,0:1])
+                        loss2 = criterion(outputs_1, phases[:,1:])
+                        # loss2 = loss1
+                        loss_b = (w1*loss1 + w2*loss2)
+
+                        loss = torch.min(loss_a, loss_b)
                         running_val_loss += loss.item()
                     
                     if second_val_dataloader is not None and second_denoising:

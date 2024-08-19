@@ -222,7 +222,7 @@ def main():
     total_params = sum(param.numel() for param in classModel.parameters())
 
     print(f'Total number of parameters: {total_params}')
-    # classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
+    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
     
     
     # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
