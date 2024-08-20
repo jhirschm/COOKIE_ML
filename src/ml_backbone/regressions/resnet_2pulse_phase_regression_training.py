@@ -152,6 +152,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     loss_2 = criterion(outputs_2, phases_1)
                     loss_b = loss_1 + loss_2
                     loss = torch.min(loss_a, loss_b)
+                    output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                    phases_differences = phases_1 - phases_2
+                    loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                    loss = loss_c
                     loss.backward()
                     optimizer.step()
 
@@ -213,6 +217,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         loss_2 = criterion(outputs_2, phases_1)
                         loss_b = loss_1 + loss_2
                         loss = torch.min(loss_a, loss_b)
+                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        phases_differences = phases_1 - phases_2
+                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                        loss = loss_c
                         loss.backward()
                         optimizer.step()
 
@@ -287,7 +295,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         loss_1 = criterion(outputs_1, phases_2)
                         loss_2 = criterion(outputs_2, phases_1)
                         loss_b = loss_1 + loss_2
+                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        phases_differences = phases_1 - phases_2
+                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
                         loss = torch.min(loss_a, loss_b)
+                        loss = loss_c
+                        
                         running_val_loss += loss.item()
                     
                     if second_val_dataloader is not None and second_denoising:
@@ -344,6 +357,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             loss_2 = criterion(outputs_2, phases_1)
                             loss_b = loss_1 + loss_2
                             loss = torch.min(loss_a, loss_b)
+
+                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            phases_differences = phases_1 - phases_2
+                            loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                            loss = loss_c
                             running_val_loss += loss.item()
             
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
