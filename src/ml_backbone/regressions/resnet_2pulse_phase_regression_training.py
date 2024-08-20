@@ -91,6 +91,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
             f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
 
             for epoch in range(start_epoch, max_epochs):
+                i = 0
                 model.train()  # Set the model to training mode
                 running_train_loss = 0.0
 
@@ -135,9 +136,22 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     
                     
                     outputs = model(inputs).to(device)
-                    outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                    outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                    outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                    if i == 0:
+                        print(outputs_1)
+                        print(outputs_2)    
+                        i+=1
                     phases = phases.to(torch.float32)
-                    loss = criterion(outputs, phases)
+                    phases_1 = phases[:,0:1]
+                    phases_2 = phases[:,1:2]
+                    loss_1 = criterion(outputs_1, phases_1)
+                    loss_2 = criterion(outputs_2, phases_2)
+                    loss_a = loss_1 + loss_2
+                    loss_1 = criterion(outputs_1, phases_2)
+                    loss_2 = criterion(outputs_2, phases_1)
+                    loss_b = loss_1 + loss_2
+                    loss = torch.min(loss_a, loss_b)
                     loss.backward()
                     optimizer.step()
 
@@ -183,9 +197,22 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                         
                         outputs = model(inputs).to(device)
-                        outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                        if i == 0:
+                            print(outputs_1)
+                            print(outputs_2)    
+                            i+=1
                         phases = phases.to(torch.float32)
-                        loss = criterion(outputs, phases)
+                        phases_1 = phases[:,0:1]
+                        phases_2 = phases[:,1:2]
+                        loss_1 = criterion(outputs_1, phases_1)
+                        loss_2 = criterion(outputs_2, phases_2)
+                        loss_a = loss_1 + loss_2
+                        loss_1 = criterion(outputs_1, phases_2)
+                        loss_2 = criterion(outputs_2, phases_1)
+                        loss_b = loss_1 + loss_2
+                        loss = torch.min(loss_a, loss_b)
                         loss.backward()
                         optimizer.step()
 
@@ -240,8 +267,22 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             
                         
                         outputs = model(inputs).to(device)
-                        outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        loss = criterion(outputs, phases)
+                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                        if i == 1:
+                            print(outputs_1)
+                            print(outputs_2)    
+                            i+=1
+                        phases = phases.to(torch.float32)
+                        phases_1 = phases[:,0:1]
+                        phases_2 = phases[:,1:2]
+                        loss_1 = criterion(outputs_1, phases_1)
+                        loss_2 = criterion(outputs_2, phases_2)
+                        loss_a = loss_1 + loss_2
+                        loss_1 = criterion(outputs_1, phases_2)
+                        loss_2 = criterion(outputs_2, phases_1)
+                        loss_b = loss_1 + loss_2
+                        loss = torch.min(loss_a, loss_b)
                         running_val_loss += loss.item()
                     
                     if second_val_dataloader is not None and second_denoising:
@@ -282,11 +323,22 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 inputs = inputs.to(device, torch.float32)
                             
                             outputs = model(inputs).to(device)
-                            outputs = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                            if i == 0:
+                                print(outputs_1)
+                                print(outputs_2)    
+                                i+=1
                             phases = phases.to(torch.float32)
-
-                            # loss = ((torch.cos(outputs*2*np.pi)-torch.cos(phases_differences*2*np.pi))**2 + (torch.sin(outputs*2*np.pi)-torch.sin(phases_differences*2*np.pi))**2).mean()
-                            loss = criterion(outputs, phases)
+                            phases_1 = phases[:,0:1]
+                            phases_2 = phases[:,1:2]
+                            loss_1 = criterion(outputs_1, phases_1)
+                            loss_2 = criterion(outputs_2, phases_2)
+                            loss_a = loss_1 + loss_2
+                            loss_1 = criterion(outputs_1, phases_2)
+                            loss_2 = criterion(outputs_2, phases_1)
+                            loss_b = loss_1 + loss_2
+                            loss = torch.min(loss_a, loss_b)
                             running_val_loss += loss.item()
             
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
@@ -384,12 +436,12 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
 
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=5, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=5, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
