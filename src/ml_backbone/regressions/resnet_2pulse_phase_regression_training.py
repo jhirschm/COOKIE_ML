@@ -269,13 +269,18 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         outputs = model(inputs).to(device)
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                        if i == 1:
-                            print(outputs_1)
-                            print(outputs_2)    
-                            i+=1
+                        
                         phases = phases.to(torch.float32)
                         phases_1 = phases[:,0:1]
                         phases_2 = phases[:,1:2]
+                        if i == 1:
+                            print("***********  Validation  ***********")
+                            print(outputs_1)
+                            print(outputs_2)  
+                            print(phases_1)
+                            print(phases_2)  
+                            print("***********  ***  ***********")
+                            i+=1
                         loss_1 = criterion(outputs_1, phases_1)
                         loss_2 = criterion(outputs_2, phases_2)
                         loss_a = loss_1 + loss_2
@@ -418,7 +423,7 @@ def main():
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 2000
     # model = resnet152(num_classes=num_classes)
-    model = resnet18(num_classes=num_classes)
+    model = resnet152(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
