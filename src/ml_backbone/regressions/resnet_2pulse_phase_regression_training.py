@@ -441,7 +441,8 @@ def main():
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 2000
     # model = resnet152(num_classes=num_classes)
-    model = resnet34(num_classes=num_classes)
+    # model = resnet34(num_classes=num_classes)
+    model = resnet50(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -491,7 +492,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08212024_doublePulseregressionResnet34_Ypdf"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08212024_doublePulseregressionResnet50_Ypdf"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
@@ -499,7 +500,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "resNetregression_34_2000classes_Ypdf"
+    identifier = "resNetregression_50_2000classes_Ypdf"
 
     '''
     denoising
