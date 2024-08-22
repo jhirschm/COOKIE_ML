@@ -1,5 +1,7 @@
 from regression_util import *
 from pulse_phase_regression import RegressionModel
+from skimage.transform import iradon
+
 
 
 
@@ -54,7 +56,7 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -71,6 +73,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 zero_mask_model.to(device)
         model.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+
+        if inverse_radon:
+            n = 16
+            theta = np.linspace(0., 360., n, endpoint=False)
 
         
         
@@ -134,7 +140,27 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         inputs = inputs.to(device, torch.float32)
                         
                     
-                    
+                    if inverse_radon:
+                        recon_images = []
+                        transpose_inputs = torch.transpose(inputs, 2, 3)
+                        for i in range(transpose_inputs.size(0)):  # Iterate over the batch
+                            # Extract the image and remove the channel dimension for processing with skimage
+                            image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+
+                            # Compute the inverse Radon transform
+                            recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
+                            
+                            # Convert back to a PyTorch tensor and add channel dimension back
+                            recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
+
+                            # Add to the list of reconstructed images
+                            recon_images.append(recon_image_tensor)
+                        # Stack the reconstructed images back into a batch
+                        recon_images = torch.stack(recon_images)
+
+                        # Add the batch dimension back
+                        recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                        inputs = recon_images
                     outputs = model(inputs).to(device)
                     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -199,7 +225,27 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                         
-                        
+                        if inverse_radon:
+                            recon_images = []
+                            transpose_inputs = torch.transpose(inputs, 2, 3)
+                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
+                                # Extract the image and remove the channel dimension for processing with skimage
+                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+
+                                # Compute the inverse Radon transform
+                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
+                                
+                                # Convert back to a PyTorch tensor and add channel dimension back
+                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
+
+                                # Add to the list of reconstructed images
+                                recon_images.append(recon_image_tensor)
+                            # Stack the reconstructed images back into a batch
+                            recon_images = torch.stack(recon_images)
+
+                            # Add the batch dimension back
+                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                            inputs = recon_images
                         outputs = model(inputs).to(device)
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -437,13 +483,16 @@ def main():
 
    
     fake_input = torch.randn(1, 1, 512, 16, device=device, dtype=dtype)
+    fake_input = torch.randn(1, 1, 362, 362, device=device, dtype=dtype)
+
+
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 2000
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
-    model = resnext50_32x4d(num_classes=num_classes)
+    model = resnet18(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -466,7 +515,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=5, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=1, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -493,7 +542,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08212024_doublePulseregressionResnext50_32x4d_Ypdf"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08222024_Resnext18_Iradon_Ypdf"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
@@ -501,7 +550,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext50_32x4dregression_50_2000classes_Ypdf"
+    identifier = "Resnext18_iradon_2000classes_Ypdf"
 
     '''
     denoising
@@ -551,7 +600,7 @@ def main():
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes)
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
