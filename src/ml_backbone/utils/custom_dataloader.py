@@ -135,15 +135,17 @@ class DataMilking_MilkCurds(Dataset):
 
         self.inputs_arr = np.array(self.inputs_arr)
         if self.inverse_radon:
+            new_inputs_arr = []
             n = 16
             theta = np.linspace(0., 360.,n, endpoint=False)
-            sigma = 1e-1
             for i in range(len(self.inputs_arr)):
                 image = np.transpose(self.inputs_arr[i])
                 rec_image = iradon(image, theta=theta, filter_name='ramp', circle = False)
                 rec_image = rec_image-np.min(rec_image)
                 rec_image = rec_image/np.max(rec_image)
-                self.inputs_arr[i] = rec_image
+                new_inputs_arr.append(rec_image)
+            self.inputs_arr = np.array(new_inputs_arr)
+            
         if self.phases_labeled:
             self.phases_arr = np.array(self.phases_arr)
         if zero_to_one_rescale:
