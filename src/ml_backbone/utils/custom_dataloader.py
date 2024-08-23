@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 import os
 import torch
+from skimage.transform import iradon
+
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -14,7 +16,7 @@ class DataMilking_MilkCurds(Dataset):
     pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
     an exception will be thrown.
     '''
-    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2): 
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2, inverse_radon=False): 
         self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
@@ -25,6 +27,7 @@ class DataMilking_MilkCurds(Dataset):
         self.test_batch = test_batch
         self.phases_labeled = phases_labeled
         self.phases_labeled_max = phases_labeled_max
+        self.inverse_radon = inverse_radon
 
         
         for i, root_dir in enumerate(self.root_dirs):
@@ -131,6 +134,16 @@ class DataMilking_MilkCurds(Dataset):
 
 
         self.inputs_arr = np.array(self.inputs_arr)
+        if self.inverse_radon:
+            n = 16
+            theta = np.linspace(0., 360.,n, endpoint=False)
+            sigma = 1e-1
+            for i in range(len(self.inputs_arr)):
+                image = np.transpose(self.inputs_arr[i])
+                rec_image = iradon(image, theta=theta, filter_name='ramp', circle = False)
+                rec_image = rec_image-np.min(rec_image)
+                rec_image = rec_image/np.max(rec_image)
+                self.inputs_arr[i] = rec_image
         if self.phases_labeled:
             self.phases_arr = np.array(self.phases_arr)
         if zero_to_one_rescale:
