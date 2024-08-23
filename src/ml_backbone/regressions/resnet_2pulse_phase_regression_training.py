@@ -319,7 +319,27 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             
-                        
+                        if inverse_radon:
+                            recon_images = []
+                            transpose_inputs = torch.transpose(inputs, 2, 3)
+                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
+                                # Extract the image and remove the channel dimension for processing with skimage
+                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+
+                                # Compute the inverse Radon transform
+                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
+                                
+                                # Convert back to a PyTorch tensor and add channel dimension back
+                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
+
+                                # Add to the list of reconstructed images
+                                recon_images.append(recon_image_tensor)
+                            # Stack the reconstructed images back into a batch
+                            recon_images = torch.stack(recon_images)
+
+                            # Add the batch dimension back
+                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                            inputs = recon_images
                         outputs = model(inputs).to(device)
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -385,7 +405,27 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             else: 
                                 inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
-                            
+                            if inverse_radon:
+                                recon_images = []
+                                transpose_inputs = torch.transpose(inputs, 2, 3)
+                                for i in range(transpose_inputs.size(0)):  # Iterate over the batch
+                                    # Extract the image and remove the channel dimension for processing with skimage
+                                    image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+
+                                    # Compute the inverse Radon transform
+                                    recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
+                                    
+                                    # Convert back to a PyTorch tensor and add channel dimension back
+                                    recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
+
+                                    # Add to the list of reconstructed images
+                                    recon_images.append(recon_image_tensor)
+                                # Stack the reconstructed images back into a batch
+                                recon_images = torch.stack(recon_images)
+
+                            # Add the batch dimension back
+                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                            inputs = recon_images
                             outputs = model(inputs).to(device)
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -546,11 +586,11 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext18_iradon_2000classes_Ypdf"
+    identifier = "Resnext18_iradon_2000classes_Ypdf_2"
 
     '''
     denoising
