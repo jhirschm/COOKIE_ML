@@ -528,11 +528,11 @@ def main():
 
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 2000
+    num_classes = 4000
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
-    model = resnet18(num_classes=num_classes)
+    model = resnet34(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -582,7 +582,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08222024_Resnext18_Iradon_Ypdf"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08222024_Resnext18_Iradon_Ypdf_2"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
