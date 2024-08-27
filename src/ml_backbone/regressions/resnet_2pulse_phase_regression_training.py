@@ -51,7 +51,7 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = phase_values.to(torch.float32)
     return phase_values
     
-def batch_phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2*np.pi)):
+def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2*np.pi)):
     """
     Converts batches of phase values into a batch of 2-hot encoded vectors.
 
