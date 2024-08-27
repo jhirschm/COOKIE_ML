@@ -66,6 +66,9 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2*np.pi)):
     """
     min_phase, max_phase = phase_range
 
+    print(phases1)
+    print(phases2)
+
     # Check if any phase is out of the specified range
     if not np.all((min_phase <= phases1) & (phases1 <= max_phase)):
         raise ValueError(f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}")
@@ -197,6 +200,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
                         inputs = recon_images
                     outputs = model(inputs).to(device)
+                    print(outputs)
                     if multi_hotEncoding:
                         phases = phases.to(torch.float32)
                         phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
