@@ -589,7 +589,7 @@ def main():
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
-    model = resnet34(num_classes=num_classes)
+    model = resnet18(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -648,7 +648,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext18_iradon_4000classes_Ypdf_1"
+    identifier = "Resnext18_4000classes_Ypdf_2"
 
     '''
     denoising
