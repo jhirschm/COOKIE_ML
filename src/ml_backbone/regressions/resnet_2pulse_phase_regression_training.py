@@ -195,7 +195,6 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
                         inputs = recon_images
                     outputs = model(inputs).to(device)
-                    print(outputs)
                     if multi_hotEncoding:
                         phases = phases.to(torch.float32)
                         phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
