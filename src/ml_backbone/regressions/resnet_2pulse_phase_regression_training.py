@@ -51,12 +51,42 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = phase_values.to(torch.float32)
     return phase_values
     
+def phase_to_2hot(phase1, phase2, n_classes, phase_range=(0, 2*np.pi)):
+    """
+    Converts two phase values into a 2-hot encoded vector.
 
+    Args:
+    phase1 (float): First phase value.
+    phase2 (float): Second phase value.
+    n_classes (int): Number of classes for the 2-hot encoding.
+    phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
+
+    Returns:
+    np.ndarray: 2-hot encoded vector of length `n_classes`.
+    """
+    min_phase, max_phase = phase_range
+    assert min_phase <= phase1 <= max_phase, "Phase1 is out of the specified range."
+    assert min_phase <= phase2 <= max_phase, "Phase2 is out of the specified range."
+
+    # Normalize the phases to a range from 0 to n_classes
+    phase1_norm = (phase1 - min_phase) / (max_phase - min_phase)
+    phase2_norm = (phase2 - min_phase) / (max_phase - min_phase)
+
+    # Convert normalized phases to class indices
+    idx1 = int(phase1_norm * n_classes) % n_classes
+    idx2 = int(phase2_norm * n_classes) % n_classes
+
+    # Create 2-hot encoded vector
+    one_hot_vector = np.zeros(n_classes)
+    one_hot_vector[idx1] = 1
+    one_hot_vector[idx2] = 1
+
+    return one_hot_vector
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -162,26 +192,32 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
                         inputs = recon_images
                     outputs = model(inputs).to(device)
-                    outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                    outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                    if i == 0:
-                        print(outputs_1)
-                        print(outputs_2)    
-                        i+=1
-                    phases = phases.to(torch.float32)
-                    phases_1 = phases[:,0:1]
-                    phases_2 = phases[:,1:2]
-                    loss_1 = criterion(outputs_1, phases_1)
-                    loss_2 = criterion(outputs_2, phases_2)
-                    loss_a = loss_1 + loss_2
-                    loss_1 = criterion(outputs_1, phases_2)
-                    loss_2 = criterion(outputs_2, phases_1)
-                    loss_b = loss_1 + loss_2
-                    loss = torch.min(loss_a, loss_b)
-                    output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                    phases_differences = phases_1 - phases_2
-                    loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                    loss = loss_c
+                    if multi_hotEncoding:
+                        phases = phases.to(torch.float32)
+                        phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
+                        phases_encoded = torch.tensor(phases_encoded).to(device)
+                        loss = criterion(outputs, phases_encoded)
+                    else:
+                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                        if i == 0:
+                            print(outputs_1)
+                            print(outputs_2)    
+                            i+=1
+                        phases = phases.to(torch.float32)
+                        phases_1 = phases[:,0:1]
+                        phases_2 = phases[:,1:2]
+                        loss_1 = criterion(outputs_1, phases_1)
+                        loss_2 = criterion(outputs_2, phases_2)
+                        loss_a = loss_1 + loss_2
+                        loss_1 = criterion(outputs_1, phases_2)
+                        loss_2 = criterion(outputs_2, phases_1)
+                        loss_b = loss_1 + loss_2
+                        loss = torch.min(loss_a, loss_b)
+                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        phases_differences = phases_1 - phases_2
+                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                        loss = loss_c
                     loss.backward()
                     optimizer.step()
 
@@ -247,26 +283,32 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
                             inputs = recon_images
                         outputs = model(inputs).to(device)
-                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                        if i == 0:
-                            print(outputs_1)
-                            print(outputs_2)    
-                            i+=1
-                        phases = phases.to(torch.float32)
-                        phases_1 = phases[:,0:1]
-                        phases_2 = phases[:,1:2]
-                        loss_1 = criterion(outputs_1, phases_1)
-                        loss_2 = criterion(outputs_2, phases_2)
-                        loss_a = loss_1 + loss_2
-                        loss_1 = criterion(outputs_1, phases_2)
-                        loss_2 = criterion(outputs_2, phases_1)
-                        loss_b = loss_1 + loss_2
-                        loss = torch.min(loss_a, loss_b)
-                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        phases_differences = phases_1 - phases_2
-                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                        loss = loss_c
+                        if multi_hotEncoding:
+                            phases = phases.to(torch.float32)
+                            phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
+                            phases_encoded = torch.tensor(phases_encoded).to(device)
+                            loss = criterion(outputs, phases_encoded)
+                        else:
+                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                            if i == 0:
+                                print(outputs_1)
+                                print(outputs_2)    
+                                i+=1
+                            phases = phases.to(torch.float32)
+                            phases_1 = phases[:,0:1]
+                            phases_2 = phases[:,1:2]
+                            loss_1 = criterion(outputs_1, phases_1)
+                            loss_2 = criterion(outputs_2, phases_2)
+                            loss_a = loss_1 + loss_2
+                            loss_1 = criterion(outputs_1, phases_2)
+                            loss_2 = criterion(outputs_2, phases_1)
+                            loss_b = loss_1 + loss_2
+                            loss = torch.min(loss_a, loss_b)
+                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            phases_differences = phases_1 - phases_2
+                            loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                            loss = loss_c
                         loss.backward()
                         optimizer.step()
 
@@ -341,31 +383,37 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
                             inputs = recon_images
                         outputs = model(inputs).to(device)
-                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                        
-                        phases = phases.to(torch.float32)
-                        phases_1 = phases[:,0:1]
-                        phases_2 = phases[:,1:2]
-                        if i == 1:
-                            print("***********  Validation  ***********")
-                            print(outputs_1)
-                            print(outputs_2)  
-                            print(phases_1)
-                            print(phases_2)  
-                            print("***********  ***  ***********")
-                            i+=1
-                        loss_1 = criterion(outputs_1, phases_1)
-                        loss_2 = criterion(outputs_2, phases_2)
-                        loss_a = loss_1 + loss_2
-                        loss_1 = criterion(outputs_1, phases_2)
-                        loss_2 = criterion(outputs_2, phases_1)
-                        loss_b = loss_1 + loss_2
-                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        phases_differences = phases_1 - phases_2
-                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                        loss = torch.min(loss_a, loss_b)
-                        loss = loss_c
+                        if multi_hotEncoding:
+                            phases = phases.to(torch.float32)
+                            phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
+                            phases_encoded = torch.tensor(phases_encoded).to(device)
+                            loss = criterion(outputs, phases_encoded)
+                        else:
+                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                            
+                            phases = phases.to(torch.float32)
+                            phases_1 = phases[:,0:1]
+                            phases_2 = phases[:,1:2]
+                            if i == 1:
+                                print("***********  Validation  ***********")
+                                print(outputs_1)
+                                print(outputs_2)  
+                                print(phases_1)
+                                print(phases_2)  
+                                print("***********  ***  ***********")
+                                i+=1
+                            loss_1 = criterion(outputs_1, phases_1)
+                            loss_2 = criterion(outputs_2, phases_2)
+                            loss_a = loss_1 + loss_2
+                            loss_1 = criterion(outputs_1, phases_2)
+                            loss_2 = criterion(outputs_2, phases_1)
+                            loss_b = loss_1 + loss_2
+                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            phases_differences = phases_1 - phases_2
+                            loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                            loss = torch.min(loss_a, loss_b)
+                            loss = loss_c
                         
                         running_val_loss += loss.item()
                     
@@ -424,30 +472,36 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 recon_images = torch.stack(recon_images)
 
                             # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
+                                recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                                inputs = recon_images
                             outputs = model(inputs).to(device)
-                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                            if i == 0:
-                                print(outputs_1)
-                                print(outputs_2)    
-                                i+=1
-                            phases = phases.to(torch.float32)
-                            phases_1 = phases[:,0:1]
-                            phases_2 = phases[:,1:2]
-                            loss_1 = criterion(outputs_1, phases_1)
-                            loss_2 = criterion(outputs_2, phases_2)
-                            loss_a = loss_1 + loss_2
-                            loss_1 = criterion(outputs_1, phases_2)
-                            loss_2 = criterion(outputs_2, phases_1)
-                            loss_b = loss_1 + loss_2
-                            loss = torch.min(loss_a, loss_b)
+                            if multi_hotEncoding:
+                                phases = phases.to(torch.float32)
+                                phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
+                                phases_encoded = torch.tensor(phases_encoded).to(device)
+                                loss = criterion(outputs, phases_encoded)
+                            else:
+                                outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+                                outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                                if i == 0:
+                                    print(outputs_1)
+                                    print(outputs_2)    
+                                    i+=1
+                                phases = phases.to(torch.float32)
+                                phases_1 = phases[:,0:1]
+                                phases_2 = phases[:,1:2]
+                                loss_1 = criterion(outputs_1, phases_1)
+                                loss_2 = criterion(outputs_2, phases_2)
+                                loss_a = loss_1 + loss_2
+                                loss_1 = criterion(outputs_1, phases_2)
+                                loss_2 = criterion(outputs_2, phases_1)
+                                loss_b = loss_1 + loss_2
+                                loss = torch.min(loss_a, loss_b)
 
-                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                            phases_differences = phases_1 - phases_2
-                            loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                            loss = loss_c
+                                output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                                phases_differences = phases_1 - phases_2
+                                loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+                                loss = loss_c               
                             running_val_loss += loss.item()
             
                 val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
@@ -555,7 +609,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=6, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=True)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=2, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -582,7 +636,7 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08222024_Resnext18_Iradon_Ypdf_2"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08272024_Resnext34_2Hot_Ypdf_2"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     criterion = nn.MSELoss()
@@ -640,7 +694,7 @@ def main():
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False)
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
