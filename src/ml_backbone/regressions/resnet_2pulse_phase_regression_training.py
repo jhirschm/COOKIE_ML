@@ -585,7 +585,7 @@ def main():
 
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 2000
+    num_classes = 4000
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
@@ -648,7 +648,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext18_iradon_2000classes_Ypdf_4"
+    identifier = "Resnext18_iradon_4000classes_Ypdf_1"
 
     '''
     denoising
