@@ -51,43 +51,38 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = phase_values.to(torch.float32)
     return phase_values
     
-def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2*np.pi)):
+def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     """
     Converts batches of phase values into a batch of 2-hot encoded vectors.
 
     Args:
-    phases1 (np.ndarray): Batch of first phase values (shape: [batch_size]).
-    phases2 (np.ndarray): Batch of second phase values (shape: [batch_size]).
+    phases1 (torch.Tensor): Batch of first phase values (shape: [batch_size]).
+    phases2 (torch.Tensor): Batch of second phase values (shape: [batch_size]).
     n_classes (int): Number of classes for the 2-hot encoding.
     phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
 
     Returns:
-    np.ndarray: Batch of 2-hot encoded vectors (shape: [batch_size, n_classes]).
+    torch.Tensor: Batch of 2-hot encoded vectors (shape: [batch_size, n_classes]).
     """
     min_phase, max_phase = phase_range
 
-    print(phases1)
-    print(phases2)
-
-    # Check if any phase is out of the specified range
-    if not np.all((min_phase <= phases1) & (phases1 <= max_phase)):
-        raise ValueError(f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}")
-    if not np.all((min_phase <= phases2) & (phases2 <= max_phase)):
-        raise ValueError(f"Some values in phases2 are out of the specified range ({min_phase}, {max_phase}). Values: {phases2}")
+    # Ensure the phases are within the specified range
+    assert torch.all((min_phase <= phases1) & (phases1 <= max_phase)), f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}"
+    assert torch.all((min_phase <= phases2) & (phases2 <= max_phase)), f"Some values in phases2 are out of the specified range ({min_phase}, {max_phase}). Values: {phases2}"
 
     # Normalize the phases to a range from 0 to n_classes
     phases1_norm = (phases1 - min_phase) / (max_phase - min_phase)
     phases2_norm = (phases2 - min_phase) / (max_phase - min_phase)
 
     # Convert normalized phases to class indices
-    idx1 = (phases1_norm * n_classes).astype(int) % n_classes
-    idx2 = (phases2_norm * n_classes).astype(int) % n_classes
+    idx1 = (phases1_norm * n_classes).long() % n_classes
+    idx2 = (phases2_norm * n_classes).long() % n_classes
 
     # Create 2-hot encoded vectors
-    batch_size = phases1.shape[0]
-    one_hot_vectors = np.zeros((batch_size, n_classes))
-    one_hot_vectors[np.arange(batch_size), idx1] = 1
-    one_hot_vectors[np.arange(batch_size), idx2] = 1
+    batch_size = phases1.size(0)
+    one_hot_vectors = torch.zeros(batch_size, n_classes, device=phases1.device)
+    one_hot_vectors[torch.arange(batch_size), idx1] = 1
+    one_hot_vectors[torch.arange(batch_size), idx2] = 1
 
     return one_hot_vectors
 
