@@ -51,38 +51,42 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = phase_values.to(torch.float32)
     return phase_values
     
-def phase_to_2hot(phase1, phase2, n_classes, phase_range=(0, 2*np.pi)):
+def batch_phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2*np.pi)):
     """
-    Converts two phase values into a 2-hot encoded vector.
+    Converts batches of phase values into a batch of 2-hot encoded vectors.
 
     Args:
-    phase1 (float): First phase value.
-    phase2 (float): Second phase value.
+    phases1 (np.ndarray): Batch of first phase values (shape: [batch_size]).
+    phases2 (np.ndarray): Batch of second phase values (shape: [batch_size]).
     n_classes (int): Number of classes for the 2-hot encoding.
     phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
 
     Returns:
-    np.ndarray: 2-hot encoded vector of length `n_classes`.
+    np.ndarray: Batch of 2-hot encoded vectors (shape: [batch_size, n_classes]).
     """
     min_phase, max_phase = phase_range
-    assert min_phase <= phase1 <= max_phase, f"Phase1 ({phase1}) is out of the specified range ({min_phase}, {max_phase})."
-    assert min_phase <= phase2 <= max_phase, f"Phase2 ({phase2}) is out of the specified range ({min_phase}, {max_phase})."
 
+    # Check if any phase is out of the specified range
+    if not np.all((min_phase <= phases1) & (phases1 <= max_phase)):
+        raise ValueError(f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}")
+    if not np.all((min_phase <= phases2) & (phases2 <= max_phase)):
+        raise ValueError(f"Some values in phases2 are out of the specified range ({min_phase}, {max_phase}). Values: {phases2}")
 
     # Normalize the phases to a range from 0 to n_classes
-    phase1_norm = (phase1 - min_phase) / (max_phase - min_phase)
-    phase2_norm = (phase2 - min_phase) / (max_phase - min_phase)
+    phases1_norm = (phases1 - min_phase) / (max_phase - min_phase)
+    phases2_norm = (phases2 - min_phase) / (max_phase - min_phase)
 
     # Convert normalized phases to class indices
-    idx1 = int(phase1_norm * n_classes) % n_classes
-    idx2 = int(phase2_norm * n_classes) % n_classes
+    idx1 = (phases1_norm * n_classes).astype(int) % n_classes
+    idx2 = (phases2_norm * n_classes).astype(int) % n_classes
 
-    # Create 2-hot encoded vector
-    one_hot_vector = np.zeros(n_classes)
-    one_hot_vector[idx1] = 1
-    one_hot_vector[idx2] = 1
+    # Create 2-hot encoded vectors
+    batch_size = phases1.shape[0]
+    one_hot_vectors = np.zeros((batch_size, n_classes))
+    one_hot_vectors[np.arange(batch_size), idx1] = 1
+    one_hot_vectors[np.arange(batch_size), idx2] = 1
 
-    return one_hot_vector
+    return one_hot_vectors
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
