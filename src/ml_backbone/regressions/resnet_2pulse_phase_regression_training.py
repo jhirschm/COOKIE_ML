@@ -65,8 +65,9 @@ def phase_to_2hot(phase1, phase2, n_classes, phase_range=(0, 2*np.pi)):
     np.ndarray: 2-hot encoded vector of length `n_classes`.
     """
     min_phase, max_phase = phase_range
-    assert min_phase <= phase1 <= max_phase, "Phase1 is out of the specified range."
-    assert min_phase <= phase2 <= max_phase, "Phase2 is out of the specified range."
+    assert min_phase <= phase1 <= max_phase, f"Phase1 ({phase1}) is out of the specified range ({min_phase}, {max_phase})."
+    assert min_phase <= phase2 <= max_phase, f"Phase2 ({phase2}) is out of the specified range ({min_phase}, {max_phase})."
+
 
     # Normalize the phases to a range from 0 to n_classes
     phase1_norm = (phase1 - min_phase) / (max_phase - min_phase)
