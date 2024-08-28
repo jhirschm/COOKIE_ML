@@ -97,11 +97,39 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = torch.unsqueeze(phase_values, 1)
     phase_values = phase_values.to(torch.float32)
     return phase_values
+
+def decode_2hot_phases(phases, max_val):
+    """
+    Decodes 2-hot encoded phase vectors into two phase values.
+
+    Args:
+        phases (np.ndarray): A 2D numpy array where the first dimension is the number of samples
+                             and the second dimension is the number of classes. Each row contains
+                             a 2-hot encoded vector.
+        max_val (float): The maximum possible value that a phase can have.
+
+    Returns:
+        np.ndarray: A 2D array where each row contains the two decoded phase values.
+    """
+    num_samples, num_classes = phases.shape
+    decoded_phases = np.zeros((num_samples, 2))
+
+    for i in range(num_samples):
+        # Find the indices of the two hot-encoded '1's
+        hot_indices = np.where(phases[i] == 1)[0]
+        if len(hot_indices) != 2:
+            raise ValueError(f"Row {i} does not contain exactly two '1's.")
+
+        # Map the indices back to the phase values
+        decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
+        decoded_phases[i, 1] = hot_indices[1] * (max_val / num_classes)
+
+    return decoded_phases
     
 
 
 def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
-               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False):
+               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10):
     test_losses = []
     true_phase_list = []
     predicted_phase_list = []
@@ -265,9 +293,44 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
             plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
             plt.close()
 
+    predicted_phases_decoded = decode_2hot_phases(predicted_phases, max_val=2*np.pi)
+    true_phases_decoded = decode_2hot_phases(true_phases, max_val=2*np.pi)
+
+    predicted_phase_difference = predicted_phases_decoded[:, 0] - predicted_phases_decoded[:, 1]
+    true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
+
     # Calculate and print the average test loss
-    avg_test_loss = running_test_loss / len(test_dataloader)
-    print(f"Average Test Loss: {avg_test_loss:.4f}")
+    
+
+    plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
+    # Plot the values
+    plt.figure(figsize=(10, 6))
+    plt.scatter(np.abs(true_phase_difference), np.abs(predicted_phase_difference), color='blue', label='Predicted vs True')
+    plt.plot([np.abs(true_phase_difference).min(), np.abs(true_phase_difference).max()], 
+            [np.abs(true_phase_difference).min(), np.abs(true_phase_difference).max()], 
+            color='red', linestyle='--', label='Ideal Prediction')
+    plt.xlabel('True Abs Phase Differences')
+    plt.ylabel('Predicted Abs Phase Differences')
+    plt.title('True vs Predicted Phase Differences')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    plt.savefig(plot_path)
+
+    plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
+    # Plot the values
+    plt.figure(figsize=(10, 6))
+    plt.scatter(np.sin(np.abs(true_phase_difference)), np.sin(np.abs(predicted_phase_difference)), color='blue', label='Predicted vs True')
+    # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
+    #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
+    #         color='red', linestyle='--', label='Ideal Prediction')
+    plt.xlabel('Sin True Abs Phase Differences')
+    plt.ylabel('Sin Predicted Abs Phase Differences')
+    plt.title('Sin Abs True vs Predicted Phase Differences')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    plt.savefig(plot_path)
 
    
             
