@@ -63,7 +63,10 @@ def decode_2hot_to_phases(output_vector, n_classes, phase_range=(0, 2 * np.pi)):
     min_phase, max_phase = phase_range
 
     # Apply sigmoid to the output vector
+    print(output_vector)
     probabilities = np.sigmoid(output_vector)
+    print(probabilities)
+
     
     # Split the vector into two halves
     half_n_classes = n_classes // 2
