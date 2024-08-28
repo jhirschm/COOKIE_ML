@@ -87,7 +87,28 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     return one_hot_vectors
 
 def earth_mover_distance(y_pred, y_true):
-    return torch.mean(torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)), dim=-1)
+    """
+    Calculates the Earth Mover's Distance (EMD) between the cumulative sums
+    of the predicted and true distributions.
+
+    Args:
+    y_pred (torch.Tensor): The predicted logits or probabilities.
+    y_true (torch.Tensor): The true distributions (typically one-hot encoded).
+
+    Returns:
+    torch.Tensor: The computed EMD loss.
+    """
+    # Ensure both inputs are probabilities
+    y_pred_prob = torch.sigmoid(y_pred)
+    
+    # Compute the cumulative sums
+    cumsum_y_true = torch.cumsum(y_true, dim=-1)
+    cumsum_y_pred = torch.cumsum(y_pred_prob, dim=-1)
+    
+    # Calculate the squared difference between cumulative sums
+    emd_loss = torch.mean(torch.square(cumsum_y_true - cumsum_y_pred), dim=-1)
+    
+    return emd_loss
 
 def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     """
@@ -684,7 +705,7 @@ def main():
     # criterion = nn.MSELoss()
     # criterion = nn.MultiLabelSoftMarginLoss()
     # criterion = nn.BCEWithLogitsLoss()
-    criterion = earth_mover_distance()
+    criterion = earth_mover_distance
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
