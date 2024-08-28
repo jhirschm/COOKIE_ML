@@ -108,7 +108,7 @@ def earth_mover_distance(y_pred, y_true):
     # Calculate the squared difference between cumulative sums
     emd_loss = torch.mean(torch.square(cumsum_y_true - cumsum_y_pred), dim=-1)
     
-    return emd_loss
+    return torch.mean(emd_loss)
 
 def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     """
