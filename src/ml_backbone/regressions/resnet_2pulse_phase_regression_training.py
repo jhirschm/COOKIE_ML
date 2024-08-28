@@ -86,6 +86,45 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 
     return one_hot_vectors
 
+def earth_mover_distance(y_pred, y_true):
+    return torch.mean(torch.square(torch.cumsum(y_true, dim=-1) - torch.cumsum(y_pred, dim=-1)), dim=-1)
+
+def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
+    """
+    Converts batches of phase values into a batch of 2-hot encoded vectors.
+
+    Args:
+    phases1 (torch.Tensor): Batch of first phase values (shape: [batch_size]).
+    phases2 (torch.Tensor): Batch of second phase values (shape: [batch_size]).
+    n_classes (int): Number of classes for the 2-hot encoding.
+    phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
+
+    Returns:
+    torch.Tensor: Batch of 2-hot encoded vectors (shape: [batch_size, n_classes]).
+    """
+    min_phase, max_phase = phase_range
+
+    # Ensure the phases are within the specified range
+    assert torch.all((min_phase <= phases1) & (phases1 <= max_phase)), f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}"
+    assert torch.all((min_phase <= phases2) & (phases2 <= max_phase)), f"Some values in phases2 are out of the specified range ({min_phase}, {max_phase}). Values: {phases2}"
+
+    # Normalize the phases to a range from 0 to n_classes
+    phases1_norm = (phases1 - min_phase) / (max_phase - min_phase)
+    phases2_norm = (phases2 - min_phase) / (max_phase - min_phase)
+
+    # Convert normalized phases to class indices for each half of the vector
+    half_n_classes = n_classes // 2
+    idx1 = (phases1_norm * half_n_classes).long() % half_n_classes
+    idx2 = (phases2_norm * half_n_classes).long() % half_n_classes + half_n_classes
+
+    # Create 2-hot encoded vectors
+    batch_size = phases1.size(0)
+    one_hot_vectors = torch.zeros(batch_size, n_classes, device=phases1.device)
+    one_hot_vectors[torch.arange(batch_size), idx1] = 1
+    one_hot_vectors[torch.arange(batch_size), idx2] = 1
+
+    return one_hot_vectors
+
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
@@ -612,7 +651,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, test_batch=10, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=2, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -639,17 +678,18 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2Hot_Ximg_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     # criterion = nn.MSELoss()
     # criterion = nn.MultiLabelSoftMarginLoss()
-    criterion = nn.BCEWithLogitsLoss()
+    # criterion = nn.BCEWithLogitsLoss()
+    criterion = earth_mover_distance()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext18_4000classes_Ypdf_2_BCEloss"
+    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf"
 
     '''
     denoising
