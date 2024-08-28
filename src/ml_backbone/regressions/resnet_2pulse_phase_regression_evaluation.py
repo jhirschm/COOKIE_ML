@@ -113,7 +113,13 @@ def decode_2hot_phases(phases, max_val):
     """
     num_samples, num_classes = phases.shape
     decoded_phases = np.zeros((num_samples, 2))
+
     print(phases)
+    print(np.sort(phases))
+    probabilities = 1 / (1 + np.exp(-phases))
+    print(probabilities)
+    print(np.sort(probabilities))
+
     for i in range(num_samples):
         # Find the indices of the two hot-encoded '1's
         hot_indices = np.where(phases[i] == 1)[0]
