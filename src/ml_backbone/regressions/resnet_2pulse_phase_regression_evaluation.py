@@ -37,6 +37,51 @@ else:
     device = torch.device("cpu")
     print("MPS is not available. Using CPU.")
 import torch.nn.functional as F
+
+def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+
+def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
+    """
+    Converts batches of phase values into a batch of 2-hot encoded vectors.
+
+    Args:
+    phases1 (torch.Tensor): Batch of first phase values (shape: [batch_size]).
+    phases2 (torch.Tensor): Batch of second phase values (shape: [batch_size]).
+    n_classes (int): Number of classes for the 2-hot encoding.
+    phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
+
+    Returns:
+    torch.Tensor: Batch of 2-hot encoded vectors (shape: [batch_size, n_classes]).
+    """
+    min_phase, max_phase = phase_range
+
+    # Ensure the phases are within the specified range
+    assert torch.all((min_phase <= phases1) & (phases1 <= max_phase)), f"Some values in phases1 are out of the specified range ({min_phase}, {max_phase}). Values: {phases1}"
+    assert torch.all((min_phase <= phases2) & (phases2 <= max_phase)), f"Some values in phases2 are out of the specified range ({min_phase}, {max_phase}). Values: {phases2}"
+
+    # Normalize the phases to a range from 0 to n_classes
+    phases1_norm = (phases1 - min_phase) / (max_phase - min_phase)
+    phases2_norm = (phases2 - min_phase) / (max_phase - min_phase)
+
+    # Convert normalized phases to class indices
+    idx1 = (phases1_norm * n_classes).long() % n_classes
+    idx2 = (phases2_norm * n_classes).long() % n_classes
+
+    # Create 2-hot encoded vectors
+    batch_size = phases1.size(0)
+    one_hot_vectors = torch.zeros(batch_size, n_classes, device=phases1.device)
+    one_hot_vectors[torch.arange(batch_size), idx1] = 1
+    one_hot_vectors[torch.arange(batch_size), idx2] = 1
+
+    return one_hot_vectors
+
 def get_phase(outputs, num_classes, max_val=2*torch.pi):
     # Convert the model outputs to probabilities using softmax
     probabilities = F.softmax(outputs, dim=1)
@@ -182,7 +227,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         true_phases = np.vstack(true_phase_list)
         predicted_phases = np.vstack(predicted_phase_list)
 
-         print("Shapes")
+        print("Shapes")
         print(predicted_phases.shape)
         print(true_phases.shape)
 
@@ -266,31 +311,31 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
 
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=1, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=1, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
-    print(len(data_train))
+    print(len(data_test))
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data_train))
-    val_size = int(0.2 * len(data_train))
-    test_size = len(data_train) - train_size - val_size
+    train_size = 0*int(0.8 * len(data_test))
+    val_size = 0*int(0.2 * len(data_test))
+    test_size = len(data_test) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
     print(f"Validation size: {val_size}")
     print(f"Test size: {test_size}")
 
     # Perform the split
-    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+    train_dataset, val_dataset, test_dataset = random_split(data_test, [train_size, val_size, test_size])
     
     # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    # val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
@@ -298,15 +343,20 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08222024_Resnext18_Iradon_Ypdf"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08272024_Resnext34_2Hot_Ypdf_2/Resnext18_4000classes_Ypdf_2_BCEloss_best_model.pth"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08272024_Resnext34_2Hot_Ypdf_2/evaluate_outputs/"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
+    
+    identifier = "Resnext18_4000classes_Ypdf_2_BCEloss"
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    max_epochs = 200
-    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+    state_dict = torch.load(best_model_regression_path, map_location=device)
+    state_dict = remove_module_prefix(state_dict)
+    
+    model.load_state_dict(state_dict)
 
-    identifier = "Resnext18_iradon_2000classes_Ypdf_3"
+    
+
 
     '''
     denoising
@@ -356,7 +406,7 @@ def main():
 
 
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =autoencoder,
-                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=True)
+                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=True)
     
  # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
