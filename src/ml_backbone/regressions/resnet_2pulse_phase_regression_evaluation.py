@@ -1,6 +1,8 @@
 from regression_util import *
 from pulse_phase_regression import RegressionModel
 from skimage.transform import iradon
+from sklearn.metrics import precision_score, recall_score, f1_score, hamming_loss, multilabel_confusion_matrix, accuracy_score
+import seaborn as sns
 
 
 
@@ -53,469 +55,183 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     
 
 
-def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                    checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
-                    denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False):
-        train_losses = []
-        val_losses = []
-        best_val_loss = float('inf')
-        best_epoch = 0
-        start_epoch = 0
-        if denoising and denoise_model is None and zero_mask_model is None:
-            raise ValueError("Denoising is enabled but no denoising model is provided")
-        if parallel:
-            model = nn.DataParallel(model)
+def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
+               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False):
+    test_losses = []
+    true_phase_list = []
+    predicted_phase_list = []
+    running_test_loss = 0
+    model.to(device)
+
+    if denoising and denoise_model is None and zero_mask_model is None:
+        raise ValueError("Denoising is enabled but no denoising model is provided")
+    if parallel:
+        model = nn.DataParallel(model)
+        if denoising and denoise_model is not None and zero_mask_model is not None:
+            denoise_model = nn.DataParallel(denoise_model)
+            zero_mask_model = nn.DataParallel(zero_mask_model)
+            denoise_model.to(device)
+            zero_mask_model.to(device)
+    checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+
+    if inverse_radon:
+        n = 16
+        theta = np.linspace(0., 360., n, endpoint=False)
+
+        
+        
+    model.eval()  # Set the model to evaluation mode
+  
+    with torch.no_grad():
+        for batch in test_dataloader:
+            inputs, labels, phases = batch
+            inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
             if denoising and denoise_model is not None and zero_mask_model is not None:
-                denoise_model = nn.DataParallel(denoise_model)
-                zero_mask_model = nn.DataParallel(zero_mask_model)
-                denoise_model.to(device)
-                zero_mask_model.to(device)
-        model.to(device)
-        checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
-
-        if inverse_radon:
-            n = 16
-            theta = np.linspace(0., 360., n, endpoint=False)
-
-        
-        
-        # Try to load from checkpoint if it exists and resume_from_checkpoint is True
-        if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
-            checkpoint = torch.load(checkpoint_path)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            train_losses = checkpoint['train_losses']
-            val_losses = checkpoint['val_losses']
-            best_val_loss = checkpoint['best_val_loss']
-            best_epoch = checkpoint['best_epoch']
-            best_model = None
-        name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
-        with open(name, "a") as f:
-            f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
-
-            for epoch in range(start_epoch, max_epochs):
-                i = 2
-                model.train()  # Set the model to training mode
-                running_train_loss = 0.0
-
-
-                for batch in train_dataloader:
-                    optimizer.zero_grad()  # Zero the parameter gradients
-
-                    inputs, labels, phases = batch
-                    inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                    # phases = phases.to(dtype)
-                    # print(labels)
-                    if denoising and denoise_model is not None and zero_mask_model is not None:
+                        
+                denoise_model.eval()
+                zero_mask_model.eval()
                 
-                        denoise_model.eval()
-                        zero_mask_model.eval()
-                        
-                        inputs = torch.unsqueeze(inputs, 1)
-                        inputs = inputs.to(device, torch.float32)
-                        # labels = labels[0]
-                        
-                        outputs = denoise_model(inputs)
-                        outputs = outputs.squeeze()
-                        outputs = outputs.to(device)
-                        if parallel:
-                            probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                        else:
-                            probs, zero_mask  = zero_mask_model.predict(inputs)
-                        zero_mask = zero_mask.to(device)
-                        # zero mask either 0 or 1
-                        # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                        zero_mask = torch.unsqueeze(zero_mask,2)
-                        zero_mask = zero_mask.to(device, torch.float32)
+                inputs = torch.unsqueeze(inputs, 1)
+                inputs = inputs.to(device, torch.float32)
+                # labels = labels[0]
+                
+                outputs = denoise_model(inputs)
+                outputs = outputs.squeeze()
+                outputs = outputs.to(device)
+                if parallel:
+                    probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                else:
+                    probs, zero_mask  = zero_mask_model.predict(inputs)
+                zero_mask = zero_mask.to(device)
+                # zero mask either 0 or 1
+                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                zero_mask = torch.unsqueeze(zero_mask,2)
+                zero_mask = zero_mask.to(device, torch.float32)
 
-                        outputs = outputs * zero_mask
-                        inputs = torch.unsqueeze(outputs, 1)
-                        inputs = inputs.to(device, torch.float32)
+                outputs = outputs * zero_mask
+                inputs = torch.unsqueeze(outputs, 1)
+                inputs = inputs.to(device, torch.float32)
 
-                    else: 
-                        inputs = torch.unsqueeze(inputs, 1)
-                        inputs = inputs.to(device, torch.float32)
-                        
+
+            else: 
+                inputs = torch.unsqueeze(inputs, 1)
+                inputs = inputs.to(device, torch.float32)
+                            
+            if inverse_radon:
+                recon_images = []
+                transpose_inputs = torch.transpose(inputs, 2, 3)
+                for i in range(transpose_inputs.size(0)):  # Iterate over the batch
+                    # Extract the image and remove the channel dimension for processing with skimage
+                    image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+
+                    # Compute the inverse Radon transform
+                    recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
                     
-                    if inverse_radon:
-                        recon_images = []
-                        transpose_inputs = torch.transpose(inputs, 2, 3)
-                        for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                            # Extract the image and remove the channel dimension for processing with skimage
-                            image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+                    # Convert back to a PyTorch tensor and add channel dimension back
+                    recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
 
-                            # Compute the inverse Radon transform
-                            recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                            
-                            # Convert back to a PyTorch tensor and add channel dimension back
-                            recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
+                    # Add to the list of reconstructed images
+                    recon_images.append(recon_image_tensor)
+                # Stack the reconstructed images back into a batch
+                recon_images = torch.stack(recon_images)
 
-                            # Add to the list of reconstructed images
-                            recon_images.append(recon_image_tensor)
-                        # Stack the reconstructed images back into a batch
-                        recon_images = torch.stack(recon_images)
+                # Add the batch dimension back
+                recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
+                inputs = recon_images
+            outputs = model(inputs).to(device)
+            if multi_hotEncoding_eval:
+                phases = phases.to(torch.float32)
+                phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
+                phases_encoded = torch.tensor(phases_encoded).to(device)
 
-                        # Add the batch dimension back
-                        recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                        inputs = recon_images
-                    outputs = model(inputs).to(device)
-                    outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                    outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                    if i == 0:
-                        print(outputs_1)
-                        print(outputs_2)    
-                        i+=1
-                    phases = phases.to(torch.float32)
-                    phases_1 = phases[:,0:1]
-                    phases_2 = phases[:,1:2]
-                    loss_1 = criterion(outputs_1, phases_1)
-                    loss_2 = criterion(outputs_2, phases_2)
-                    loss_a = loss_1 + loss_2
-                    loss_1 = criterion(outputs_1, phases_2)
-                    loss_2 = criterion(outputs_2, phases_1)
-                    loss_b = loss_1 + loss_2
-                    loss = torch.min(loss_a, loss_b)
-                    output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                    phases_differences = phases_1 - phases_2
-                    loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                    loss = loss_c
-                    loss.backward()
-                    optimizer.step()
+                # Store the true and predicted values
+                true_phase_list.append(phases_encoded.cpu().numpy())
+                predicted_phase_list.append(outputs.cpu().numpy())
 
-                    running_train_loss += loss.item()
-                if second_train_dataloader is not None and second_denoising:
-                    for batch in train_dataloader:
-                        optimizer.zero_grad()  # Zero the parameter gradients
-
-                        inputs, labels, phases = batch
-                        inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        # phases = phases.to(model.module.dtype)
-                        # print(labels)
-                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                # Calculate test loss (using binary cross entropy)
+                loss = criterion(outputs, phases_encoded)
+                running_test_loss += loss.item()
+            # else:
+            #     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
+            #     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
+                
+            #     phases = phases.to(torch.float32)
+            #     phases_1 = phases[:,0:1]
+            #     phases_2 = phases[:,1:2]
+            #     if i == 1:
+            #         print("***********  Validation  ***********")
+            #         print(outputs_1)
+            #         print(outputs_2)  
+            #         print(phases_1)
+            #         print(phases_2)  
+            #         print("***********  ***  ***********")
+            #         i+=1
+            #     loss_1 = criterion(outputs_1, phases_1)
+            #     loss_2 = criterion(outputs_2, phases_2)
+            #     loss_a = loss_1 + loss_2
+            #     loss_1 = criterion(outputs_1, phases_2)
+            #     loss_2 = criterion(outputs_2, phases_1)
+            #     loss_b = loss_1 + loss_2
+            #     output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+            #     phases_differences = phases_1 - phases_2
+            #     loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
+            #     loss = torch.min(loss_a, loss_b)
+            #     loss = loss_c
                         
-                            denoise_model.eval()
-                            zero_mask_model.eval()
-                            
-                            inputs = torch.unsqueeze(inputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-                            # labels = labels[0]
-                            
-                            outputs = denoise_model(inputs)
-                            outputs = outputs.squeeze()
-                            outputs = outputs.to(device)
-                            if parallel:
-                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                            else:
-                                probs, zero_mask  = zero_mask_model.predict(inputs)
-                            zero_mask = zero_mask.to(device)
-                            # zero mask either 0 or 1
-                            # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                            zero_mask = torch.unsqueeze(zero_mask,2)
-                            zero_mask = zero_mask.to(device, torch.float32)
+            # After looping over the batches, flatten the lists
+        true_phases = np.vstack(true_phase_list)
+        predicted_phases = np.vstack(predicted_phase_list)
 
-                            outputs = outputs * zero_mask
-                            inputs = torch.unsqueeze(outputs, 1)
-                            inputs = inputs.to(device, torch.float32)
+         print("Shapes")
+        print(predicted_phases.shape)
+        print(true_phases.shape)
 
+        # Convert predicted logits to binary predictions
+        predicted_phases_binary = (predicted_phases > 0.5).astype(int)
+        
+        # Calculate evaluation metrics
+        exact_match_ratio = accuracy_score(true_phases, predicted_phases_binary)
+        hamming_loss_value = hamming_loss(true_phases, predicted_phases_binary)
+        precision = precision_score(true_phases, predicted_phases_binary, average='macro')
+        recall = recall_score(true_phases, predicted_phases_binary, average='macro')
+        f1 = f1_score(true_phases, predicted_phases_binary, average='macro')
+        
+        print(f"Exact Match Ratio: {exact_match_ratio:.4f}")
+        print(f"Hamming Loss: {hamming_loss_value:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
+        
+        # Calculate multilabel confusion matrix
+        multilabel_cm = multilabel_confusion_matrix(true_phases, predicted_phases_binary)
+        
+        # Aggregate confusion matrices into a summary (optional, depends on your use case)
+        summary_cm = np.sum(multilabel_cm, axis=0)
+        
+        # Plot confusion matrix for top N classes
+        top_n_classes = min(top_n_classes, num_classes)
+        for i in range(top_n_classes):
+            cm = multilabel_cm[i]
+            plt.figure(figsize=(10, 7))
+            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+            plt.title(f'Confusion Matrix for Class {i}')
+            plt.xlabel('Predicted')
+            plt.ylabel('True')
+            plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
+            plt.close()
 
-                        else: 
-                            inputs = torch.unsqueeze(inputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-                        
-                        if inverse_radon:
-                            recon_images = []
-                            transpose_inputs = torch.transpose(inputs, 2, 3)
-                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                # Extract the image and remove the channel dimension for processing with skimage
-                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+    # Calculate and print the average test loss
+    avg_test_loss = running_test_loss / len(test_dataloader)
+    print(f"Average Test Loss: {avg_test_loss:.4f}")
 
-                                # Compute the inverse Radon transform
-                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                
-                                # Convert back to a PyTorch tensor and add channel dimension back
-                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                # Add to the list of reconstructed images
-                                recon_images.append(recon_image_tensor)
-                            # Stack the reconstructed images back into a batch
-                            recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
-                        outputs = model(inputs).to(device)
-                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                        if i == 0:
-                            print(outputs_1)
-                            print(outputs_2)    
-                            i+=1
-                        phases = phases.to(torch.float32)
-                        phases_1 = phases[:,0:1]
-                        phases_2 = phases[:,1:2]
-                        loss_1 = criterion(outputs_1, phases_1)
-                        loss_2 = criterion(outputs_2, phases_2)
-                        loss_a = loss_1 + loss_2
-                        loss_1 = criterion(outputs_1, phases_2)
-                        loss_2 = criterion(outputs_2, phases_1)
-                        loss_b = loss_1 + loss_2
-                        loss = torch.min(loss_a, loss_b)
-                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        phases_differences = phases_1 - phases_2
-                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                        loss = loss_c
-                        loss.backward()
-                        optimizer.step()
-
-                    running_train_loss += loss.item()
-
-                # train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
-                train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
-
-                train_losses.append(train_loss)
-               
-
-                # Validation loop
-                model.eval()  # Set the model to evaluation mode
-                running_val_loss = 0.0
-
-                with torch.no_grad():
-                    for batch in val_dataloader:
-                        inputs, labels, phases = batch
-                        inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                        # phases = phases.to(model.module.dtype)
-                        # print(labels)
-                        if denoising and denoise_model is not None and zero_mask_model is not None:
-                        
-                            denoise_model.eval()
-                            zero_mask_model.eval()
-                            
-                            inputs = torch.unsqueeze(inputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-                            # labels = labels[0]
-                            
-                            outputs = denoise_model(inputs)
-                            outputs = outputs.squeeze()
-                            outputs = outputs.to(device)
-                            if parallel:
-                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                            else:
-                                probs, zero_mask  = zero_mask_model.predict(inputs)
-                            zero_mask = zero_mask.to(device)
-                            # zero mask either 0 or 1
-                            # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                            zero_mask = torch.unsqueeze(zero_mask,2)
-                            zero_mask = zero_mask.to(device, torch.float32)
-
-                            outputs = outputs * zero_mask
-                            inputs = torch.unsqueeze(outputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-
-
-                        else: 
-                            inputs = torch.unsqueeze(inputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-                            
-                        if inverse_radon:
-                            recon_images = []
-                            transpose_inputs = torch.transpose(inputs, 2, 3)
-                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                # Extract the image and remove the channel dimension for processing with skimage
-                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
-
-                                # Compute the inverse Radon transform
-                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                
-                                # Convert back to a PyTorch tensor and add channel dimension back
-                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                # Add to the list of reconstructed images
-                                recon_images.append(recon_image_tensor)
-                            # Stack the reconstructed images back into a batch
-                            recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
-                        outputs = model(inputs).to(device)
-                        outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                        outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                        
-                        phases = phases.to(torch.float32)
-                        phases_1 = phases[:,0:1]
-                        phases_2 = phases[:,1:2]
-                        if i == 1:
-                            print("***********  Validation  ***********")
-                            print(outputs_1)
-                            print(outputs_2)  
-                            print(phases_1)
-                            print(phases_2)  
-                            print("***********  ***  ***********")
-                            i+=1
-                        loss_1 = criterion(outputs_1, phases_1)
-                        loss_2 = criterion(outputs_2, phases_2)
-                        loss_a = loss_1 + loss_2
-                        loss_1 = criterion(outputs_1, phases_2)
-                        loss_2 = criterion(outputs_2, phases_1)
-                        loss_b = loss_1 + loss_2
-                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                        phases_differences = phases_1 - phases_2
-                        loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                        loss = torch.min(loss_a, loss_b)
-                        loss = loss_c
-                        
-                        running_val_loss += loss.item()
-                    
-                    if second_val_dataloader is not None and second_denoising:
-                        for batch in val_dataloader:
-
-                            inputs, labels, phases = batch
-                            inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
-                            # phases = phases.to(model.module.dtype)
-                            # print(labels)
-                            if second_denoising and denoise_model is not None and zero_mask_model is not None:
-                            
-                                denoise_model.eval()
-                                zero_mask_model.eval()
-                                
-                                inputs = torch.unsqueeze(inputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-                                # labels = labels[0]
-                                
-                                outputs = denoise_model(inputs)
-                                outputs = outputs.squeeze()
-                                outputs = outputs.to(device)
-                                if parallel:
-                                    probs, zero_mask  = zero_mask_model.module.predict(inputs)
-                                else:
-                                    probs, zero_mask  = zero_mask_model.predict(inputs)
-                                zero_mask = zero_mask.to(device)
-                                # zero mask either 0 or 1
-                                # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                                zero_mask = torch.unsqueeze(zero_mask,2)
-                                zero_mask = zero_mask.to(device, torch.float32)
-
-                                outputs = outputs * zero_mask
-                                inputs = torch.unsqueeze(outputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-
-                            else: 
-                                inputs = torch.unsqueeze(inputs, 1)
-                                inputs = inputs.to(device, torch.float32)
-                            if inverse_radon:
-                                recon_images = []
-                                transpose_inputs = torch.transpose(inputs, 2, 3)
-                                for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                    # Extract the image and remove the channel dimension for processing with skimage
-                                    image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
-
-                                    # Compute the inverse Radon transform
-                                    recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                    
-                                    # Convert back to a PyTorch tensor and add channel dimension back
-                                    recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                    # Add to the list of reconstructed images
-                                    recon_images.append(recon_image_tensor)
-                                # Stack the reconstructed images back into a batch
-                                recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
-                            outputs = model(inputs).to(device)
-                            outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
-                            outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
-                            if i == 0:
-                                print(outputs_1)
-                                print(outputs_2)    
-                                i+=1
-                            phases = phases.to(torch.float32)
-                            phases_1 = phases[:,0:1]
-                            phases_2 = phases[:,1:2]
-                            loss_1 = criterion(outputs_1, phases_1)
-                            loss_2 = criterion(outputs_2, phases_2)
-                            loss_a = loss_1 + loss_2
-                            loss_1 = criterion(outputs_1, phases_2)
-                            loss_2 = criterion(outputs_2, phases_1)
-                            loss_b = loss_1 + loss_2
-                            loss = torch.min(loss_a, loss_b)
-
-                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
-                            phases_differences = phases_1 - phases_2
-                            loss_c =  ((torch.cos(output_dif)-torch.cos(phases_differences))**2 + (torch.sin(output_dif)-torch.sin(phases_differences))**2).mean()
-                            loss = loss_c
-                            running_val_loss += loss.item()
+   
             
-                val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
-                # val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
-
-                val_losses.append(val_loss)
-
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-
-                # Update the scheduler
-                should_stop = scheduler.step(val_loss, epoch)
-
-                # Check if this is the best model so far
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    best_epoch = epoch
-                    best_model = model.state_dict().copy()
-
-                    # Save the best model with a specified name and path in the model_dir
-                    best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
-                    torch.save(model.state_dict(), best_model_path)
-
-                ## Save checkpoint
-                if checkpoints_enabled:
-                    checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'scheduler_state_dict': scheduler.state_dict(),
-                        'train_losses': train_losses,
-                        'val_losses': val_losses,
-                        'best_val_loss': best_val_loss,
-                        'best_epoch': best_epoch,
-                    }
-                    torch.save(checkpoint, checkpoint_path)
                 
-                # Early stopping check
-                # if scheduler.should_stop():
-                #     print(f"Early stopping at epoch {epoch+1}")
-                #     break
-                if should_stop:
-                    print(f"Early stopping at epoch {epoch+1}\n")
-                    f.write(f"Early stopping at epoch {epoch+1}\n")
-                    break
-                f.flush() # Flush the buffer to write to the file
-        # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
-        with open(run_summary_path, "w") as file:
-            file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
-            file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
-            file.write("Final Validation Loss: {:.10f}\n".format(val_losses[-1]))
+                
+                
 
-        # Plot the training and validation losses
-        plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
-        plt.legend()
-        losses_path = os.path.join(model_save_dir, identifier + "_losses.pdf")
-        plt.savefig(losses_path)
-        plt.close()
 
-        return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
-
+    return 1
 def main():
     
     dtype = torch.float32
@@ -642,10 +358,7 @@ def main():
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =autoencoder,
                 zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=True)
     
-    train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=True)
-    # print(summary(model=model, 
+ # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
     #     col_names=["input_size", "output_size", "num_params", "trainable"],
