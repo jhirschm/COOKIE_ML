@@ -113,16 +113,20 @@ def decode_2hot_phases(phases, max_val):
     """
     num_samples, num_classes = phases.shape
     decoded_phases = np.zeros((num_samples, 2))
-
+    print(phases)
     for i in range(num_samples):
         # Find the indices of the two hot-encoded '1's
         hot_indices = np.where(phases[i] == 1)[0]
-        if len(hot_indices) != 2:
+        if len(hot_indices) == 1:
+            # Map the indices back to the phase values
+            decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
+            decoded_phases[i, 1] = hot_indices[0] * (max_val / num_classes)
+        elif len(hot_indices) != 2:
             raise ValueError(f"Row {i} does not contain exactly two '1's.")
-
-        # Map the indices back to the phase values
-        decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
-        decoded_phases[i, 1] = hot_indices[1] * (max_val / num_classes)
+        else:
+            # Map the indices back to the phase values
+            decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
+            decoded_phases[i, 1] = hot_indices[1] * (max_val / num_classes)
 
     return decoded_phases
     
