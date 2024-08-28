@@ -47,6 +47,66 @@ def remove_module_prefix(state_dict):
                 new_state_dict[k] = v
         return new_state_dict
 
+def decode_2hot_to_phases(output_vector, n_classes, phase_range=(0, 2 * np.pi)):
+    """
+    Decodes the 2-hot encoded output vector into the original phase values.
+
+    Args:
+    output_vector (torch.Tensor): The prediction vector (shape: [batch_size, n_classes]).
+    n_classes (int): Number of classes (must match the encoder's n_classes).
+    phase_range (tuple): Tuple indicating the range of phase values (min_phase, max_phase).
+
+    Returns:
+    phases1 (torch.Tensor): Decoded first phase values (shape: [batch_size]).
+    phases2 (torch.Tensor): Decoded second phase values (shape: [batch_size]).
+    """
+    min_phase, max_phase = phase_range
+
+    # Apply sigmoid to the output vector
+    probabilities = np.sigmoid(output_vector)
+    
+    # Split the vector into two halves
+    half_n_classes = n_classes // 2
+    first_half = probabilities[:, :half_n_classes]
+    second_half = probabilities[:, half_n_classes:]
+
+    # Get the max index from each half (corresponding to the predicted phases)
+    idx1 = np.argmax(first_half, dim=1)
+    idx2 = np.argmax(second_half, dim=1)
+
+    # Convert indices back to phase values
+    phases1 = (idx1.float() / half_n_classes) * (max_phase - min_phase) + min_phase
+    phases2 = (idx2.float() / half_n_classes) * (max_phase - min_phase) + min_phase
+
+    output_phases = np.ndarray((phases1.shape[0], 2))
+    output_phases[:, 0] = phases1
+    output_phases[:, 1] = phases2
+    return output_phases
+
+def earth_mover_distance(y_pred, y_true):
+    """
+    Calculates the Earth Mover's Distance (EMD) between the cumulative sums
+    of the predicted and true distributions.
+
+    Args:
+    y_pred (torch.Tensor): The predicted logits or probabilities.
+    y_true (torch.Tensor): The true distributions (typically one-hot encoded).
+
+    Returns:
+    torch.Tensor: The computed EMD loss.
+    """
+    # Ensure both inputs are probabilities
+    y_pred_prob = torch.sigmoid(y_pred)
+    
+    # Compute the cumulative sums
+    cumsum_y_true = torch.cumsum(y_true, dim=-1)
+    cumsum_y_pred = torch.cumsum(y_pred_prob, dim=-1)
+    
+    # Calculate the squared difference between cumulative sums
+    emd_loss = torch.mean(torch.square(cumsum_y_true - cumsum_y_pred), dim=-1)
+    
+    return torch.mean(emd_loss)
+
 def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     """
     Converts batches of phase values into a batch of 2-hot encoded vectors.
@@ -70,9 +130,10 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     phases1_norm = (phases1 - min_phase) / (max_phase - min_phase)
     phases2_norm = (phases2 - min_phase) / (max_phase - min_phase)
 
-    # Convert normalized phases to class indices
-    idx1 = (phases1_norm * n_classes).long() % n_classes
-    idx2 = (phases2_norm * n_classes).long() % n_classes
+    # Convert normalized phases to class indices for each half of the vector
+    half_n_classes = n_classes // 2
+    idx1 = (phases1_norm * half_n_classes).long() % half_n_classes
+    idx2 = (phases2_norm * half_n_classes).long() % half_n_classes + half_n_classes
 
     # Create 2-hot encoded vectors
     batch_size = phases1.size(0)
@@ -97,45 +158,6 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
     phase_values = torch.unsqueeze(phase_values, 1)
     phase_values = phase_values.to(torch.float32)
     return phase_values
-
-def decode_2hot_phases(phases, max_val):
-    """
-    Decodes 2-hot encoded phase vectors into two phase values.
-
-    Args:
-        phases (np.ndarray): A 2D numpy array where the first dimension is the number of samples
-                             and the second dimension is the number of classes. Each row contains
-                             a 2-hot encoded vector.
-        max_val (float): The maximum possible value that a phase can have.
-
-    Returns:
-        np.ndarray: A 2D array where each row contains the two decoded phase values.
-    """
-    num_samples, num_classes = phases.shape
-    decoded_phases = np.zeros((num_samples, 2))
-
-    print(phases)
-    print(np.sort(phases))
-    probabilities = 1 / (1 + np.exp(-phases))
-    print(probabilities)
-    print(np.sort(probabilities))
-
-    for i in range(num_samples):
-        # Find the indices of the two hot-encoded '1's
-        hot_indices = np.where(phases[i] == 1)[0]
-        if len(hot_indices) == 1:
-            # Map the indices back to the phase values
-            decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
-            decoded_phases[i, 1] = hot_indices[0] * (max_val / num_classes)
-        elif len(hot_indices) != 2:
-            raise ValueError(f"Row {i} does not contain exactly two '1's.")
-        else:
-            # Map the indices back to the phase values
-            decoded_phases[i, 0] = hot_indices[0] * (max_val / num_classes)
-            decoded_phases[i, 1] = hot_indices[1] * (max_val / num_classes)
-
-    return decoded_phases
-    
 
 
 def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
@@ -303,8 +325,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
             plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
             plt.close()
 
-    predicted_phases_decoded = decode_2hot_phases(predicted_phases, max_val=2*np.pi)
-    true_phases_decoded = decode_2hot_phases(true_phases, max_val=2*np.pi)
+    predicted_phases_decoded = decode_2hot_to_phases(predicted_phases, predicted_phases.shape[1], max_val=2*np.pi)
+    true_phases_decoded = decode_2hot_to_phases(true_phases, predicted_phases.shape[1], max_val=2*np.pi)
 
     predicted_phase_difference = predicted_phases_decoded[:, 0] - predicted_phases_decoded[:, 1]
     true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
@@ -416,13 +438,13 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08272024_Resnext34_2Hot_Ypdf_2/Resnext18_4000classes_Ypdf_2_BCEloss_best_model.pth"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08272024_Resnext34_2Hot_Ypdf_2/evaluate_outputs/"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/Resnext34_2hotsplit_EMDloss_Ypdf_best_model.pth"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
-    identifier = "Resnext18_4000classes_Ypdf_2_BCEloss"
-    criterion = nn.MSELoss()
+    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf"
+    criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
     
