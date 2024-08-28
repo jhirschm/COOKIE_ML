@@ -649,7 +649,7 @@ def main():
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
-    model = resnet18(num_classes=num_classes)
+    model = resnet34(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
@@ -672,7 +672,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=2, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=8, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -708,7 +708,7 @@ def main():
     criterion = earth_mover_distance
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     max_epochs = 200
-    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
     identifier = "Resnext34_2hotsplit_EMDloss_Ypdf"
 
