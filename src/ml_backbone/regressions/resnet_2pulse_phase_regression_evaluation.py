@@ -78,8 +78,8 @@ def decode_2hot_to_phases(output_vector, n_classes, phase_range=(0, 2 * np.pi)):
     idx2 = np.argmax(second_half, axis=1)
 
     # Convert indices back to phase values
-    phases1 = (idx1.float() / half_n_classes) * (max_phase - min_phase) + min_phase
-    phases2 = (idx2.float() / half_n_classes) * (max_phase - min_phase) + min_phase
+    phases1 = (idx1.astype(float) / half_n_classes) * (max_phase - min_phase) + min_phase
+    phases2 = (idx2.astype(float) / half_n_classes) * (max_phase - min_phase) + min_phase
 
     output_phases = np.ndarray((phases1.shape[0], 2))
     output_phases[:, 0] = phases1
