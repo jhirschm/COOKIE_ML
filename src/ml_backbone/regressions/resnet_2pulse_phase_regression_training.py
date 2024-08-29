@@ -110,6 +110,30 @@ def earth_mover_distance(y_pred, y_true):
     
     return torch.mean(emd_loss)
 
+def custom_loss_function(y_pred, y_true):
+    """
+    Calculates the custom loss function between the predicted and true phase values.
+
+    Args:
+    y_pred (torch.Tensor): The predicted phase values.
+    y_true (torch.Tensor): The true phase values.
+
+    Returns:
+    torch.Tensor: The computed loss.
+    """
+    # Compute the difference between the predicted and true phase values
+    # phase_diff_pred = y_pred[:,0] - y_pred[:,1]
+    # phase_diff_true = y_true[:,0] - y_true[:,1]
+
+    # Compute the sine and cosine of the phase differences
+    cos_diff = torch.cos(y_pred)-torch.cos(y_true)
+    sin_diff = torch.sin(y_pred)-torch.sin(y_true)
+
+    # Compute the loss as the mean squared error between the sine and cosine values
+    loss = torch.mean(torch.square(cos_diff) + torch.square(sin_diff))
+
+    return loss
+
 def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
     """
     Converts batches of phase values into a batch of 2-hot encoded vectors.
@@ -149,7 +173,7 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -260,6 +284,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
                         phases_encoded = torch.tensor(phases_encoded).to(device)
                         loss = criterion(outputs, phases_encoded)
+                    elif phase_dif_pred:
+                        phases = phases.to(torch.float32)
+                        phases_dif = phases[:,0] - phases[:,1]
+                        output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                        loss = criterion(output_dif, phases_dif)
                     else:
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -351,6 +380,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
                             phases_encoded = torch.tensor(phases_encoded).to(device)
                             loss = criterion(outputs, phases_encoded)
+                        elif phase_dif_pred:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            loss = criterion(output_dif, phases_dif)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -451,6 +485,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
                             phases_encoded = torch.tensor(phases_encoded).to(device)
                             loss = criterion(outputs, phases_encoded)
+                        elif phase_dif_pred:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                            loss = criterion(output_dif, phases_dif)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -543,6 +582,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 phases_encoded = phase_to_2hot(phases[:,0], phases[:,1], num_classes)
                                 phases_encoded = torch.tensor(phases_encoded).to(device)
                                 loss = criterion(outputs, phases_encoded)
+                            elif phase_dif_pred:
+                                phases = phases.to(torch.float32)
+                                phases_dif = phases[:,0] - phases[:,1]
+                                output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                                loss = criterion(output_dif, phases_dif)
                             else:
                                 outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                                 outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -672,7 +716,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=8, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=2, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -699,18 +743,19 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_dif_Ypdf_1"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     # criterion = nn.MSELoss()
     # criterion = nn.MultiLabelSoftMarginLoss()
     # criterion = nn.BCEWithLogitsLoss()
-    criterion = earth_mover_distance
+    # criterion = earth_mover_distance
+    criterion = custom_loss_function
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_2"
+    identifier = "Resnext34_dif_Ypdf_1"
 
     '''
     denoising
@@ -760,7 +805,7 @@ def main():
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=True)
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
