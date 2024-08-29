@@ -74,8 +74,8 @@ def decode_2hot_to_phases(output_vector, n_classes, phase_range=(0, 2 * np.pi)):
     second_half = probabilities[:, half_n_classes:]
 
     # Get the max index from each half (corresponding to the predicted phases)
-    idx1 = np.argmax(first_half, dim=1)
-    idx2 = np.argmax(second_half, dim=1)
+    idx1 = np.argmax(first_half, axis=1)
+    idx2 = np.argmax(second_half, axis=1)
 
     # Convert indices back to phase values
     phases1 = (idx1.float() / half_n_classes) * (max_phase - min_phase) + min_phase
