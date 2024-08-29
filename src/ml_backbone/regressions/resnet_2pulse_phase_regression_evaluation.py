@@ -164,7 +164,7 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
 
 
 def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
-               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10):
+               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10, phase_dif_pred=False):
     test_losses = []
     true_phase_list = []
     predicted_phase_list = []
@@ -259,6 +259,15 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 # Calculate test loss (using binary cross entropy)
                 loss = criterion(outputs, phases_encoded)
                 running_test_loss += loss.item()
+            elif phase_dif_pred:
+                phases = phases.to(torch.float32)
+                phases_dif = phases[:,0] - phases[:,1]
+                output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
+                loss = criterion(output_dif, phases_dif)
+                true_phase_list.append(phases_dif.cpu().numpy())
+                predicted_phase_list.append(output_dif.cpu().numpy())
+                predicted_phase_list= np.array(predicted_phase_list)
+                true_phase_list = np.array(true_phase_list)
             # else:
             #     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
             #     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -287,52 +296,52 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
             #     loss = loss_c
                         
             # After looping over the batches, flatten the lists
-        true_phases = np.vstack(true_phase_list)
-        predicted_phases = np.vstack(predicted_phase_list)
+        # true_phases = np.vstack(true_phase_list)
+        # predicted_phases = np.vstack(predicted_phase_list)
 
-        print("Shapes")
-        print(predicted_phases.shape)
-        print(true_phases.shape)
+        # print("Shapes")
+        # print(predicted_phases.shape)
+        # print(true_phases.shape)
 
-        # Convert predicted logits to binary predictions
-        predicted_phases_binary = (predicted_phases > 0.5).astype(int)
+        # # Convert predicted logits to binary predictions
+        # predicted_phases_binary = (predicted_phases > 0.5).astype(int)
         
-        # Calculate evaluation metrics
-        exact_match_ratio = accuracy_score(true_phases, predicted_phases_binary)
-        hamming_loss_value = hamming_loss(true_phases, predicted_phases_binary)
-        precision = precision_score(true_phases, predicted_phases_binary, average='macro')
-        recall = recall_score(true_phases, predicted_phases_binary, average='macro')
-        f1 = f1_score(true_phases, predicted_phases_binary, average='macro')
+        # # Calculate evaluation metrics
+        # exact_match_ratio = accuracy_score(true_phases, predicted_phases_binary)
+        # hamming_loss_value = hamming_loss(true_phases, predicted_phases_binary)
+        # precision = precision_score(true_phases, predicted_phases_binary, average='macro')
+        # recall = recall_score(true_phases, predicted_phases_binary, average='macro')
+        # f1 = f1_score(true_phases, predicted_phases_binary, average='macro')
         
-        print(f"Exact Match Ratio: {exact_match_ratio:.4f}")
-        print(f"Hamming Loss: {hamming_loss_value:.4f}")
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1 Score: {f1:.4f}")
+        # print(f"Exact Match Ratio: {exact_match_ratio:.4f}")
+        # print(f"Hamming Loss: {hamming_loss_value:.4f}")
+        # print(f"Precision: {precision:.4f}")
+        # print(f"Recall: {recall:.4f}")
+        # print(f"F1 Score: {f1:.4f}")
         
-        # Calculate multilabel confusion matrix
-        multilabel_cm = multilabel_confusion_matrix(true_phases, predicted_phases_binary)
+        # # Calculate multilabel confusion matrix
+        # multilabel_cm = multilabel_confusion_matrix(true_phases, predicted_phases_binary)
         
-        # Aggregate confusion matrices into a summary (optional, depends on your use case)
-        summary_cm = np.sum(multilabel_cm, axis=0)
+        # # Aggregate confusion matrices into a summary (optional, depends on your use case)
+        # summary_cm = np.sum(multilabel_cm, axis=0)
         
-        # Plot confusion matrix for top N classes
-        top_n_classes = min(top_n_classes, num_classes)
-        for i in range(top_n_classes):
-            cm = multilabel_cm[i]
-            plt.figure(figsize=(10, 7))
-            sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-            plt.title(f'Confusion Matrix for Class {i}')
-            plt.xlabel('Predicted')
-            plt.ylabel('True')
-            plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
-            plt.close()
+        # # Plot confusion matrix for top N classes
+        # top_n_classes = min(top_n_classes, num_classes)
+        # for i in range(top_n_classes):
+        #     cm = multilabel_cm[i]
+        #     plt.figure(figsize=(10, 7))
+        #     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+        #     plt.title(f'Confusion Matrix for Class {i}')
+        #     plt.xlabel('Predicted')
+        #     plt.ylabel('True')
+        #     plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
+        #     plt.close()
 
-    predicted_phases_decoded = decode_2hot_to_phases(predicted_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
-    true_phases_decoded = decode_2hot_to_phases(true_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
+    # predicted_phases_decoded = decode_2hot_to_phases(predicted_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
+    # true_phases_decoded = decode_2hot_to_phases(true_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
 
-    predicted_phase_difference = predicted_phases_decoded[:, 0] - predicted_phases_decoded[:, 1]
-    true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
+    # predicted_phase_difference = predicted_phases_decoded[:, 0] - predicted_phases_decoded[:, 1]
+    # true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
 
     # Calculate and print the average test loss
     
@@ -340,9 +349,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
-    plt.scatter(np.abs(true_phase_difference), np.abs(predicted_phase_difference), color='blue', label='Predicted vs True')
-    plt.plot([np.abs(true_phase_difference).min(), np.abs(true_phase_difference).max()], 
-            [np.abs(true_phase_difference).min(), np.abs(true_phase_difference).max()], 
+    plt.scatter(np.abs(true_phase_list), np.abs(predicted_phase_list), color='blue', label='Predicted vs True')
+    plt.plot([np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
+            [np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
             color='red', linestyle='--', label='Ideal Prediction')
     plt.xlabel('True Abs Phase Differences')
     plt.ylabel('Predicted Abs Phase Differences')
@@ -355,7 +364,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
-    plt.scatter(np.sin(np.abs(true_phase_difference)), np.sin(np.abs(predicted_phase_difference)), color='blue', label='Predicted vs True')
+    plt.scatter(np.sin(np.abs(true_phase_list)), np.sin(np.abs(predicted_phase_list)), color='blue', label='Predicted vs True')
     # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         color='red', linestyle='--', label='Ideal Prediction')
