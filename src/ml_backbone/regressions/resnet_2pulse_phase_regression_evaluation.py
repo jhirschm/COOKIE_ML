@@ -328,8 +328,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
             plt.savefig(os.path.join(model_save_dir, f"{identifier}_confusion_matrix_class_{i}.png"))
             plt.close()
 
-    predicted_phases_decoded = decode_2hot_to_phases(predicted_phases, predicted_phases.shape[1], phase_range=2*np.pi)
-    true_phases_decoded = decode_2hot_to_phases(true_phases, predicted_phases.shape[1], phase_range=2*np.pi)
+    predicted_phases_decoded = decode_2hot_to_phases(predicted_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
+    true_phases_decoded = decode_2hot_to_phases(true_phases, predicted_phases.shape[1], phase_range=(0,2*np.pi))
 
     predicted_phase_difference = predicted_phases_decoded[:, 0] - predicted_phases_decoded[:, 1]
     true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
