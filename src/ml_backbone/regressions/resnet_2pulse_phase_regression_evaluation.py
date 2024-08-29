@@ -409,7 +409,7 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
 
     pulse_specification = None
 
@@ -446,7 +446,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
-    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf"
+    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
     criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
