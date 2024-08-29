@@ -684,12 +684,12 @@ def main():
 
    
     fake_input = torch.randn(1, 1, 512, 16, device=device, dtype=dtype)
-    fake_input = torch.randn(1, 1, 362, 362, device=device, dtype=dtype)
+    # fake_input = torch.randn(1, 1, 362, 362, device=device, dtype=dtype)
 
 
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 64
+    num_classes = 1024
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
@@ -711,7 +711,8 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
+    # datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
+    datapath_train = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/2-Pulse_04232024/Processed_07312024_0to1/train/"
 
     pulse_specification = None
 
