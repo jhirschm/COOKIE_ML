@@ -391,7 +391,7 @@ def main():
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
-    model = resnet18(num_classes=num_classes)
+    model = resnet34(num_classes=num_classes)
 
     model = model.to(device).to(dtype)
 
