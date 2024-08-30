@@ -422,6 +422,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.show()
     plt.savefig(plot_path)
 
+    plot_path = os.path.join(model_save_dir, identifier + "_CosTruePred.pdf")
+
     plt.figure(figsize=(10, 6))
     plt.scatter(np.cos(np.abs(true_phase_list)), np.cos(np.abs(predicted_phase_list)), color='blue', label='Predicted vs True')
     # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
