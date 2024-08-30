@@ -396,9 +396,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
-    plt.scatter((true_phase_list), (predicted_phase_list), color='blue', label='Predicted vs True')
-    plt.plot([(true_phase_list).min(), (true_phase_list).max()], 
-            [(true_phase_list).min(), (true_phase_list).max()], 
+    plt.scatter(np.abs(true_phase_list), np.abs(predicted_phase_list), color='blue', label='Predicted vs True')
+    plt.plot([np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
+            [np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
             color='red', linestyle='--', label='Ideal Prediction')
     plt.xlabel('True Abs Phase Differences')
     plt.ylabel('Predicted Abs Phase Differences')
@@ -411,7 +411,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
-    plt.scatter(np.sin(np.abs(true_phase_list)), np.sin(np.abs(predicted_phase_list)), color='blue', label='Predicted vs True')
+    plt.scatter(np.sin((true_phase_list)), np.sin((predicted_phase_list)), color='blue', label='Predicted vs True')
     # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         color='red', linestyle='--', label='Ideal Prediction')
@@ -426,7 +426,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_CosTruePred.pdf")
 
     plt.figure(figsize=(10, 6))
-    plt.scatter(np.cos(np.abs(true_phase_list)), np.cos(np.abs(predicted_phase_list)), color='blue', label='Predicted vs True')
+    plt.scatter(np.cos((true_phase_list)), np.cos((predicted_phase_list)), color='blue', label='Predicted vs True')
     # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
     #         color='red', linestyle='--', label='Ideal Prediction')
