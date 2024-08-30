@@ -198,7 +198,7 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
 
 
 def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
-               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10, phase_dif_pred=False):
+               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10, phase_dif_pred=False, phase_1hotwrapping=False):
     test_losses = []
     true_phase_list = []
     predicted_phase_list = []
@@ -302,6 +302,16 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 predicted_phase_list.append(output_dif.cpu().numpy())
                 predicted_phase_list= np.array(predicted_phase_list)
                 true_phase_list = np.array(true_phase_list)
+            elif phase_1hotwrapping:
+                phases = phases.to(torch.float32)
+                phases_dif = phases[:,0] - phases[:,1]
+                phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
+                predicted_phases_decoded = onehot_to_phase(outputs, num_classes, phase_range=(0, torch.pi))
+                loss = criterion(outputs, phases_one_hot)
+
+                true_phase_list.append(phases_dif.cpu().numpy())
+                predicted_phase_list.append(predicted_phases_decoded.cpu().numpy())
+
             # else:
             #     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
             #     outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -378,8 +388,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     # true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
 
     # Calculate and print the average test loss
-    
-
+    true_phase_list = np.array(true_phase_list)
+    predicted_phase_list = np.array(predicted_phase_list)
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
@@ -452,7 +462,7 @@ def main():
     # Input Data Paths and Output Save Paths
 
     # Load Dataset and Feed to Dataloader
-    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
 
     pulse_specification = None
 
@@ -484,12 +494,15 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/Resnext34_2hotsplit_EMDloss_Ypdf_best_model.pth"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
+    # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/Resnext34_2hotsplit_EMDloss_Ypdf_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_dif_Ypdf_1/Resnext34_dif_Ypdf_3_wrapping_best_model.pth"
+    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_dif_Ypdf_1/evaluate_outputs/"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
-    identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
+    # identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
+    identifier = "Resnext34_dif_Ypdf_3_wrapping"
     criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
