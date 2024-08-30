@@ -808,14 +808,14 @@ def main():
         if not param.requires_grad:
             print(f"Parameter {name} does not require gradients!")
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_dif_Ypdf_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     # criterion = nn.MSELoss()
     # criterion = nn.MultiLabelSoftMarginLoss()
-    # criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCEWithLogitsLoss()
     # criterion = earth_mover_distance
-    criterion = custom_loss_function
+    # criterion = custom_loss_function
     # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 

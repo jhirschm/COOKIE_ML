@@ -146,6 +146,40 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 
     return one_hot_vectors
 
+def phases_to_1hot(phase, num_classes, phase_range=(0, 2 * torch.pi)):
+    '''
+    Converts a batch of phase values to a batch of one-hot encoded vectors.
+    '''
+    min_phase, max_phase = phase_range
+    phases_norm = (phase - min_phase) / (max_phase - min_phase)
+    idx = (phases_norm * num_classes).long() % num_classes
+    one_hot_vectors = torch.zeros(phase.size(0), num_classes, device=phase.device)
+    one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
+    return one_hot_vectors
+
+def phases_to_1hot_wrapping(phase, num_classes, phase_range=(0, torch.pi)):
+    '''
+    Converts a batch of phase values to a batch of one-hot encoded vectors.
+    '''
+    min_phase, max_phase = phase_range
+    phases = torch.fmod(torch.abs(phase), torch.pi)
+    phases_norm = (phases - min_phase) / (max_phase - min_phase)
+
+    idx = (phases_norm * num_classes).long() % num_classes
+    one_hot_vectors = torch.zeros(phase.size(0), num_classes, device=phase.device)
+    one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
+    return one_hot_vectors
+
+def onehot_to_phase(one_hot_vector, num_classes, phase_range=(0, 2 * torch.pi)):
+    '''
+    Converts a batch of one-hot encoded vectors to a batch of phase values.
+    '''
+    min_phase, max_phase = phase_range
+    idx = torch.argmax(one_hot_vector, dim=1)
+    phases_norm = idx.float() / num_classes
+    phases = phases_norm * (max_phase - min_phase) + min_phase
+    return phases
+
 def get_phase(outputs, num_classes, max_val=2*torch.pi):
     # Convert the model outputs to probabilities using softmax
     probabilities = F.softmax(outputs, dim=1)
