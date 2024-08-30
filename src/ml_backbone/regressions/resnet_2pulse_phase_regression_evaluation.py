@@ -389,7 +389,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
 
     # Calculate and print the average test loss
     true_phase_list = np.array(true_phase_list)
+    print("True Phase List:", true_phase_list)
     predicted_phase_list = np.array(predicted_phase_list)
+    print("Predicted Phase List:", predicted_phase_list)
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
@@ -560,7 +562,7 @@ def main():
 
 
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =autoencoder,
-                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=True)
+                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True)
     
  # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
