@@ -162,7 +162,8 @@ def phases_to_1hot_wrapping(phase, num_classes, phase_range=(0, torch.pi)):
     Converts a batch of phase values to a batch of one-hot encoded vectors.
     '''
     min_phase, max_phase = phase_range
-    phases = torch.fmod(torch.abs(phase), torch.pi)
+    # phases = torch.fmod(torch.abs(phase), torch.pi)
+    phases = torch.arccos(torch.cos(phase)) #not including sign now
     phases_norm = (phases - min_phase) / (max_phase - min_phase)
 
     idx = (phases_norm * num_classes).long() % num_classes
@@ -395,9 +396,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
-    plt.scatter(np.abs(true_phase_list), np.abs(predicted_phase_list), color='blue', label='Predicted vs True')
-    plt.plot([np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
-            [np.abs(true_phase_list).min(), np.abs(true_phase_list).max()], 
+    plt.scatter((true_phase_list), (predicted_phase_list), color='blue', label='Predicted vs True')
+    plt.plot([(true_phase_list).min(), (true_phase_list).max()], 
+            [(true_phase_list).min(), (true_phase_list).max()], 
             color='red', linestyle='--', label='Ideal Prediction')
     plt.xlabel('True Abs Phase Differences')
     plt.ylabel('Predicted Abs Phase Differences')
@@ -513,13 +514,14 @@ def main():
 
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/Resnext34_2hotsplit_EMDloss_Ypdf_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1/Resnext34_dif_Ypdf_3_wrapping_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/Resnext34_dif_Ximg_3_wrapping_3_best_model.pth"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
     # identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
-    identifier = "Resnext34_dif_Ypdf_3_wrapping"
+    identifier = "Resnext34_dif_Ximg_3_wrapping"
     criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
