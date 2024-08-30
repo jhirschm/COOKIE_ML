@@ -422,6 +422,19 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.show()
     plt.savefig(plot_path)
 
+    plt.figure(figsize=(10, 6))
+    plt.scatter(np.cos(np.abs(true_phase_list)), np.cos(np.abs(predicted_phase_list)), color='blue', label='Predicted vs True')
+    # plt.plot([true_phase_differences_array.min(), true_phase_differences_array.max()], 
+    #         [true_phase_differences_array.min(), true_phase_differences_array.max()], 
+    #         color='red', linestyle='--', label='Ideal Prediction')
+    plt.xlabel('Cos True Abs Phase Differences')
+    plt.ylabel('Cos Predicted Abs Phase Differences')
+    plt.title('Cos Abs True vs Predicted Phase Differences')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    plt.savefig(plot_path)
+
    
             
                 
