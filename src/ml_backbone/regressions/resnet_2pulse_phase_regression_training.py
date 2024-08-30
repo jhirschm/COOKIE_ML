@@ -705,7 +705,7 @@ def main():
         print("Error:", e)
 
     # print(summary(model, input_size=(1, 1, 512, 16)))
-    seed = 42
+    seed = 40#42
     torch.manual_seed(seed)
     np.random.seed(seed)
     # Input Data Paths and Output Save Paths
