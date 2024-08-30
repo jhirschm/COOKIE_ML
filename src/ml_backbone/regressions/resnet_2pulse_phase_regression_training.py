@@ -86,6 +86,17 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 
     return one_hot_vectors
 
+def phases_to_1hot(phase, num_classes, phase_range=(0, 2 * torch.pi)):
+    '''
+    Converts a batch of phase values to a batch of one-hot encoded vectors.
+    '''
+    min_phase, max_phase = phase_range
+    phases_norm = (phase - min_phase) / (max_phase - min_phase)
+    idx = (phases_norm * num_classes).long() % num_classes
+    one_hot_vectors = torch.zeros(phase.size(0), num_classes, device=phase.device)
+    one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
+    return one_hot_vectors
+
 def earth_mover_distance(y_pred, y_true):
     """
     Calculates the Earth Mover's Distance (EMD) between the cumulative sums
@@ -173,7 +184,7 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False,phase_dif_pred_1hot=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -289,10 +300,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         phases_dif = phases[:,0] - phases[:,1]
                         output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
                         loss = criterion(output_dif, phases_dif)
-                    elif phase_dif_pred:
+                    elif phase_dif_pred_1hot:
                         phases = phases.to(torch.float32)
                         phases_dif = phases[:,0] - phases[:,1]
-                        phases_one_hot = phases_to_1hot(phases_dif, num_classes, max_val=2*torch.pi)
+                        phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
                         loss = criterion(outputs, phases_one_hot)
                     else:
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
@@ -390,6 +401,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases_dif = phases[:,0] - phases[:,1]
                             output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
                             loss = criterion(output_dif, phases_dif)
+                        elif phase_dif_pred_1hot:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
+                            loss = criterion(outputs, phases_one_hot)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -495,6 +511,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases_dif = phases[:,0] - phases[:,1]
                             output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
                             loss = criterion(output_dif, phases_dif)
+                        elif phase_dif_pred_1hot:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
+                            loss = criterion(outputs, phases_one_hot)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -592,6 +613,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 phases_dif = phases[:,0] - phases[:,1]
                                 output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
                                 loss = criterion(output_dif, phases_dif)
+                            elif phase_dif_pred_1hot:
+                                phases = phases.to(torch.float32)
+                                phases_dif = phases[:,0] - phases[:,1]
+                                phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
+                                loss = criterion(outputs, phases_one_hot)
                             else:
                                 outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                                 outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -758,7 +784,7 @@ def main():
     # criterion = earth_mover_distance
     criterion = custom_loss_function
     # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
