@@ -104,9 +104,9 @@ def phases_to_1hot_wrapping(phase, num_classes, phase_range=(0, torch.pi)):
     min_phase, max_phase = phase_range
     # phases = torch.fmod(torch.abs(phase), torch.pi)
     phases = torch.arccos(torch.cos(phase)) #not including sign now
-    # phases_norm = (phases - min_phase) / (max_phase - min_phase)
+    phases_norm = (phases - min_phase) / (max_phase - min_phase)
 
-    idx = (phases * num_classes).long() % num_classes
+    idx = (phases_norm * num_classes).long() % num_classes
     one_hot_vectors = torch.zeros(phase.size(0), num_classes, device=phase.device)
     one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
     return one_hot_vectors
