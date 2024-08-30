@@ -720,7 +720,7 @@ def main():
 
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 1024
+    num_classes = 256
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
@@ -748,7 +748,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=2, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=4, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
