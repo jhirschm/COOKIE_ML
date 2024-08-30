@@ -97,6 +97,19 @@ def phases_to_1hot(phase, num_classes, phase_range=(0, 2 * torch.pi)):
     one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
     return one_hot_vectors
 
+def phases_to_1hot_wrapping(phase, num_classes, phase_range=(0, torch.pi)):
+    '''
+    Converts a batch of phase values to a batch of one-hot encoded vectors.
+    '''
+    min_phase, max_phase = phase_range
+    phases = torch.fmod(torch.abs(phase), torch.pi)
+    phases_norm = (phases - min_phase) / (max_phase - min_phase)
+
+    idx = (phases_norm * num_classes).long() % num_classes
+    one_hot_vectors = torch.zeros(phase.size(0), num_classes, device=phase.device)
+    one_hot_vectors[torch.arange(phase.size(0)), idx] = 1
+    return one_hot_vectors
+
 def earth_mover_distance(y_pred, y_true):
     """
     Calculates the Earth Mover's Distance (EMD) between the cumulative sums
@@ -184,7 +197,7 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True,
-                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False,phase_dif_pred_1hot=False):
+                    second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False,phase_dif_pred_1hot=False, phase_dif_pred_1hot_wrapping=False):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
@@ -305,6 +318,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         phases_dif = phases[:,0] - phases[:,1]
                         phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
                         loss = criterion(outputs, phases_one_hot)
+                    elif phase_dif_pred_1hot_wrapping:
+                        phases = phases.to(torch.float32)
+                        phases_dif = phases[:,0] - phases[:,1]
+                        phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
+                        loss = criterion(outputs, phases_one_hot)
                     else:
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -405,6 +423,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases = phases.to(torch.float32)
                             phases_dif = phases[:,0] - phases[:,1]
                             phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
+                            loss = criterion(outputs, phases_one_hot)
+                        elif phase_dif_pred_1hot_wrapping:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
                             loss = criterion(outputs, phases_one_hot)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
@@ -516,6 +539,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             phases_dif = phases[:,0] - phases[:,1]
                             phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
                             loss = criterion(outputs, phases_one_hot)
+                        elif phase_dif_pred_1hot_wrapping:
+                            phases = phases.to(torch.float32)
+                            phases_dif = phases[:,0] - phases[:,1]
+                            phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
+                            loss = criterion(outputs, phases_one_hot)
                         else:
                             outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                             outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -617,6 +645,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 phases = phases.to(torch.float32)
                                 phases_dif = phases[:,0] - phases[:,1]
                                 phases_one_hot = phases_to_1hot(phases_dif, num_classes, phase_range=(0, 2 * torch.pi))
+                                loss = criterion(outputs, phases_one_hot)
+                            elif phase_dif_pred_1hot_wrapping:
+                                phases = phases.to(torch.float32)
+                                phases_dif = phases[:,0] - phases[:,1]
+                                phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
                                 loss = criterion(outputs, phases_one_hot)
                             else:
                                 outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
@@ -789,7 +822,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext34_dif_Ypdf_3"
+    identifier = "Resnext34_dif_Ypdf_3_wrapping"
 
     '''
     denoising
@@ -839,7 +872,7 @@ def main():
 
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
-                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False, phase_dif_pred_1hot=True)
+                                 denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False, phase_dif_pred_1hot=False. phase_dif_pred_1hot_wrapping=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
     #     # col_names=["input_size"], # uncomment for smaller output
