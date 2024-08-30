@@ -289,6 +289,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         phases_dif = phases[:,0] - phases[:,1]
                         output_dif = get_phase(outputs, num_classes, max_val=2*torch.pi)
                         loss = criterion(output_dif, phases_dif)
+                    elif phase_dif_pred:
+                        phases = phases.to(torch.float32)
+                        phases_dif = phases[:,0] - phases[:,1]
+                        phases_one_hot = phases_to_1hot(phases_dif, num_classes, max_val=2*torch.pi)
+                        loss = criterion(outputs, phases_one_hot)
                     else:
                         outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
                         outputs_2 = get_phase(outputs[:,outputs.shape[1]//2:], num_classes//2, max_val=2*torch.pi)
@@ -752,7 +757,9 @@ def main():
     # criterion = nn.BCEWithLogitsLoss()
     # criterion = earth_mover_distance
     criterion = custom_loss_function
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
