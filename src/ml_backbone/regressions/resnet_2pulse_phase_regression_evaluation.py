@@ -515,8 +515,10 @@ def main():
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/Resnext34_2hotsplit_EMDloss_Ypdf_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1/Resnext34_dif_Ypdf_3_wrapping_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/Resnext34_dif_Ximg_3_wrapping_3_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_best_model.pth"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
+    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
@@ -578,7 +580,7 @@ def main():
     autoencoder.load_state_dict(state_dict)
 
 
-    test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =autoencoder,
+    test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=True, denoise_model =autoencoder,
                 zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True)
     
  # print(summary(model=model, 
