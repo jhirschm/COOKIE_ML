@@ -15,8 +15,12 @@ def calculate_scaler(file_paths, scaler_save_path, scaler_name):
     Returns:
     - scaler (MinMaxScaler): The trained MinMaxScaler.
     """
-    scaler_ximg = MinMaxScaler(feature_range=(-1, 1))
-    scaler_ypdf = MinMaxScaler(feature_range=(-1, 1))
+    # scaler_ximg = MinMaxScaler(feature_range=(-1, 1))
+    # scaler_ypdf = MinMaxScaler(feature_range=(-1, 1))
+
+    scaler_ximg = MinMaxScaler(feature_range=(0, 1))
+    scaler_ypdf = MinMaxScaler(feature_range=(0, 1))
+
 
     # Check if savepath exists, and create it if it doesn't
     if not os.path.exists(scaler_save_path):
@@ -93,7 +97,7 @@ def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Process CookieSimSlim data for ML models")
     parser.add_argument("file_paths", type = str, help="Paths to the data files to process")
-    parser.add_argument("--scaler_save_path", default="scalers", help="Path to save the scalers")
+    # parser.add_argument("--scaler_save_path", default="scalers", help="Path to save the scalers")
     parser.add_argument("--scaler_name", default="min_max_scaler", help="Name to save the scaler as")
     parser.add_argument("--ximg_scaler_load_path", default="scalers/min_max_scaler_ximg.joblib", help="Path to load the Ximg scaler from")
     parser.add_argument("--ypdf_scaler_load_path", default="scalers/min_max_scaler_ypdf.joblib", help="Path to load the Ypdf scaler from")
@@ -101,6 +105,7 @@ def main():
     parser.add_argument("--energy_elements", default=512, type=int, help="Number of energy elements in the data")
     parser.add_argument("--suffix", default="_processed", help="Suffix to append to the processed data filename")
     parser.add_argument("--test_mode", default=False, help="Run in test mode")
+    parser.add_argument("--train_test_split", type=float, nargs=2, default=[1.0, 0], help="Train, validation, and test split")
     args = parser.parse_args()
 
     data_file_paths = [os.path.join(args.file_paths, file) for file in os.listdir(args.file_paths) if file.endswith('.h5')]
@@ -108,11 +113,26 @@ def main():
         data_file_paths = data_file_paths[0:1]
     print("Data File Paths:")
     print(data_file_paths)
-    # Calculate and save the scalers
-    ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(data_file_paths, args.scaler_save_path, args.scaler_name)
+    # Based on train_val_test_split, split the data into training, validation, and test sets and make subfolders in savepath for these
+    assert sum(args.train_test_split) == 1.0, "Split ratios must sum to 1."
 
-    # Load and preprocess the data
-    load_and_preprocess_data(data_file_paths, ximg_scaler_load_path, ypdf_scaler_load_path, args.savepath, args.energy_elements, args.suffix)
+    # Calculate the number of samples for each set
+    train_ratio, test_ratio = args.train_test_split
+    train_files, test_files = train_test_split(data_file_paths, test_size=(test_ratio))
+
+    # Create subfolders for train, val, and test
+    train_folder = os.path.join(args.savepath, 'train')
+    test_folder = os.path.join(args.savepath, 'test')
+    # Calculate and save the scalers
+    if train_files != []:
+        ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(train_files, train_folder, args.scaler_name)
+        load_and_preprocess_data(train_files, ximg_scaler_load_path, ypdf_scaler_load_path, train_folder, args.energy_elements, args.suffix)
+    if test_files != []:
+        ximg_scaler_load_path, ypdf_scaler_load_path = calculate_scaler(test_files, test_folder, args.scaler_name)
+        load_and_preprocess_data(test_files, ximg_scaler_load_path, ypdf_scaler_load_path, test_folder, args.energy_elements, args.suffix)
+
+    # # Load and preprocess the data
+    # load_and_preprocess_data(data_file_paths, ximg_scaler_load_path, ypdf_scaler_load_path, args.savepath, args.energy_elements, args.suffix)
 
 if __name__ == "__main__":
     main()

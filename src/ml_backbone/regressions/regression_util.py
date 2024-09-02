@@ -4,7 +4,7 @@ import sys
 import time
 import json
 
-# External library imports
+# # External library imports
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,4 +26,13 @@ import copy
 import joblib
 
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import train_test_split
+
+import datetime
+from typing import List, Any
+from torchinfo import summary
+
+def get_conv_output_size(input_size, conv_layers):
+    x = torch.randn(input_size)
+    model = nn.Sequential(*[layer for layer_pair in conv_layers for layer in layer_pair if layer is not None])
+    x = model(x)
+    return x.shape

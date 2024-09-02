@@ -36,50 +36,59 @@ def main():
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/train/"
-    # datapath_val = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/val/"
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/train/"
+    datapath_val = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024/val/"
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
+    # datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
+
     pulse_specification = None
 
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    # data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=5, zero_to_one_rescale=True)
-    # data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False)
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=5, zero_to_one_rescale=False)
-    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=5, zero_to_one_rescale=False)
+    # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=True)
+    # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=1, zero_to_one_rescale=False)
+   
+    # data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, test_batch=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=5, zero_to_one_rescale=False, phases_labeled=False, phases_labeled_max=2)
+
+
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
-    print(len(data_train))
     # Calculate the lengths for each split
-    train_size = int(0.8 * len(data_train))
-    val_size = int(0.2 * len(data_train))
-    test_size = len(data_train) - train_size - val_size
+    train_size = 0
+    val_size = 0
+    test_size = len(data_test) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
     print(f"Validation size: {val_size}")
     print(f"Test size: {test_size}")
 
     # Perform the split
-    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
-    train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
-
+    train_dataset, val_dataset, test_dataset = random_split(data_test, [train_size, val_size, test_size])
 
 
     # Create data loaders
-    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    # val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-
-    train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
-    val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
-    test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
 
     # Define the model
     # Create CustomLSTMClassifier model
+    # data = {
+    #     "hidden_size": 64,
+    #     "num_lstm_layers": 3,
+    #     "bidirectional": True,
+    #     "fc_layers": [32, 64],
+    #     "dropout": 0.2,
+    #     "lstm_dropout": 0.2,
+    #     "layerNorm": False,
+    #     # Other parameters are default or not provided in the example
+    # }   
     data = {
-        "hidden_size": 128,
+        "hidden_size": 128,#128
         "num_lstm_layers": 3,
         "bidirectional": True,
         "fc_layers": [32, 64],
@@ -106,16 +115,10 @@ def main():
         layer_norm=data['layerNorm'],
         ignore_output_layer=False  # Set as needed based on your application
     )
+    classModel.to(device)
 
-    # Define the loss function and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(classModel.parameters(), lr=0.0001)
-    max_epochs = 200
-    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
-    # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/"
-
+        # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase_temp"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -124,9 +127,33 @@ def main():
 
 
     # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
-    # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
-    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+    # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+
+    
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
+
+    # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
+    # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
+
+    # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_4/testLSTM_best_model.pth"
+    # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07262024_ypdf_0to1_5_extraClass/testLSTM_best_model.pth"
+    # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
+    state_dict = torch.load(best_mode_classifier, map_location=device)
+    def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+    state_dict = remove_module_prefix(state_dict)
+    for key in state_dict.keys():
+        print(key, state_dict[key].shape)
+    classModel.load_state_dict(state_dict)
+
     # Example usage
     encoder_layers = np.array([
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
@@ -188,31 +215,36 @@ def main():
     zero_model.load_state_dict(state_dict)
 
     identifier = "testLSTM"
+    autoencoder.to(device)
+    zero_model.to(device)
 
-   
-    classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model, second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
-    results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
-    with open(results_file, 'w') as f:
-        f.write("Model Training Results\n")
-        f.write("======================\n")
-        f.write(f"Data Path: {datapath2}\n")
-        f.write(f"Model Save Directory: {model_save_dir}\n")
-        f.write("\nModel Parameters and Hyperparameters\n")
-        f.write("-----------------------------------\n")
-        f.write(f"Patience: {scheduler.patience}\n")
-        f.write(f"Cooldown: {scheduler.cooldown}\n")
-        f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
-        f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
-        f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
-        f.write("\nModel Architecture\n")
-        f.write("------------------\n")
-        f.write(f"Encoder Layers: {encoder_layers}\n")
-        f.write(f"Decoder Layers: {decoder_layers}\n")
-        f.write("------------------\n")
-        f.write(f"LSTM Architecture: {data}\n")
-        f.write("\nAdditional Notes\n")
-        f.write("----------------\n")
-        f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+    # Calculate the total number of parameters
+    total_params = sum(param.numel() for param in classModel.parameters())
+
+    print(f'Total number of parameters: {total_params}')
+    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
+    
+    
+    # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    # with open(results_file, 'w') as f:
+    #     f.write("Model Training Results\n")
+    #     f.write("======================\n")
+    #     f.write(f"Data Path: {datapath2}\n")
+    #     f.write(f"Model Save Directory: {model_save_dir}\n")
+    #     f.write("\nModel Parameters and Hyperparameters\n")
+    #     f.write("-----------------------------------\n")
+    #     f.write(f"Patience: {scheduler.patience}\n")
+    #     f.write(f"Cooldown: {scheduler.cooldown}\n")
+    #     f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+    #     f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+    #     f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+    #     f.write("\nModel Architecture\n")
+    #     f.write("------------------\n")
+    #     f.write(f"Encoder Layers: {encoder_layers}\n")
+    #     f.write(f"Decoder Layers: {decoder_layers}\n")
+    #     f.write("\nAdditional Notes\n")
+    #     f.write("----------------\n")
+    #     f.write("First trial on S3DF for LSTM trained on denoised data.\n")
 
     
     

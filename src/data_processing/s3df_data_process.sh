@@ -9,17 +9,19 @@
 #SBATCH --mem-per-cpu=10g
 #SBATCH --time=0-10:00:00
 ##SBATCH --gpus 3
-# source ~/.bashrc
-source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
-
+source ~/conda.sh
+export PYTHONUNBUFFERED=1
+export PYTHONIOENCODING=utf-8
 # Define paths to your data files and scalers
-FILE_PATHS="/sdf/scratch/users/j/jhirschm/CookieSimSlimData/1-Pulse_03282024/"
-SCALER_SAVE_PATH="/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+FILE_PATHS="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/"
 SCALER_NAME="min_max_scaler"
-SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+SAVEPATH="/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024//Processed_07312024_0to1"
 ENERGY_ELEMENTS=512
 TEST_MODE=False
 
+TRAIN=0.9
+TEST=0.1
+
 # Run the Python script with the specified arguments
-python3 /sdf/home/j/jhirschm/COOKIE_ML/src/data_processing/universal_cookiesimslim_processor.py $FILE_PATHS --scaler_save_path $SCALER_SAVE_PATH --scaler_name $SCALER_NAME  --savepath $SAVEPATH --energy_elements $ENERGY_ELEMENTS 
+python3 /sdf/home/j/jhirschm/COOKIE_ML/src/data_processing/universal_cookiesimslim_processor.py $FILE_PATHS --scaler_name $SCALER_NAME  --savepath $SAVEPATH --energy_elements $ENERGY_ELEMENTS --train_test_split $TRAIN $TEST 
 

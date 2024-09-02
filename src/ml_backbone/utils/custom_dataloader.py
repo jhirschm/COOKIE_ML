@@ -2,8 +2,296 @@ import numpy as np
 import h5py
 import os
 import torch
+from skimage.transform import iradon
+
 from torch.utils.data import Dataset
 from torchvision import transforms
+
+
+class DataMilking_MilkCurds(Dataset):
+    '''
+    HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 
+    For example, could pull all shots from directory 1, only shots with 1 pulse from directory 2, and only shots with 2 pulses from directory 3.
+    Pulse handler expects a list of dictionaries. If nothing is provided, it will pull all shots from all directories. If dictionary provided, expects only
+    pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
+    an exception will be thrown.
+    '''
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2, inverse_radon=False): 
+        self.root_dirs = root_dirs
+        self.transform = transform
+        self.input_name = input_name
+        self.pulse_threshold = pulse_threshold
+        self.inputs_arr = []
+        self.labels_arr = []
+        self.phases_arr = []
+        self.test_batch = test_batch
+        self.phases_labeled = phases_labeled
+        self.phases_labeled_max = phases_labeled_max
+        self.inverse_radon = inverse_radon
+
+        
+        for i, root_dir in enumerate(self.root_dirs):
+            train_files = os.listdir(root_dir)
+            train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
+            if self.test_batch is not None:
+                train_files = train_files[:self.test_batch]
+
+            for file in train_files:
+                print("file: ", file)
+                with h5py.File(os.path.join(root_dir, file), 'r') as f:
+                    for shot in f.keys():
+                        # Check if exception
+                        if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None :
+                            #throw exception
+                            print("Both pulse_number and pulse_number_max specified. Only one should be specified.")
+                            exit(1)
+                        # Process all shots
+                        if pulse_handler is None or (pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is None):
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            if pulse_min_binary is not None:
+                                encode_pulses_temp = torch.zeros(2)
+                                if f[shot].attrs["npulses"] >= pulse_min_binary:
+                                    encode_pulses_temp[1] = 1
+                                else:
+                                    encode_pulses_temp[0] = 1
+                                self.labels_arr.append(encode_pulses_temp)
+                                if self.phases_labeled:
+                                    temp = np.zeros(self.phases_labeled_max)
+                                    if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phases"]*2*np.pi
+                                    else:
+                                        temp = f[shot].attrs["phases"][0:self.phases_labeled_max]*2*np.pi
+                                    self.phases_arr.append(temp)
+                            else:
+                                encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                                if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                        encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                                else:
+                                    encode_pulses_temp[self.pulse_threshold] = 1
+                                self.labels_arr.append(encode_pulses_temp)
+                                if self.phases_labeled:
+                                    temp = np.zeros(self.phases_labeled_max)
+                                    if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phases"]*2*np.pi
+                                    else:
+                                        temp = f[shot].attrs["phases"][0:self.phases_labeled_max]*2*np.pi
+                                    self.phases_arr.append(temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
+                                   
+                        # Process shots with pulse_number
+                        elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            else:
+                                encode_pulses_temp[self.pulse_threshold] = 1
+                            self.labels_arr.append(encode_pulses_temp)
+                            if self.phases_labeled:
+                                temp = np.zeros(self.phases_labeled_max)
+                                if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                else:
+                                    temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                self.phases_arr.append(temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
+                        
+                        # Process shots with pulse_number_max
+                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            # Label num pulses
+                            encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
+                            if f[shot].attrs["npulses"] <= self.pulse_threshold:
+                                    encode_pulses_temp[f[shot].attrs["npulses"]] = 1
+                            else:
+                                encode_pulses_temp[self.pulse_threshold] = 1
+                            self.labels_arr.append(encode_pulses_temp)
+                            if self.phases_labeled:
+                                temp = np.zeros(self.phases_labeled_max)
+                                if f[shot].attrs["npulses"] <= self.phases_labeled_max:
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["phase"]
+                                else:
+                                    temp = f[shot].attrs["phase"][0:self.phases_labeled_max]
+                                self.phases_arr.append(temp)
+                            # print(f[shot].attrs["npulses"])
+                            # print(encode_pulses_temp)
+
+
+        self.inputs_arr = np.array(self.inputs_arr)
+        if self.inverse_radon:
+            new_inputs_arr = []
+            n = 16
+            theta = np.linspace(0., 360.,n, endpoint=False)
+            for i in range(len(self.inputs_arr)):
+                image = np.transpose(self.inputs_arr[i])
+                rec_image = iradon(image, theta=theta, filter_name='ramp', circle = False)
+                rec_image = rec_image-np.min(rec_image)
+                rec_image = rec_image/np.max(rec_image)
+                new_inputs_arr.append(rec_image)
+            self.inputs_arr = np.array(new_inputs_arr)
+            
+        if self.phases_labeled:
+            self.phases_arr = np.array(self.phases_arr)
+        if zero_to_one_rescale:
+            self.inputs_arr = (self.inputs_arr+1)/2
+        self.labels_arr = np.array(self.labels_arr)
+
+        if len(self.labels_arr) == 1:
+            print(self.labels_arr)
+            self.labels_arr = self.labels_arr[0]
+                                
+            
+
+    def __len__(self):
+        return len(self.inputs_arr)
+
+    def __getitem__(self, idx):
+        
+        data_point = self.inputs_arr[idx]
+        labels = self.labels_arr[idx]
+        if self.phases_labeled:
+            phases = self.phases_arr[idx]
+        
+        if self.input_name == "Ypdf" or self.input_name == "Ximg": #input is an image
+            if self.transform:
+                data_point = self.transform(data_point)
+        
+        if self.phases_labeled:
+            return data_point, labels, phases
+        return data_point, labels
+class DataMilking_HalfAndHalf(Dataset):
+    '''
+    HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 
+    For example, could pull all shots from directory 1, only shots with 1 pulse from directory 2, and only shots with 2 pulses from directory 3.
+    Pulse handler expects a list of dictionaries. If nothing is provided, it will pull all shots from all directories. If dictionary provided, expects only
+    pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then th
+    thorOtherwise will throw an exception.
+    '''
+    def __init__(self, root_dirs = [], input_name="Ypdf", labels = [], pulse_handler = None, transform=None, test_batch=None): #pulse_range is [min_pulses, max_pulses]
+        self.root_dirs = root_dirs
+        self.transform = transform
+        self.input_name = input_name
+        self.labels = labels
+        self.inputs_arr = []
+        self.labels_arr = []
+        self.test_batch = test_batch
+
+        
+        for i, root_dir in enumerate(self.root_dirs):
+            train_files = os.listdir(root_dir)
+            train_files = list(filter(lambda x: x.endswith('.h5'), train_files))
+            if self.test_batch is not None:
+                train_files = train_files[:self.test_batch]
+
+            for file in train_files:
+                print("file: ", file)
+                with h5py.File(os.path.join(root_dir, file), 'r') as f:
+                    for shot in f.keys():
+                        # Check if exception
+                        if pulse_handler is not None and pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is not None:
+                            #throw exception
+                            print("Both pulse_number and pulse_number_max specified. Only one should be specified.")
+                            exit(1)
+                        # Process all shots
+                        if pulse_handler is None or (pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is None):
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            labels_temp = []
+                            for label in self.labels:
+                                
+                                if label == "Ypdf" or label == "Ximg": #label is an image
+                                    # labels_temp.append(f[shot][label][()])
+                                    labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
+                                else: #label is an attribute
+                                    labels_temp.append(f[shot].attrs[label])
+                                    print("Cast to Tensor, FIX")
+                            
+                            self.labels_arr.append(labels_temp)
+                        # Process shots with pulse_number
+                        elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            labels_temp = []
+                            for label in self.labels:
+                                
+                                if label == "Ypdf" or label == "Ximg": #label is an image
+                                    # labels_temp.append(f[shot][label][()])
+                                    labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
+                                else: #label is an attribute
+                                    labels_temp.append(f[shot].attrs[label])
+                                    print("Cast to Tensor, FIX")
+                            
+                            self.labels_arr.append(labels_temp)
+                        
+                        # Process shots with pulse_number_max
+                        elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
+                            if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
+                                self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                            else: #input is an attribute
+                                self.inputs_arr.append(f[shot].attrs[self.input_name])
+                            
+                            labels_temp = []
+                            for label in self.labels:
+                                
+                                if label == "Ypdf" or label == "Ximg": #label is an image
+                                    # labels_temp.append(f[shot][label][()])
+                                    labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
+                                else: #label is an attribute
+                                    labels_temp.append(f[shot].attrs[label])
+                                    print("Cast to Tensor, FIX")
+                            
+                            self.labels_arr.append(labels_temp)
+
+
+
+        self.inputs_arr = np.array(self.inputs_arr)
+        self.labels_arr = np.array(self.labels_arr)
+
+        if len(self.labels_arr) == 1:
+            print(self.labels_arr)
+            self.labels_arr = self.labels_arr[0]
+                                
+            
+
+    def __len__(self):
+        return len(self.inputs_arr)
+
+    def __getitem__(self, idx):
+        
+        data_point = self.inputs_arr[idx]
+        labels = self.labels_arr[idx]
+        
+        if self.input_name == "Ypdf" or self.input_name == "Ximg": #input is an image
+            if self.transform:
+                data_point = self.transform(data_point)
+                
+        if "Ypdf" in self.labels  or "Ximg" in self.labels: #label has an image
+            if self.transform:
+                labels = self.transform(labels)
+
+        return data_point, labels
 
 
 class DataMilking_SemiSkimmed(Dataset):
@@ -26,7 +314,6 @@ class DataMilking_SemiSkimmed(Dataset):
                 for shot in f.keys():
                     # print("input: ", shot)
                     # print("labels: ", list(f[shot].attrs.items()))
-                    
                     if pulse_number is not None and pulse_number_max is None and pulse_number == f[shot].attrs["npulses"] :
                         if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                             
@@ -62,15 +349,14 @@ class DataMilking_SemiSkimmed(Dataset):
                                 labels_temp.append(torch.tensor(f[shot][label][()],dtype=torch.float32))
                             else: #label is an attribute
                                 print("Not Handled")
-
+                        self.labels_arr.append(labels_temp)
                     elif pulse_number is None and pulse_number_max is None:
                         # An exception should occur
                         print("No pulse number or max pulses specified")
         
         self.inputs_arr = np.array(self.inputs_arr)
         self.labels_arr = np.array(self.labels_arr)
-        print("lengt of labels_arr: ", (self.labels_arr.shape))
-        print("lengt of inputs_arr: ", (self.inputs_arr.shape))
+
         if len(self.labels_arr) == 1:
             print(self.labels_arr)
             self.labels_arr = self.labels_arr[0]
@@ -81,9 +367,7 @@ class DataMilking_SemiSkimmed(Dataset):
         return len(self.inputs_arr)
 
     def __getitem__(self, idx):
-        print("idx: ", idx)
-        print(len(self.labels_arr))
-        print(len(self.inputs_arr))
+        
         data_point = self.inputs_arr[idx]
         labels = self.labels_arr[idx]
         

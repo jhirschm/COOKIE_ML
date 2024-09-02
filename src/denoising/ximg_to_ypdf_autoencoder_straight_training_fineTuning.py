@@ -11,7 +11,7 @@ utils_dir = os.path.abspath(os.path.join(current_dir, '..', 'ml_backbone'))
 
 # Add the utils directory to the Python path
 sys.path.append(utils_dir)
-from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed, DataMilking_HalfAndHalf
+from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed
 from utils import CustomScheduler
 
 # Check if CUDA (GPU support) is available
@@ -35,27 +35,17 @@ def main():
     # Load Dataset and Feed to Dataloader
     # datapath = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
-    datapath1 = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
-    datapath2 = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
-    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/train/"
+    # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
+    datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
+    # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
 
-    datapaths = [datapath2, datapath2]
-    pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}, {"pulse_number": 0, "pulse_number_max": None}]
-
-    datapaths = [datapath_train]
-    pulse_specification = [{"pulse_number": 1, "pulse_number_max": None}]
-    pulse_specification = [{"pulse_number": None, "pulse_number_max": 10}]
 
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
-    # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
-    # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None)
-    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None)
-
+    data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=0, input_name="Ximg", labels=["Ypdf"])
     print(len(data))
     # Calculate the lengths for each split
     train_size = int(0.8 * len(data))
-    val_size = int(0.2 * len(data))
+    val_size = int(0.1 * len(data))
     test_size = len(data) - train_size - val_size
     #print sizes of train, val, and test
     print(f"Train size: {train_size}")
@@ -77,17 +67,10 @@ def main():
         [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
-    # decoder_layers = np.array([
-    #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Tanh activation
-    #     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
-    # ])
-    #Changing back to sigmoid since normalized outputs to be 0 to 1
     decoder_layers = np.array([
         [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
         [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
 
@@ -100,22 +83,23 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
-    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/"
-
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse_fineTuned0Pulse"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder"
-    autoencoder.to(device)
-    autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs)
 
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06262024_singlePulse/testAutoencoder_best_model.pth"
+    identifier = "testAutoencoder_fineTuning0Pulse"
+    encoder_layer_indices_unfreeze = [2]  # Specify the indices of the layers to unfreeze in the encoder
+    decoder_layer_indices_unfreeze = [0]  # Specify the indices of the layers to unfreeze in the decoder
+
+    autoencoder.fine_tune(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, best_model_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")
         f.write("======================\n")
-        f.write(f"Data Path: {datapaths}\n")
+        f.write(f"Data Path: {datapath}\n")
         f.write(f"Model Save Directory: {model_save_dir}\n")
         f.write("\nModel Parameters and Hyperparameters\n")
         f.write("-----------------------------------\n")
@@ -130,7 +114,7 @@ def main():
         f.write(f"Decoder Layers: {decoder_layers}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("Training on single pulse.\n")
+        f.write("Training on single pulse. Then loading this and fine tuning on 0 pulses. \n")
 
 
     

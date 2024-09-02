@@ -28,16 +28,14 @@ export PYTHONIOENCODING=utf-8
 
 case "$1" in
     training)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_training.py
         ;;
-    fineTuning)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training_fineTuning.py
-        ;;
+    
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/pulse_phase_regression_evaluation.py
         ;;
     *)
-        echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
+        echo "Invalid script specified. Usage: sbatch this_script.sh [training|evaluation]"
         exit 1
         ;;
 esac

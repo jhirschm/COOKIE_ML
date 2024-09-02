@@ -1,9 +1,10 @@
 from classifiers_util import *
 
 class CustomLSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_lstm_layers, num_classes, bidirectional=False, fc_layers=None, dropout_p=0.5, lstm_dropout=0.2, layer_norm=False, ignore_output_layer=False):
+    def __init__(self, input_size, hidden_size, num_lstm_layers, num_classes, bidirectional=False, fc_layers=None, dropout_p=0.5, lstm_dropout=0.2, layer_norm=False, ignore_output_layer=False, ignore_fc_layers=False):
         super(CustomLSTMClassifier, self).__init__()
         self.ignore_output_layer = ignore_output_layer
+        self.ignore_fc_layers = ignore_fc_layers
 
         # LSTM layers with optional bidirectionality and dropout
         self.bidirectional = bidirectional
@@ -40,10 +41,14 @@ class CustomLSTMClassifier(nn.Module):
             out = self.layer_norm(out)
 
         # Apply fully connected layers (if defined)
-        if self.fc_layers is not None:
+        if self.fc_layers is not None and not self.ignore_fc_layers:
             out = self.fc_layers(out[:, -1, :])
             if self.ignore_output_layer:
                 return out
+        elif self.ignore_fc_layers:
+            out = out[:, -1, :] #allows model to be constructed with fc layers but then ignore them
+
+            return out
         else:
             out = out[:, -1, :]
         
@@ -76,14 +81,25 @@ class CustomLSTMClassifier(nn.Module):
 
         return nn.Sequential(*layers), fc_layers[-1]  # Last fully connected layer's output size
     
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, pre_models=None):
+    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, second_denoising=False, denoise_model = None, zero_mask_model = None, parallel=True, second_train_dataloader=None, second_val_dataloader=None):
         train_losses = []
         val_losses = []
         best_val_loss = float('inf')
         best_epoch = 0
         start_epoch = 0
-
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
+        if parallel:
+            self = nn.DataParallel(self)
+            if (denoising and denoise_model is not None or second_denoising and denoise_model is not None) and zero_mask_model is not None:
+                denoise_model = nn.DataParallel(denoise_model)
+                zero_mask_model = nn.DataParallel(zero_mask_model)
+                denoise_model.to(device)
+                zero_mask_model.to(device)
+        self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+
+        
         
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
@@ -109,25 +125,83 @@ class CustomLSTMClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
+                    labels = labels.to(device) #indexing for access to the first element of the list
+                    # print(labels)
+                    if denoising and denoise_model is not None and zero_mask_model is not None:
+                       
+                        denoise_model.eval()
+                        zero_mask_model.eval()
+                        inputs = torch.unsqueeze(inputs, 1)
+                        inputs = inputs.to(device, torch.float32)
+                        # labels = labels[0]
+                        outputs = denoise_model(inputs)
+                        outputs = outputs.squeeze()
+                        outputs = outputs.to(device)
+                        if parallel:
+                            probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                        else:
+                            probs, zero_mask  = zero_mask_model.predict(inputs)
+                        zero_mask = zero_mask.to(device)
+                        # zero mask either 0 or 1
+                        # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                        zero_mask = torch.unsqueeze(zero_mask,2)
+                        zero_mask = zero_mask.to(device, torch.float32)
 
-                    # Pass inputs through pre-trained models if provided
-                    if pre_models is not None:
-                        for model in pre_models:
-                            model.eval()  # Set pre-trained models to evaluation mode
-                            with torch.no_grad():
-                                inputs = model(inputs)
+                        outputs = outputs * zero_mask
+                        inputs = outputs.to(device, torch.float32)
 
-                    outputs = self(inputs)
+                    else: 
+                        inputs = inputs.to(device, torch.float32)
+                    
+
+                    outputs = self(inputs).to(device)
+                    # print(outputs)
                     loss = criterion(outputs, labels)
                     loss.backward()
                     optimizer.step()
 
                     running_train_loss += loss.item()
 
-                train_loss = running_train_loss / len(train_dataloader)
+
+                # Training loop with second dataloader that requires denoising
+                if second_train_dataloader is not None and second_denoising:
+                    for batch in second_train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
+
+                        inputs, labels = batch
+                        labels = labels.to(device)
+
+                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            zero_mask = torch.unsqueeze(zero_mask, 2)
+                            zero_mask = zero_mask.to(device, torch.float32)
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+                        else:
+                            inputs = inputs.to(device, torch.float32)
+
+                        outputs = self(inputs).to(device)
+                        loss = criterion(outputs, labels)
+                        loss.backward()
+                        optimizer.step()
+
+                        running_train_loss += loss.item()
+
+
+                train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
                 train_losses.append(train_loss)
+               
 
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
@@ -136,25 +210,78 @@ class CustomLSTMClassifier(nn.Module):
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
-                        inputs, labels = inputs.to(device), labels.to(device)
+                        labels = labels.to(device) #indexing for access to the first element of the list
 
-                        # Pass inputs through pre-trained models if provided
-                        if pre_models is not None:
-                            for model in pre_models:
-                                model.eval()
-                                inputs = model(inputs)
+                        if denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            # labels = labels[0]
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask  = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            # zero mask either 0 or 1
+                            # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                            zero_mask = torch.unsqueeze(zero_mask,2)
+                            zero_mask = zero_mask.to(device, torch.float32)
 
-                        outputs = self(inputs)
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+
+                        else: 
+                            inputs = inputs.to(device, torch.float32)
+                            
+
+                        outputs = self(inputs).to(device)
+                        loss = criterion(outputs, labels)
+                        running_val_loss += loss.item()
+                if second_val_dataloader is not None and second_denoising:
+                    for batch in second_train_dataloader:
+                        optimizer.zero_grad()  # Zero the parameter gradients
+
+                        inputs, labels = batch
+                        labels = labels.to(device)
+
+                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                            denoise_model.eval()
+                            zero_mask_model.eval()
+                            inputs = torch.unsqueeze(inputs, 1)
+                            inputs = inputs.to(device, torch.float32)
+                            outputs = denoise_model(inputs)
+                            outputs = outputs.squeeze()
+                            outputs = outputs.to(device)
+                            if parallel:
+                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                            else:
+                                probs, zero_mask = zero_mask_model.predict(inputs)
+                            zero_mask = zero_mask.to(device)
+                            zero_mask = torch.unsqueeze(zero_mask, 2)
+                            zero_mask = zero_mask.to(device, torch.float32)
+                            outputs = outputs * zero_mask
+                            inputs = outputs.to(device, torch.float32)
+                        else:
+                            inputs = inputs.to(device, torch.float32)
+
+                        outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
-                val_loss = running_val_loss / len(val_dataloader)
+                # val_loss = running_val_loss / len(val_dataloader)
+                val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
+
                 val_losses.append(val_loss)
 
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}")
+                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
                 # Update the scheduler
-                scheduler.step(val_loss)
+                should_stop = scheduler.step(val_loss, epoch)
 
                 # Check if this is the best model so far
                 if val_loss < best_val_loss:
@@ -166,7 +293,7 @@ class CustomLSTMClassifier(nn.Module):
                     best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
                     torch.save(self.state_dict(), best_model_path)
 
-                # Save checkpoint
+                ## Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
                         'epoch': epoch,
@@ -179,15 +306,18 @@ class CustomLSTMClassifier(nn.Module):
                         'best_epoch': best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
-
+                
                 # Early stopping check
-                if scheduler.should_stop():
-                    print(f"Early stopping at epoch {epoch+1}")
+                # if scheduler.should_stop():
+                #     print(f"Early stopping at epoch {epoch+1}")
+                #     break
+                if should_stop:
+                    print(f"Early stopping at epoch {epoch+1}\n")
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-
-
+                f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}" + "_run_summary.txt"
+        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
             file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
             file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
@@ -208,33 +338,165 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, filename, model_dir, run_summary_path, device, pre_models=None):
+    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False, two_pulse_analysis=False):
         # Lists to store true and predicted values for pulses
+        true_1_pred_1 = []
+        true_1_pred_2 = []
+        true_2_pred_1 = []
+        true_2_pred_2 = []
+        true_2_pred_3 = []
+        true_3_pred_2 = []
+        true_3_pred_3 = []
+        true_3_pred_4p = []
+
         true_pulses = []
         predicted_pulses = []
 
+        self.to(device)
+
+        if denoising and denoise_model is None and zero_mask_model is None:
+            raise ValueError("Denoising is enabled but no denoising model is provided")
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
-        for inputs, labels in test_dataloader:
-            # Move data to the GPU
-            inputs, labels = inputs.to(device), labels.to(device)
+        with torch.no_grad():
+            for loader in test_dataloader:
+                # Move data to the GPU
+                if two_pulse_analysis:
+                    inputs, labels, phases = loader
+                    inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                else:
+                    inputs, labels = loader
+                    inputs, labels = inputs.to(device), labels.to(device)
 
-            # Pass inputs through pre-trained models if provided
-            if pre_models is not None:
-                for pre_model in pre_models:
-                    pre_model.eval()  # Set pre-trained models to evaluation mode
-                    with torch.no_grad():
-                        inputs = pre_model(inputs)
+                if denoising and denoise_model is not None and zero_mask_model is not None:
+                    denoise_model.eval()
+                    zero_mask_model.eval()
+                    inputs = torch.unsqueeze(inputs, 1)
+                    inputs = inputs.to(device, torch.float32)
+                    # labels = labels[0]
+                    outputs = denoise_model(inputs)
+                    outputs = outputs.squeeze()
+                    outputs = outputs.to(device)
+                    probs, zero_mask  = zero_mask_model.predict(inputs)
+                    zero_mask = zero_mask.to(device)
+                    # zero mask either 0 or 1
+                    # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
+                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = zero_mask.to(device, torch.float32)
 
-            # Forward pass
-            outputs = self(inputs)
+                    outputs = outputs * zero_mask
 
-            # Get the predicted class (index with the highest probability)
-            _, predicted = torch.max(outputs, 1)
+                    if rescale_0to1:
+                        inputs = (inputs +1)/2 
+                    inputs = outputs.to(device, torch.float32)
 
-            true_pulses.extend(labels.cpu().numpy())
-            predicted_pulses.extend(predicted.cpu().numpy())
 
+                else: 
+                    inputs = inputs.to(device, torch.float32)
+                
+                if self.ignore_fc_layers:
+                    probs = self(inputs)
+                    return probs
+                
+                probs, preds = self.predict(inputs)
+                preds = preds.to(device)
+                probs = probs.to(device)
+                print("preds raw----------------")
+                print(preds)
+                print("probs raw----------------")
+                print(probs)
+
+
+                true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
+                print("true----------------")
+                print(true_pulse_single_label)
+                print("pred----------------")
+
+                predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
+                print(predicted_pulse_single_label)
+
+
+                true_pulses.extend(true_pulse_single_label)
+                predicted_pulses.extend(predicted_pulse_single_label)
+
+                # Two pulse analysis
+                # For all true pulses that are predicted as 1 pulse save the phases to an array. Then for entire array calculate the mean and std deviation of the absolute value of the phase difference
+                # similarly calculate mean and standard deviation of the sin of the absolute value of the phase difference
+                if two_pulse_analysis:
+                    for i in range(len(true_pulse_single_label)):
+                        true_pulse = true_pulse_single_label[i]
+                        predicted_pulse = predicted_pulse_single_label[i]
+                        
+                        if true_pulse == 2 and predicted_pulse == 1:
+                            true_2_pred_1.append(phases[i].cpu().numpy())
+                        if true_pulse == 2 and predicted_pulse == 2:
+                            true_2_pred_2.append(phases[i].cpu().numpy())
+                
+            
+                        
+
+
+        if two_pulse_analysis:
+            plot_path = os.path.join(model_dir, identifier + "_histogram_2True1Pred.pdf")
+            true_2_pred_1 = np.array(true_2_pred_1)
+            abs_phase_differences = np.abs(np.diff(true_2_pred_1, axis=1))
+            mean_phase_diff = np.mean(abs_phase_differences)
+            std_phase_diff = np.std(abs_phase_differences)
+            sin_abs_phase_diff = np.sin(abs_phase_differences%np.pi)
+            mean_sin_phase_diff = np.mean(sin_abs_phase_diff)
+            std_sin_phase_diff = np.std(sin_abs_phase_diff)
+                                        
+            print(f"Mean Phase Difference: {mean_phase_diff}")
+            print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
+            print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
+            print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
+
+
+            # Plot the histogram of the absolute phase differences
+            fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
+            ax_hist1.hist(abs_phase_differences, bins=50, color='blue', alpha=0.7)
+            ax_hist1.set_title('Histogram of Absolute Phase Differences')
+            ax_hist1.set_xlabel('Phase Difference (radians)')
+            ax_hist1.set_ylabel('Frequency')
+
+            # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
+            ax_hist2.hist(sin_abs_phase_diff, bins=50, color='green', alpha=0.7)
+            ax_hist2.set_title('Histogram of sin(phase_diff%pi)')
+            ax_hist2.set_xlabel('sin(phase_diff%pi) ')
+            ax_hist2.set_ylabel('Frequency')
+
+            plt.savefig(plot_path)
+
+            plot_path = os.path.join(model_dir, identifier + "_histogram_2True2Pred.pdf")
+            true_2_pred_2 = np.array(true_2_pred_2)
+            abs_phase_differences = np.abs(np.diff(true_2_pred_2, axis=1))
+            mean_phase_diff = np.mean(abs_phase_differences)
+            std_phase_diff = np.std(abs_phase_differences)
+            sin_abs_phase_diff = np.sin(abs_phase_differences%np.pi)
+            mean_sin_phase_diff = np.mean(sin_abs_phase_diff)
+            std_sin_phase_diff = np.std(sin_abs_phase_diff)
+                                        
+            print(f"Mean Phase Difference: {mean_phase_diff}")
+            print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
+            print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
+            print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
+
+
+            # Plot the histogram of the absolute phase differences
+            fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
+            ax_hist1.hist(abs_phase_differences, bins=50, color='blue', alpha=0.7)
+            ax_hist1.set_title('Histogram of Absolute Phase Differences')
+            ax_hist1.set_xlabel('Phase Difference (radians)')
+            ax_hist1.set_ylabel('Frequency')
+
+            # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
+            ax_hist2.hist(sin_abs_phase_diff, bins=50, color='green', alpha=0.7)
+            ax_hist2.set_title('Histogram of sin(phase_diff%pi)')
+            ax_hist2.set_xlabel('sin(phase_diff%pi) ')
+            ax_hist2.set_ylabel('Frequency')
+
+            plt.savefig(plot_path)
+                                        
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
@@ -270,13 +532,14 @@ class CustomLSTMClassifier(nn.Module):
         # Add axis labels
         plt.xlabel('Predicted')
         plt.ylabel('True')
-        plot_path = os.path.join(model_dir, filename + "_confusion_matrix.pdf")
+        plot_path = os.path.join(model_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
         plt.savefig(plot_path)
         plt.close()
 
         # Print and display metrics
         # Redirect output to the same log file used during training
+        run_summary_path = f"{model_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "a") as file:
             file.write(f"Accuracy: {accuracy:.2f}%\n")
             file.write(f"Precision: {precision:.2f}%\n")
@@ -291,7 +554,23 @@ class CustomLSTMClassifier(nn.Module):
                 file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
 
         return accuracy, precision, recall, f1, normalized_cm, plot_path
-    
+    def predict(self, x):
+        """
+        Perform binary classification prediction from logits.
+
+        Args:
+        - x (torch.Tensor): Input tensor, shape (batch_size, 512)
+
+        Returns:
+        - probabilities (torch.Tensor): Probabilities after applying sigmoid activation, shape (batch_size, 1)
+        - predictions (torch.Tensor): Binary predictions (0 or 1), shape (batch_size, 1)
+        """
+        with torch.no_grad():
+            logits = self.forward(x)
+            probabilities = torch.sigmoid(logits)
+            predictions = (probabilities > 0.5).float()
+        
+        return probabilities, predictions
     
 def create_model_from_json(json_file_path, input_size, num_classes, ignore_output_layer = True, load_weights = True):
     with open(json_file_path, 'r') as f:

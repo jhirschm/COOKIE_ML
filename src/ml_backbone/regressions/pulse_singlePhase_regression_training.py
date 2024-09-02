@@ -1,0 +1,285 @@
+from regression_util import *
+from pulse_phase_regression import RegressionModel
+
+
+
+# Get the directory of the currently running file
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the path to the utils directory relative to the current file's directory
+utils_dir = os.path.abspath(os.path.join(current_dir, '../..', 'ml_backbone'))
+classifier_dir = os.path.abspath(os.path.join(current_dir, '../../ml_backbone', 'classifiers'))
+
+denoise_dir = os.path.abspath(os.path.join(current_dir, '../..', 'denoising'))
+
+sys.path.append(utils_dir)
+sys.path.append(denoise_dir)
+sys.path.append(classifier_dir)
+from lstm_pulseNum_classifier import CustomLSTMClassifier
+from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
+
+from utils import DataMilking_Nonfat, DataMilking, DataMilking_SemiSkimmed, DataMilking_HalfAndHalf, DataMilking_MilkCurds
+from utils import CustomScheduler
+
+# Check if CUDA (GPU support) is available
+if torch.cuda.is_available():
+    print("GPU is available!")
+    device = torch.device("cuda")
+elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+    device = torch.device("mps")
+    print("MPS is available. Using GPU.")
+else:
+    device = torch.device("cpu")
+    print("MPS is not available. Using CPU.")
+# device = torch.device("cpu")
+def main():
+    seed = 42
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    # Input Data Paths and Output Save Paths
+
+    # Load Dataset and Feed to Dataloader
+    datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_07262024_0to1/train/"
+
+    pulse_specification = None
+
+
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=10, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, test_batchzero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+
+    # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
+
+    print(len(data_train))
+    # Calculate the lengths for each split
+    train_size = int(0.8 * len(data_train))
+    val_size = int(0.2 * len(data_train))
+    test_size = len(data_train) - train_size - val_size
+    #print sizes of train, val, and test
+    print(f"Train size: {train_size}")
+    print(f"Validation size: {val_size}")
+    print(f"Test size: {test_size}")
+
+    # Perform the split
+    train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
+    train_size = int(0.8 * len(data_train_2))
+    val_size = int(0.2 * len(data_train_2))
+    test_size = len(data_train_2) - train_size - val_size
+    #print sizes of train, val, and test
+    print(f"Train size: {train_size}")
+    print(f"Validation size: {val_size}")
+    print(f"Test size: {test_size}")
+    train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
+
+
+
+    # Create data loaders
+    train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+    train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
+    val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
+    test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
+
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08072024_regressionSingleLSTMTest_1/"
+    # Check if directory exists, otherwise create it
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+    
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+    best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
+    # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
+    best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_08052024_regressionSingleLSTMTest_4/regression_model_best_model.pth"
+    # Create LSTM and Denoiser Network that data will go through first before reaching regression network
+    # Define the model
+    # Create CustomLSTMClassifier model
+
+
+    # Assuming input_size and num_classes are defined elsewhere
+    input_size = 512  # Define your input size
+    num_classes = 6   # Example number of classes
+
+    
+   
+    def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+    
+    # for key in state_dict.keys():
+    #     print(key, state_dict[key].shape)
+  
+
+    # Example usage
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+   
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
+        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    ])
+
+    # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None]
+    ]
+
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    print(f"Output size after conv layers: {output_size}")
+
+    # Use the calculated size for the fully connected layer input
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
+    zero_model = Zero_PulseClassifier(conv_layers, fc_layers)
+    zero_model.to(device)
+    state_dict = torch.load(best_model_zero_mask_path, map_location=device)
+    keys_to_remove = ['side_network.0.weight', 'side_network.0.bias']
+    state_dict = {k: v for k, v in state_dict.items() if not any(key in k for key in keys_to_remove)}
+    zero_model.load_state_dict(state_dict)
+
+    autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder=True)
+    autoencoder.to(device)
+    state_dict = torch.load(best_autoencoder_model_path, map_location=device)
+    autoencoder.load_state_dict(state_dict)
+
+
+     # Example usage
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2), None],
+        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2), None]
+        ]
+   
+    conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
+    print(f"Output size after conv layers: {conv_output_size_flattened}")
+
+    #Trying LSTM 
+    fc_layers = [
+    [nn.Linear(conv_output_size_flattened, 256), nn.ReLU()],
+    [nn.Linear(256, 128), nn.ReLU()],
+    [nn.Linear(128, 32), nn.ReLU()],
+    [nn.Linear(32, 8), nn.ReLU()],
+    # [nn.Linear(32, 8), nn.ReLU()],
+    [nn.Linear(8, 1), nn.ReLU()]  
+    ]
+
+    # Define LSTM configuration
+    lstm_config = {
+        'input_size': 512,  # Example input size for LSTM
+        'hidden_size': 256,
+        'num_layers': 2,
+        'bidirectional': False
+    }
+
+    # Create the RegressionModel instance
+    regression_model = RegressionModel(fc_layers=fc_layers, 
+                            conv_layers=conv_layers,  # No convolutional layers
+                            lstm_config=None, 
+                            dtype=torch.float32, 
+                            use_dropout=False, 
+                            dropout_rate=0.1)
+    regression_model.to(device)
+    # Define the loss function and optimizer
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(regression_model.parameters(), lr=0.0001)
+    max_epochs = 200
+    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+
+    identifier = "regression_model_fromDenoising"
+    # regression_model_fromEncoder.train_model_fromDenoise(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoise_model =autoencoder, parallel=False)
+
+    identifier = "regression_model"
+    # regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+    #                              checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+    #                              denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True)
+    regression_model.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, 
+                                 denoise_model =None , zero_mask_model = None, lstm_pretrained_model = None, parallel=True, single_pulse=True, second_denoising=True,
+                                 second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
+    print(summary(model=regression_model, 
+        input_size=(32, 16, 512), # make sure this is "input_size", not "input_shape"
+        # col_names=["input_size"], # uncomment for smaller output
+        col_names=["input_size", "output_size", "num_params", "trainable"],
+        col_width=20,
+        row_settings=["var_names"]
+))
+    
+    results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    with open(results_file, 'w') as f:
+        f.write("Model Training Results\n")
+        f.write("======================\n")
+        f.write(f"Data Path: {datapath_train}\n")
+        f.write(f"Model Save Directory: {model_save_dir}\n")
+        f.write("\nData Settings\n")
+        f.write("-------------\n")
+        f.write(f"Data Path: {datapath_train}\n")
+        f.write(f"Pulse Specification: {pulse_specification}\n")
+        f.write("\nModel Parameters and Hyperparameters\n")
+        f.write("-----------------------------------\n")
+        f.write(f"Patience: {scheduler.patience}\n")
+        f.write(f"Cooldown: {scheduler.cooldown}\n")
+        f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+        f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+        f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+        f.write(f"Max Epochs: {max_epochs}\n")
+        f.write("\nModel Architecture\n")
+        f.write("------------------\n")
+
+        f.write("Denoising Model:\n")
+        f.write("  Encoder Layers:\n")
+        for layer in encoder_layers:
+            f.write(f"    {layer}\n")
+        f.write("  Decoder Layers:\n")
+        for layer in decoder_layers:
+            f.write(f"    {layer}\n")
+        f.write(f"  Model Path: {best_autoencoder_model_path}\n")
+        
+        f.write("\nZero Pulse Classifier Model:\n")
+        f.write("  Convolutional Layers:\n")
+        for layer in conv_layers:
+            f.write(f"    {layer}\n")
+        f.write("  Fully Connected Layers:\n")
+        for layer in fc_layers:
+            f.write(f"    {layer}\n")
+        f.write(f"  Model Path: {best_model_zero_mask_path}\n")
+
+        f.write("\nLSTM Classifier Model:\n")
+        for key, value in data.items():
+            f.write(f"  {key}: {value}\n")
+        f.write(f"  Model Path: {best_mode_classifier}\n")
+        f.write(f"  Removed FC Layers\n")
+        
+        f.write("\nRegression Model:\n")
+        f.write("  Fully Connected Layers:\n")
+        for layer, activation in fc_layers:
+            f.write(f"    Layer: {layer}\n")
+            if activation is not None:
+                f.write(f"    Activation: {activation}\n")
+
+        f.write("\nAdditional Notes\n")
+        f.write("----------------\n")
+        f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+
+
+        
+if __name__ == "__main__":
+    main()
