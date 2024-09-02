@@ -408,6 +408,21 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.show()
     plt.savefig(plot_path)
 
+    plot_path = os.path.join(model_save_dir, identifier + "_ArccosCosTruePred.pdf")
+    # Plot the values
+    plt.figure(figsize=(10, 6))
+    plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
+    plt.plot([np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+            [np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+            color='red', linestyle='--', label='Ideal Prediction')
+    plt.xlabel('True ArccosCos Phase Differences')
+    plt.ylabel('Predicted Phase Differences')
+    plt.title('ArccosCos True vs Predicted Phase Differences')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    plt.savefig(plot_path)
+
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
     plt.figure(figsize=(10, 6))
