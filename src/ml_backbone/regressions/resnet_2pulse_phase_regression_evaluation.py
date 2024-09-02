@@ -473,7 +473,7 @@ def main():
 
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
-    num_classes = 1024
+    num_classes = 4000#1024
     # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet50(num_classes=num_classes)
