@@ -116,7 +116,7 @@ def main():
     print(summary(classifier, input_size=(1, 1, 512, 16)))
 
     classifier.to(device)
-    classifier.eval_model(test_dataloader, criterion, model_save_dir, identifier, device)
+    classifier.evaluate_model(test_dataloader, criterion, model_save_dir, identifier, device)
 
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
