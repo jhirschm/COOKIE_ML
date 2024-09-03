@@ -110,7 +110,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder_4"
+    identifier = "autoencoder_5"
     autoencoder.to(device)
     # Get detailed GPU information if using CUDA
     if device.type == 'cuda':
