@@ -27,7 +27,7 @@ else:
 
 def main():
 
-    seed = 40#42
+    seed = 42
     torch.manual_seed(seed)
     np.random.seed(seed)
     # Input Data Paths and Output Save Paths
@@ -51,7 +51,7 @@ def main():
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None)
-    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = None, test_batch=5, input_name="Ximg", labels=["Ypdf"],transform=None)
+    data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None)
 
     print(len(data))
     # Calculate the lengths for each split
@@ -110,7 +110,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder_3"
+    identifier = "autoencoder_4"
     autoencoder.to(device)
     # Get detailed GPU information if using CUDA
     if device.type == 'cuda':
