@@ -254,9 +254,12 @@ class Zero_PulseClassifier(nn.Module):
         # f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
         # Confusion matrix
         cm = confusion_matrix(true_pulses, predicted_pulses)
-
+        print(true_pulses)
+        print(predicted_pulses)
+        print(cm)
         # Normalize the confusion matrix based on percentages
         row_sums = cm.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1
         normalized_cm = cm / row_sums.astype(float) * 100
 
         # Create class labels based on the number of classes
