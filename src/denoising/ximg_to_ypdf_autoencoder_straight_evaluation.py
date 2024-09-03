@@ -47,7 +47,7 @@ def main():
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=None)
-    data = DataMilking_HalfAndHalf(root_dirs=[datapath_test], pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
+    data = DataMilking_HalfAndHalf(root_dirs=[datapath_test], pulse_handler = None, test_batch=1, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
 
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number_max=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
@@ -117,6 +117,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/outputs_fromEvenDist/"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09022024_multiPulse_final/autoencoder_best_model.pth"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_3/autoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
