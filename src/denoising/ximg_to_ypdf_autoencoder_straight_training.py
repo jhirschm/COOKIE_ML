@@ -124,6 +124,7 @@ def main():
         device_info = 'MPS (Apple Silicon GPU)'
     else:
         device_info = 'CPU'
+    print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     print(f"Using device: {device_info}")
     autoencoder.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs)
@@ -176,6 +177,7 @@ def main():
         f.write(f"Data handled using DataMilking_HalfAndHalf with no pulse handler.\n")
         f.write(f"Batch Size: {train_dataloader.batch_size}\n")
         f.write(f"Train Size: {train_size}, Validation Size: {val_size}, Test Size: {test_size}\n")
+        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     print(f"Training completed. Results saved to {results_file}")
 

@@ -139,6 +139,7 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
+    print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     identifier = "testAutoencoder_eval"
     autoencoder.evaluate_model(test_dataloader, criterion, device, save_results=True, results_dir=model_save_dir, results_filename=f"{identifier}_results.h5", zero_masking = True, zero_masking_model=classifier)
@@ -157,6 +158,7 @@ def main():
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
         f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses.\n")
+        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     
     
