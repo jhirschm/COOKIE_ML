@@ -320,6 +320,8 @@ class Zero_PulseClassifier(nn.Module):
     
         plot_path = os.path.join(model_save_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
         plt.savefig(plot_path)
         plt.close()
 
