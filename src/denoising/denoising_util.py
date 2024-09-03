@@ -28,3 +28,5 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 import datetime
+from torchinfo import summary
+

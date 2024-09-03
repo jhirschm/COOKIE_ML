@@ -231,24 +231,24 @@ class Zero_PulseClassifier(nn.Module):
                         
                 outputs = self(inputs).to(device)
                 predictions = torch.round(outputs).cpu().numpy()
-                print(predictions)
+                # print(predictions)
                 labels = labels[:,1:].to(device)
-                print("labels")
-                print(labels)
+                # print("labels")
+                # print(labels)
 
                 true_pulses.extend(labels.cpu().numpy())
                 predicted_pulses.extend(predictions)
 
         true_pulses = np.array(true_pulses)
         predicted_pulses = np.array(predicted_pulses)
-        print(np.sum(true_pulses))
-        print(np.sum(predicted_pulses))
+        # print(np.sum(true_pulses))
+        # print(np.sum(predicted_pulses))
 
 
         num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
-        print(accuracy)
+        # print(accuracy)
         # precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
         # recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
         # f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
