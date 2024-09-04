@@ -91,7 +91,7 @@ def main():
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
-    num_classes = 6   # Example number of classes
+    num_classes = 5   # Example number of classes
 
     # Instantiate the CustomLSTMClassifier
     classModel = CustomLSTMClassifier(
@@ -115,6 +115,7 @@ def main():
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09042024_5classCase/"
 
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
@@ -126,6 +127,7 @@ def main():
     # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/autoencoder_5_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     # Example usage
     encoder_layers = np.array([
@@ -189,14 +191,50 @@ def main():
 
     identifier = "testLSTM"
 
-   
+    if device.type == 'cuda':
+        gpu_name = torch.cuda.get_device_name(0)
+        num_gpus = torch.cuda.device_count()
+        gpu_memory_total = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)  # Convert to GB
+        gpu_memory_reserved = torch.cuda.memory_reserved(0) / (1024 ** 3)  # Convert to GB
+        gpu_memory_allocated = torch.cuda.memory_allocated(0) / (1024 ** 3)  # Convert to GB
+        device_info = f"{gpu_name} (Total GPUs: {num_gpus}, Total Memory: {gpu_memory_total:.2f} GB, " \
+                    f"Reserved Memory: {gpu_memory_reserved:.2f} GB, Allocated Memory: {gpu_memory_allocated:.2f} GB)"
+    elif device.type == 'mps':
+        device_info = 'MPS (Apple Silicon GPU)'
+    else:
+        device_info = 'CPU'
+
+    print(f"Using device: {device_info}")
     classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model, second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
+    # with open(results_file, 'w') as f:
+    #     f.write("Model Training Results\n")
+    #     f.write("======================\n")
+    #     f.write(f"Data Path: {datapath2}\n")
+    #     f.write(f"Model Save Directory: {model_save_dir}\n")
+    #     f.write("\nModel Parameters and Hyperparameters\n")
+    #     f.write("-----------------------------------\n")
+    #     f.write(f"Patience: {scheduler.patience}\n")
+    #     f.write(f"Cooldown: {scheduler.cooldown}\n")
+    #     f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
+    #     f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
+    #     f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
+    #     f.write("\nModel Architecture\n")
+    #     f.write("------------------\n")
+    #     f.write(f"Encoder Layers: {encoder_layers}\n")
+    #     f.write(f"Decoder Layers: {decoder_layers}\n")
+    #     f.write("------------------\n")
+    #     f.write(f"LSTM Architecture: {data}\n")
+    #     f.write("\nAdditional Notes\n")
+    #     f.write("----------------\n")
+    #     f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+
     with open(results_file, 'w') as f:
         f.write("Model Training Results\n")
         f.write("======================\n")
-        f.write(f"Data Path: {datapath2}\n")
+        f.write(f"Data Path: {datapath_train}\n")
         f.write(f"Model Save Directory: {model_save_dir}\n")
+        f.write(f"Device Used: {device_info}\n")
         f.write("\nModel Parameters and Hyperparameters\n")
         f.write("-----------------------------------\n")
         f.write(f"Patience: {scheduler.patience}\n")
@@ -204,16 +242,40 @@ def main():
         f.write(f"Learning Rate Reduction Factor: {scheduler.lr_reduction_factor}\n")
         f.write(f"Improvement Percentage: {scheduler.improvement_percentage}\n")
         f.write(f"Initial Learning Rate: {optimizer.param_groups[0]['lr']}\n")
-        f.write("\nModel Architecture\n")
+        f.write(f"Zero Mask Model: {best_model_zero_mask_path}\n")
+        f.write(f"Autoencoder Model: {best_autoencoder_model_path}\n")
+        f.write("\nZero Mask Model Architecture\n")
         f.write("------------------\n")
-        f.write(f"Encoder Layers: {encoder_layers}\n")
-        f.write(f"Decoder Layers: {decoder_layers}\n")
+        f.write("Convolutional Layers:\n")
+        for layer in conv_layers:
+            f.write(f"{layer}\n")
+        f.write("Fully Connected Layers:\n")
+        for layer in fc_layers:
+            f.write(f"{layer}\n")
+        f.write("\nAutoencoder Architecture\n")
+        f.write("------------------\n")
+        f.write("Encoder Layers:\n")
+        for layer in encoder_layers:
+            f.write(f"{layer}\n")
+        f.write("Decoder Layers:\n")
+        for layer in decoder_layers:
+            f.write(f"{layer}\n")
+        f.write("\nClassifier Architecture\n")
         f.write("------------------\n")
         f.write(f"LSTM Architecture: {data}\n")
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
-        f.write("LSTM trained on YPDF making sure images between 0 and 1 (instead of -1 to 1). No denoising on Ypdf. Denoising Ximg.\n")
+        f.write("Training on even distribution but on both Ypdf and Ximg.\n")
+        f.write(f"Total Training Epochs: {max_epochs}\n")
+        f.write(f"Data handled using DataMilking_HalfAndHalf with no pulse handler.\n")
+        f.write(f"Batch Size: {train_dataloader.batch_size}\n")
+        f.write(f"Train Size: {train_size}, Validation Size: {val_size}, Test Size: {test_size}\n")
+        f.write(f"Second Data handled using DataMilking_HalfAndHalf with no pulse handler.\n")
+        f.write(f"Second Batch Size: {train_dataloader_2.batch_size}\n")
+        f.write(f"Second Train Size: {train_size}, Second Validation Size: {val_size}, Second Test Size: {test_size}\n")
+        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
+    print(f"Training completed. Results saved to {results_file}")
     
     
 if __name__ == "__main__":
