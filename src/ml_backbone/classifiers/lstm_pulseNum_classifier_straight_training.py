@@ -127,8 +127,10 @@ def main():
 
     # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
-    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+    # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
     best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/autoencoder_5_best_model.pth"
+    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     # Example usage
     encoder_layers = np.array([
@@ -190,7 +192,7 @@ def main():
 
     zero_model.load_state_dict(state_dict)
 
-    identifier = "testLSTM"
+    identifier = "testLSTM_oldDenoise"
 
     if device.type == 'cuda':
         gpu_name = torch.cuda.get_device_name(0)
