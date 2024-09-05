@@ -99,18 +99,18 @@ def main():
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=0.0005)
     max_epochs = 200
-    scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+    scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 9, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09042024_multiPulse_final/"
 
 
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder_5"
+    identifier = "autoencoder_6"
     autoencoder.to(device)
     # Get detailed GPU information if using CUDA
     if device.type == 'cuda':
