@@ -192,7 +192,7 @@ def main():
 
     zero_model.load_state_dict(state_dict)
 
-    identifier = "testLSTM_oldDenoise"
+    identifier = "testLSTM_XimgDenoised"
 
     if device.type == 'cuda':
         gpu_name = torch.cuda.get_device_name(0)
