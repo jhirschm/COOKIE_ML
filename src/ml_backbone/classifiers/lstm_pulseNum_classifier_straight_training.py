@@ -46,9 +46,9 @@ def main():
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=5, zero_to_one_rescale=True)
     # data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False)
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False)
+    # data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False)
     data_train_2 = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False)
-
+    data_train = data_train_2
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
     print(len(data_train))
@@ -63,7 +63,7 @@ def main():
 
     # Perform the split
     train_dataset, val_dataset, test_dataset = random_split(data_train, [train_size, val_size, test_size])
-    train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
+    # train_dataset_2, val_dataset_2, test_dataset_2 = random_split(data_train_2, [train_size, val_size, test_size])
 
 
 
@@ -72,9 +72,9 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
-    train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
-    val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
-    test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
+    # train_dataloader_2 = DataLoader(train_dataset_2, batch_size=32, shuffle=True)
+    # val_dataloader_2 = DataLoader(val_dataset_2, batch_size=32, shuffle=False)
+    # test_dataloader_2 = DataLoader(test_dataset_2, batch_size=32, shuffle=False)
 
 
     # Define the model
@@ -129,7 +129,7 @@ def main():
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
     best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/autoencoder_5_best_model.pth"
-    best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
+    # best_autoencoder_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_singlePulse_2/autoencoder_best_model.pth"
 
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     # Example usage
@@ -208,7 +208,9 @@ def main():
         device_info = 'CPU'
 
     print(f"Using device: {device_info}")
-    classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model, second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
+    # classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=False, second_denoising=True, denoise_model =autoencoder , zero_mask_model = zero_model, second_train_dataloader = train_dataloader_2, second_val_dataloader = val_dataloader_2)
+    classModel.train_model(train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, second_denoising=False, denoise_model =autoencoder , zero_mask_model = zero_model)
+
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     # with open(results_file, 'w') as f:
     #     f.write("Model Training Results\n")
