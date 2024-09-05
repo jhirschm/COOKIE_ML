@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=ampere
-#SBATCH --account=lcls:prjs2e21
+##SBATCH --account=lcls:prjs2e21
 #SBATCH --job-name=reg
 #SBATCH --output=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --error=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=32g
 #SBATCH --time=0-24:00:00
-#SBATCH --gpus 4
+#SBATCH --gpus 2
 # source ~/.bashrc
 # source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
