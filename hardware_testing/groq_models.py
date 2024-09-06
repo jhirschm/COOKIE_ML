@@ -77,6 +77,8 @@ classModel = CustomLSTMClassifier(
 inputs = {"x": torch.rand(1, 16, 512)} 
 
 gmodel = groqit(classModel, inputs, groqview=True, rebuild="always", build_name="model_classifier_lstm")
+estimate = gmodel.estimate_performance()
+
 print("Your build's estimated performance is:")
 print(f"{estimate.latency:.7f} {estimate.latency_units}")
 print(f"{estimate.throughput:.1f} {estimate.throughput_units}")
