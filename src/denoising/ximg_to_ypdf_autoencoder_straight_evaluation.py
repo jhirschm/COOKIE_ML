@@ -34,6 +34,7 @@ def main():
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_06212024/"
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_06252024/"
     datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
+    datapath_test = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
     datapath= datapath_test
     # datapath = "/sdf/data/lcls/ds/prj/prjs2e21/results/1-Pulse_03282024/Processed_06252024/"
     # dataset = DataMilking(root_dir=datapath, attributes=["energies", "phases", "npulses"], pulse_number=2)
@@ -47,7 +48,7 @@ def main():
     # data = DataMilking_Nonfat(root_dir=datapath, pulse_number=2, subset=4)
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number=1, input_name="Ximg", labels=["Ypdf"])
     # data = DataMilking_HalfAndHalf(root_dirs=datapaths, pulse_handler = pulse_specification, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=None)
-    data = DataMilking_HalfAndHalf(root_dirs=[datapath_test], pulse_handler = None, input_name="Ximg", labels=["Ypdf"],transform=None, test_batch=1)
+    data = DataMilking_HalfAndHalf(root_dirs=[datapath_test], pulse_handler = None, test_batch=1, input_name="Ximg", labels=["Ypdf"],transform=None)
 
     # data = DataMilking_SemiSkimmed(root_dir=datapath, pulse_number_max=10, input_name="Ximg", labels=["Ypdf"], test_batch=2)
     # Calculate the lengths for each split
@@ -115,8 +116,11 @@ def main():
     criterion = nn.MSELoss()
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/outputs_fromEvenDist/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/outputs_fromEvenDist/"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06272024_singlePulse/testAutoencoder_best_model.pth"
     best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/autoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09022024_multiPulse_final/autoencoder_best_model.pth"
+    best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09032024_multiPulse_final/autoencoder_5_best_model.pth"
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_3/autoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
@@ -138,6 +142,7 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
+    print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     identifier = "testAutoencoder_eval"
     autoencoder.evaluate_model(test_dataloader, criterion, device, save_results=True, results_dir=model_save_dir, results_filename=f"{identifier}_results.h5", zero_masking = True, zero_masking_model=classifier)
@@ -156,6 +161,7 @@ def main():
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
         f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses.\n")
+        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     
     

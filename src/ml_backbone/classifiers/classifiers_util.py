@@ -28,3 +28,4 @@ import joblib
 from sklearn.metrics import mean_squared_error
 
 import datetime
+from torchinfo import summary

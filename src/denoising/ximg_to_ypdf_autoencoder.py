@@ -230,58 +230,98 @@ class Zero_PulseClassifier(nn.Module):
 
                         
                 outputs = self(inputs).to(device)
-                predictions = torch.round(outputs).cpu().numpy()
-                print(predictions)
+                # predictions = torch.round(outputs).cpu().numpy()
+                # Apply sigmoid to convert logits to probabilities
+                probabilities = torch.sigmoid(outputs)
+
+                # Convert probabilities to binary predictions (0 or 1)
+                predictions = torch.round(probabilities).cpu().numpy()
+                # print(predictions)
                 labels = labels[:,1:].to(device)
-                print("labels")
-                print(labels)
+                # print("labels")
+                # print(labels)
 
                 true_pulses.extend(labels.cpu().numpy())
                 predicted_pulses.extend(predictions)
 
         true_pulses = np.array(true_pulses)
         predicted_pulses = np.array(predicted_pulses)
-        print(np.sum(true_pulses))
-        print(np.sum(predicted_pulses))
+        # print(np.sum(true_pulses))
+        # print(np.sum(predicted_pulses))
 
 
         num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
-        print(accuracy)
+        # print(accuracy)
         # precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
         # recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
         # f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
         # Confusion matrix
+        # cm = confusion_matrix(true_pulses, predicted_pulses)
+        # print(true_pulses)
+        # print(predicted_pulses)
+        # print(cm)
+        # # Normalize the confusion matrix based on percentages
+        # row_sums = cm.sum(axis=1, keepdims=True)
+        # row_sums[row_sums == 0] = 1
+        # normalized_cm = cm / row_sums.astype(float) * 100
+
+        # # Create class labels based on the number of classes
+        # class_labels = [f'{i} Pulse(s)' for i in range(num_classes_from_test)]
+
+        # # Plot the normalized confusion matrix with class labels
+        # plt.figure(figsize=(8, 6))
+        # plt.imshow(normalized_cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
+
+        # # Add class labels to the plot
+        # plt.title('Normalized Confusion Matrix (%)')
+        # plt.colorbar()
+        # tick_marks = np.arange(len(class_labels))
+        # plt.xticks(tick_marks, class_labels, rotation=45)
+        # plt.yticks(tick_marks, class_labels)
+
+        # for i in range(num_classes_from_test):
+        #     for j in range(num_classes_from_test):
+        #         text_label = f"{normalized_cm[i, j]:.2f}%"
+        #         plt.text(j, i, text_label, horizontalalignment="center", color="black")
+        # # Add axis labels
+        # plt.xlabel('Predicted')
+        # plt.ylabel('True')
+        # Calculate the confusion matrix for binary classification
         cm = confusion_matrix(true_pulses, predicted_pulses)
+        
+        # Print to verify
+        print("True Labels:", true_pulses)
+        print("Predicted Labels:", predicted_pulses)
+        print("Confusion Matrix:\n", cm)
 
         # Normalize the confusion matrix based on percentages
         row_sums = cm.sum(axis=1, keepdims=True)
+        row_sums[row_sums == 0] = 1  # Handle any rows that sum to zero
         normalized_cm = cm / row_sums.astype(float) * 100
 
-        # Create class labels based on the number of classes
-        class_labels = [f'{i} Pulse(s)' for i in range(num_classes_from_test)]
+        # Create class labels for the two classes
+        class_labels = ['0 Pulse', '1 Pulse']
 
         # Plot the normalized confusion matrix with class labels
         plt.figure(figsize=(8, 6))
         plt.imshow(normalized_cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
-
-        # Add class labels to the plot
         plt.title('Normalized Confusion Matrix (%)')
         plt.colorbar()
         tick_marks = np.arange(len(class_labels))
         plt.xticks(tick_marks, class_labels, rotation=45)
         plt.yticks(tick_marks, class_labels)
 
-        for i in range(num_classes_from_test):
-            for j in range(num_classes_from_test):
+        for i in range(2):
+            for j in range(2):
                 text_label = f"{normalized_cm[i, j]:.2f}%"
                 plt.text(j, i, text_label, horizontalalignment="center", color="black")
-        # Add axis labels
-        plt.xlabel('Predicted')
-        plt.ylabel('True')
+    
         plot_path = os.path.join(model_save_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
         plt.savefig(plot_path)
         plt.close()
 

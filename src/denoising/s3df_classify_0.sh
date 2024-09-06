@@ -31,8 +31,7 @@ case "$1" in
         python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_0or1_classifier_training.py
         ;;
     evaluation)
-        echo "No script specified yet"
-        exit 1
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_0or1_classifier_evaluation.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
