@@ -74,7 +74,7 @@ classModel = CustomLSTMClassifier(
     layer_norm=data['layerNorm'],
     ignore_output_layer=False  # Set as needed based on your application
 )
-inputs = {"x": torch.rand(1, 512, 16)} 
+inputs = {"x": torch.rand(1, 16, 512)} 
 
 gmodel = groqit(classModel, inputs, groqview=True, rebuild="always", build_name="model_classifier_lstm")
 print("Your build's estimated performance is:")
