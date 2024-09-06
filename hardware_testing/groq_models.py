@@ -13,6 +13,8 @@ class_dir = os.path.abspath(os.path.join(current_dir, '../src/ml_backbone', 'cla
 
 sys.path.append(utils_dir)
 sys.path.append(denoise_dir)
+sys.path.append(class_dir)
+
 
 from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
