@@ -33,10 +33,11 @@ autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
 inputs = {"x": torch.rand(1, 1, 512, 16)} 
 gmodel = groqit(autoencoder, inputs, groqview=True, rebuild="always", build_name="model "+str(1))
-gmodel.groqview()
   # Get performance estimates in terms of latency and throughput
 estimate = gmodel.estimate_performance()
 print("Your build's estimated performance is:")
 print(f"{estimate.latency:.7f} {estimate.latency_units}")
 print(f"{estimate.throughput:.1f} {estimate.throughput_units}")
 print("Example estimate_performance.py finished")
+gmodel.groqview()
+
