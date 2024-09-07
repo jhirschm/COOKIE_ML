@@ -878,6 +878,10 @@ def main():
     autoencoder.load_state_dict(state_dict)
 
     checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+    except EOFError:
+        print("Checkpoint file is corrupted or incomplete.")
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                                  checkpoints_enabled=True, resume_from_checkpoint=True, max_epochs=max_epochs, denoising=True, checkpoint_path=checkpoint_path,
                                  denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False, phase_dif_pred_1hot=False, phase_dif_pred_1hot_wrapping=True)
