@@ -197,7 +197,7 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
-                    denoise_model=None, zero_mask_model=None, parallel=True,
+                    denoise_model=None, zero_mask_model=None, parallel=True, checkpoint_path = None,
                     second_denoising=False, second_train_dataloader=None, second_val_dataloader=None, num_classes=1000, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False,phase_dif_pred_1hot=False, phase_dif_pred_1hot_wrapping=False):
         train_losses = []
         val_losses = []
@@ -214,7 +214,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 denoise_model.to(device)
                 zero_mask_model.to(device)
         model.to(device)
-        checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+        # checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
         if inverse_radon:
             n = 16
@@ -828,7 +828,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext34_dif_XimgDenoised_wrapping_3"
+    identifier = "Resnext34_dif_XimgDenoised_wrapping_3_startingFromCheckpoint"
 
     '''
     denoising
@@ -877,8 +877,9 @@ def main():
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
+    checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, 
+                                 checkpoints_enabled=True, resume_from_checkpoint=True, max_epochs=max_epochs, denoising=True, checkpoint_path=checkpoint_path,
                                  denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False, phase_dif_pred_1hot=False, phase_dif_pred_1hot_wrapping=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
