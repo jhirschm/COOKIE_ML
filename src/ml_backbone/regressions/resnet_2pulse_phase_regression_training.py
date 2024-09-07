@@ -715,7 +715,16 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         'best_val_loss': best_val_loss,
                         'best_epoch': best_epoch,
                     }
-                    torch.save(checkpoint, checkpoint_path)
+                    tmp_checkpoint_path = checkpoint_path + ".tmp"
+                    # Save to a temporary file first
+                    with open(tmp_checkpoint_path, 'wb') as f:
+                        torch.save(checkpoint, f)
+                    # Rename the temporary file to the actual checkpoint path
+                    os.rename(tmp_checkpoint_path, checkpoint_path)
+                    # torch.save(checkpoint, checkpoint_path)
+                    checkpoint_path_backup = f"{model_save_dir}/{identifier}_checkpoint_backup.pth"
+                    with open(checkpoint_path_backup, 'wb') as f:
+                        torch.save(checkpoint, f, pickle_protocol=4)
                 
                 # Early stopping check
                 # if scheduler.should_stop():
@@ -788,7 +797,7 @@ def main():
     pulse_specification = None
 
 
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False, test_batch =1)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, inverse_radon=False)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -834,7 +843,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext34_dif_XimgDenoised_wrapping_3_startingFromCheckpoint"
+    identifier = "Resnext34_dif_XimgDenoised_wrapping_4"
 
     '''
     denoising
