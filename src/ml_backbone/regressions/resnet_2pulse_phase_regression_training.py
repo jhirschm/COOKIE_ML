@@ -224,6 +224,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
         
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
+            print("Loading checkpoint...")
+            print(checkpoint_path)
+            try:
+                checkpoint = torch.load(checkpoint_path, map_location=device)
+            except EOFError:
+                print("Checkpoint file is corrupted or incomplete.")
             checkpoint = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
