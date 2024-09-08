@@ -214,7 +214,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 denoise_model.to(device)
                 zero_mask_model.to(device)
         model.to(device)
-        # checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
+        if checkpoints_enabled and checkpoint_path is None:
+            checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
         if inverse_radon:
             n = 16
@@ -826,7 +827,7 @@ def main():
 
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_2"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1"
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
 
@@ -892,7 +893,7 @@ def main():
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
-    checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
+    # checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
     try:
         checkpoint = torch.load(checkpoint_path, map_location=device)
     except EOFError:
