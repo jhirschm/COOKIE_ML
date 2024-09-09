@@ -704,7 +704,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     # Save the best model with a specified name and path in the model_dir
                     best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
                     torch.save(model.state_dict(), best_model_path)
-
+                if not f.closed:
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
+                    f.flush()  # Flush the buffer to write to the file
+                else:
+                    print("Error: File is already closed, cannot write.")
                 ## Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
@@ -727,7 +731,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     checkpoint_path_backup = f"{model_save_dir}/{identifier}_checkpoint_backup.pth"
                     with open(checkpoint_path_backup, 'wb') as f:
                         torch.save(checkpoint, f, pickle_protocol=4)
-                
+                if not f.closed:
+                    f.write(f"Early stopping at epoch {epoch+1}\n")
+                    f.flush()  # Flush the buffer to write to the file
+                else:
+                    print("Error: File is already closed, cannot write.")
                 # Early stopping check
                 # if scheduler.should_stop():
                 #     print(f"Early stopping at epoch {epoch+1}")
