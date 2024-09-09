@@ -827,7 +827,7 @@ def main():
 
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_2"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1"
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
 
@@ -893,7 +893,7 @@ def main():
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
-    # checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
+    checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
     try:
         checkpoint = torch.load(checkpoint_path, map_location=device)
     except EOFError:
