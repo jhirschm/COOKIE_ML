@@ -723,19 +723,19 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     }
                     tmp_checkpoint_path = checkpoint_path + ".tmp"
                     # Save to a temporary file first
-                    with open(tmp_checkpoint_path, 'wb') as f:
-                        torch.save(checkpoint, f)
+                    with open(tmp_checkpoint_path, 'wb') as f2:
+                        torch.save(checkpoint, f2)
                     # Rename the temporary file to the actual checkpoint path
                     os.rename(tmp_checkpoint_path, checkpoint_path)
                     # torch.save(checkpoint, checkpoint_path)
                     checkpoint_path_backup = f"{model_save_dir}/{identifier}_checkpoint_backup.pth"
-                    with open(checkpoint_path_backup, 'wb') as f:
-                        torch.save(checkpoint, f, pickle_protocol=4)
-                if not f.closed:
-                    f.write(f"Early stopping at epoch {epoch+1}\n")
-                    f.flush()  # Flush the buffer to write to the file
-                else:
-                    print("Error: File is already closed, cannot write.")
+                    with open(checkpoint_path_backup, 'wb') as f3:
+                        torch.save(checkpoint, f3, pickle_protocol=4)
+                # if not f.closed:
+                #     f.write(f"Early stopping at epoch {epoch+1}\n")
+                #     f.flush()  # Flush the buffer to write to the file
+                # else:
+                #     print("Error: File is already closed, cannot write.")
                 # Early stopping check
                 # if scheduler.should_stop():
                 #     print(f"Early stopping at epoch {epoch+1}")
@@ -749,7 +749,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     f.flush()  # Flush the buffer to write to the file
                 else:
                     print("Error: File is already closed, cannot write.")
-                f.flush() # Flush the buffer to write to the file
+                # f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
         run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
