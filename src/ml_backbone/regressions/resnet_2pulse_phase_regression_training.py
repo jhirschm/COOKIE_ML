@@ -735,7 +735,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-                f.flush() # Flush the buffer to write to the file
+                # f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
         run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
