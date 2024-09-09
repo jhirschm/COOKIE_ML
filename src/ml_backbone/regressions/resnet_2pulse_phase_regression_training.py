@@ -222,7 +222,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
             theta = np.linspace(0., 360., n, endpoint=False)
 
         
-        
+        name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
+
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
             print("Loading checkpoint...")
@@ -241,7 +242,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
             best_val_loss = checkpoint['best_val_loss']
             best_epoch = checkpoint['best_epoch']
             best_model = None
-        name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
+
         with open(name, "a") as f:
             f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
 
@@ -687,7 +688,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 # val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
 
                 val_losses.append(val_loss)
-
+                print(f"File mode: {f.mode}")  # Should print 'a'
                 f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
                 print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
@@ -735,7 +736,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-                # f.flush() # Flush the buffer to write to the file
+                f.flush() # Flush the buffer to write to the file
         # Save the output to the specified file
         run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
         with open(run_summary_path, "w") as file:
