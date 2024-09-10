@@ -282,11 +282,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         zero_mask = zero_mask.to(device, torch.float32)
 
                         outputs = outputs * zero_mask
-                        inputs = torch.unsqueeze(outputs, 1)
+                        # inputs = torch.unsqueeze(outputs, 1)
                         inputs = inputs.to(device, torch.float32)
 
                     else: 
-                        inputs = torch.unsqueeze(inputs, 1)
+                        # inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
                         
                     
@@ -388,12 +388,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            inputs = torch.unsqueeze(outputs, 1)
+                            # inputs = torch.unsqueeze(outputs, 1)
                             inputs = inputs.to(device, torch.float32)
 
 
                         else: 
-                            inputs = torch.unsqueeze(inputs, 1)
+                            # inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                         
                         if inverse_radon:
@@ -503,12 +503,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            inputs = torch.unsqueeze(outputs, 1)
+                            # inputs = torch.unsqueeze(outputs, 1)
                             inputs = inputs.to(device, torch.float32)
 
 
                         else: 
-                            inputs = torch.unsqueeze(inputs, 1)
+                            # inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             
                         if inverse_radon:
@@ -612,11 +612,11 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 zero_mask = zero_mask.to(device, torch.float32)
 
                                 outputs = outputs * zero_mask
-                                inputs = torch.unsqueeze(outputs, 1)
+                                # inputs = torch.unsqueeze(outputs, 1)
                                 inputs = inputs.to(device, torch.float32)
 
                             else: 
-                                inputs = torch.unsqueeze(inputs, 1)
+                                # inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
                             if inverse_radon:
                                 recon_images = []
