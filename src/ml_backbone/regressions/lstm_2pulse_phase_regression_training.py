@@ -260,14 +260,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                     # phases = phases.to(dtype)
                     # print(labels)
                     if denoising and denoise_model is not None and zero_mask_model is not None:
-                
+                       
                         denoise_model.eval()
                         zero_mask_model.eval()
-                        
                         inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
                         # labels = labels[0]
-                        
                         outputs = denoise_model(inputs)
                         outputs = outputs.squeeze()
                         outputs = outputs.to(device)
@@ -282,35 +280,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         zero_mask = zero_mask.to(device, torch.float32)
 
                         outputs = outputs * zero_mask
-                        # inputs = torch.unsqueeze(outputs, 1)
-                        inputs = inputs.to(device, torch.float32)
+                        inputs = outputs.to(device, torch.float32)
 
                     else: 
-                        # inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
-                        
                     
-                    if inverse_radon:
-                        recon_images = []
-                        transpose_inputs = torch.transpose(inputs, 2, 3)
-                        for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                            # Extract the image and remove the channel dimension for processing with skimage
-                            image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
 
-                            # Compute the inverse Radon transform
-                            recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                            
-                            # Convert back to a PyTorch tensor and add channel dimension back
-                            recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                            # Add to the list of reconstructed images
-                            recon_images.append(recon_image_tensor)
-                        # Stack the reconstructed images back into a batch
-                        recon_images = torch.stack(recon_images)
-
-                        # Add the batch dimension back
-                        recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                        inputs = recon_images
                     outputs = model(inputs).to(device)
                     if multi_hotEncoding:
                         phases = phases.to(torch.float32)
@@ -369,11 +344,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                             denoise_model.eval()
                             zero_mask_model.eval()
-                            
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             # labels = labels[0]
-                            
                             outputs = denoise_model(inputs)
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
@@ -388,35 +361,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            # inputs = torch.unsqueeze(outputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-
+                            inputs = outputs.to(device, torch.float32)
 
                         else: 
-                            # inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
-                        
-                        if inverse_radon:
-                            recon_images = []
-                            transpose_inputs = torch.transpose(inputs, 2, 3)
-                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                # Extract the image and remove the channel dimension for processing with skimage
-                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+                    
 
-                                # Compute the inverse Radon transform
-                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                
-                                # Convert back to a PyTorch tensor and add channel dimension back
-                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                # Add to the list of reconstructed images
-                                recon_images.append(recon_image_tensor)
-                            # Stack the reconstructed images back into a batch
-                            recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
                         outputs = model(inputs).to(device)
                         if multi_hotEncoding:
                             phases = phases.to(torch.float32)
@@ -484,11 +434,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                         
                             denoise_model.eval()
                             zero_mask_model.eval()
-                            
                             inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
                             # labels = labels[0]
-                            
                             outputs = denoise_model(inputs)
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
@@ -503,35 +451,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
-                            # inputs = torch.unsqueeze(outputs, 1)
-                            inputs = inputs.to(device, torch.float32)
-
+                            inputs = outputs.to(device, torch.float32)
 
                         else: 
-                            # inputs = torch.unsqueeze(inputs, 1)
                             inputs = inputs.to(device, torch.float32)
-                            
-                        if inverse_radon:
-                            recon_images = []
-                            transpose_inputs = torch.transpose(inputs, 2, 3)
-                            for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                # Extract the image and remove the channel dimension for processing with skimage
-                                image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+                        
 
-                                # Compute the inverse Radon transform
-                                recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                
-                                # Convert back to a PyTorch tensor and add channel dimension back
-                                recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                # Add to the list of reconstructed images
-                                recon_images.append(recon_image_tensor)
-                            # Stack the reconstructed images back into a batch
-                            recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                            recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                            inputs = recon_images
                         outputs = model(inputs).to(device)
                         if multi_hotEncoding:
                             phases = phases.to(torch.float32)
@@ -590,14 +515,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                             # phases = phases.to(model.module.dtype)
                             # print(labels)
                             if second_denoising and denoise_model is not None and zero_mask_model is not None:
-                            
+                       
                                 denoise_model.eval()
                                 zero_mask_model.eval()
-                                
                                 inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
                                 # labels = labels[0]
-                                
                                 outputs = denoise_model(inputs)
                                 outputs = outputs.squeeze()
                                 outputs = outputs.to(device)
@@ -612,33 +535,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                                 zero_mask = zero_mask.to(device, torch.float32)
 
                                 outputs = outputs * zero_mask
-                                # inputs = torch.unsqueeze(outputs, 1)
-                                inputs = inputs.to(device, torch.float32)
+                                inputs = outputs.to(device, torch.float32)
 
                             else: 
-                                # inputs = torch.unsqueeze(inputs, 1)
                                 inputs = inputs.to(device, torch.float32)
-                            if inverse_radon:
-                                recon_images = []
-                                transpose_inputs = torch.transpose(inputs, 2, 3)
-                                for i in range(transpose_inputs.size(0)):  # Iterate over the batch
-                                    # Extract the image and remove the channel dimension for processing with skimage
-                                    image_np = transpose_inputs[i, 0].cpu().numpy()  # shape: [height, width]
+                    
 
-                                    # Compute the inverse Radon transform
-                                    recon_image_np = iradon(image_np, theta=theta, filter_name='ramp', circle=False)
-                                    
-                                    # Convert back to a PyTorch tensor and add channel dimension back
-                                    recon_image_tensor = torch.tensor(recon_image_np, dtype=torch.float32).unsqueeze(0)  # shape: [1, height, width]
-
-                                    # Add to the list of reconstructed images
-                                    recon_images.append(recon_image_tensor)
-                                # Stack the reconstructed images back into a batch
-                                recon_images = torch.stack(recon_images)
-
-                            # Add the batch dimension back
-                                recon_images = recon_images.to(device)  # shape: [batch_size, 1, height, width]
-                                inputs = recon_images
                             outputs = model(inputs).to(device)
                             if multi_hotEncoding:
                                 phases = phases.to(torch.float32)
