@@ -791,41 +791,40 @@ def main():
     # Example usage
     conv_layers = [
         # Conv1: Input channels = 1, Output channels = 64, kernel size = 7, stride = 2, padding = 3
-        [nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3), nn.ReLU()],
+        [nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3), nn.BatchNorm2d(64), nn.ReLU()],
         
         # MaxPool: Pooling after first convolutional block, kernel size = 3, stride = 2, padding = 1
         [nn.MaxPool2d(kernel_size=3, stride=2, padding=1), None],
         
         # Layer1: 3 blocks of 64 filters
-        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.BatchNorm2d(64), nn.ReLU()],
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.BatchNorm2d(64), nn.ReLU()],
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.BatchNorm2d(64), nn.ReLU()],
         
         # Layer2: 4 blocks of 128 filters, with downsampling (stride = 2)
-        [nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU()],
-        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.BatchNorm2d(128), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.BatchNorm2d(128), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.BatchNorm2d(128), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.BatchNorm2d(128), nn.ReLU()],
         
         # Layer3: 6 blocks of 256 filters, with downsampling (stride = 2)
-        [nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), nn.ReLU()],
-        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.BatchNorm2d(256), nn.ReLU()],
         
         # Layer4: 3 blocks of 512 filters, with downsampling (stride = 2)
-        [nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1), nn.ReLU()],
-        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1), nn.BatchNorm2d(512), nn.ReLU()],
+        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.BatchNorm2d(512), nn.ReLU()],
+        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.BatchNorm2d(512), nn.ReLU()],
         
         # Adaptive average pooling (reduces spatial dimensions to 1x1)
         [nn.AdaptiveAvgPool2d((1, 1)), None]
     ]
 
-    # Calculate the output size after convolutional layers to feed into the fully connected layers
-    # Assuming input shape of (batch_size, 1, 224, 224) typical for ResNet
+    # Calculate the output size after convolutional layers
     conv_output_size = get_conv_output_size((1, 1, 224, 224), conv_layers)
 
     conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
