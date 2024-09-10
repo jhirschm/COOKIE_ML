@@ -195,6 +195,41 @@ def phase_to_2hot(phases1, phases2, n_classes, phase_range=(0, 2 * torch.pi)):
 
     return one_hot_vectors
 
+def load_training_checkpoint(checkpoint_path, model, optimizer=None, scheduler=None, device='cpu'):
+    """
+    Load the checkpoint to resume training.
+
+    Args:
+        checkpoint_path (str): Path to the checkpoint file.
+        model (torch.nn.Module): The model to load the state dict into.
+        optimizer (torch.optim.Optimizer, optional): The optimizer to load the state dict into. Defaults to None.
+        scheduler (torch.optim.lr_scheduler, optional): The scheduler to load the state dict into. Defaults to None.
+        device (str): The device to load the model onto. Defaults to 'cpu'.
+
+    Returns:
+        tuple: A tuple containing (start_epoch, train_losses, val_losses, best_val_loss, best_epoch).
+    """
+    # Load the checkpoint
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    
+    # Load model state dict
+    model.load_state_dict(checkpoint['model_state_dict'])
+    
+    # Load optimizer and scheduler state dicts if provided
+    if optimizer is not None:
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    
+    if scheduler is not None:
+        scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+    
+    # Extract relevant training information
+    start_epoch = checkpoint['epoch'] + 1
+    train_losses = checkpoint.get('train_losses', [])
+    val_losses = checkpoint.get('val_losses', [])
+    best_val_loss = checkpoint.get('best_val_loss', float('inf'))
+    best_epoch = checkpoint.get('best_epoch', 0)
+
+    return start_epoch, train_losses, val_losses, best_val_loss, best_epoch
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
                     checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=100, denoising=False,
                     denoise_model=None, zero_mask_model=None, parallel=True, checkpoint_path = None,
@@ -228,20 +263,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
         if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
             print("Loading checkpoint...")
             print(checkpoint_path)
-            try:
-                checkpoint = torch.load(checkpoint_path, map_location=device)
-            except EOFError:
-                print("Checkpoint file is corrupted or incomplete.")
-            checkpoint = torch.load(checkpoint_path, map_location=device)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            train_losses = checkpoint['train_losses']
-            val_losses = checkpoint['val_losses']
-            best_val_loss = checkpoint['best_val_loss']
-            best_epoch = checkpoint['best_epoch']
-            best_model = None
+            start_epoch, train_losses, val_losses, best_val_loss, best_epoch = load_training_checkpoint(checkpoint_path=checkpoint_path, model=model, optimizer=optimizer, scheduler=scheduler, device=device)
+            
+
 
         with open(name, "a") as f:
             f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
@@ -858,7 +882,7 @@ def main():
     max_epochs = 200
     scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
-    identifier = "Resnext34_dif_XimgDenoised_wrapping_4"
+    identifier = "Resnext34_dif_XimgDenoised_wrapping_4_continued"
 
     '''
     denoising
@@ -907,13 +931,13 @@ def main():
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
 
-    checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09062024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_3_checkpoint.pth"
+    checkpoint_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_checkpoint_backup.pth"
     try:
         checkpoint = torch.load(checkpoint_path, map_location=device)
     except EOFError:
         print("Checkpoint file is corrupted or incomplete.")
     train_model(model, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, 
-                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True,
+                                 checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=max_epochs, denoising=True, checkpoint_path=checkpoint_path,
                                  denoise_model =autoencoder , zero_mask_model = zero_model, parallel=True, second_denoising=False, num_classes=num_classes, inverse_radon=False, multi_hotEncoding=False, phase_dif_pred=False, phase_dif_pred_1hot=False, phase_dif_pred_1hot_wrapping=True)
     # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
