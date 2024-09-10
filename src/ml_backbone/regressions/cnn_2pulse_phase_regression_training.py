@@ -790,21 +790,50 @@ def main():
     # model = resnet50(num_classes=num_classes)
     # Example usage
     conv_layers = [
-        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2), None],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(64, 128, kernel_size=3, padding=1), nn.ReLU()],
+        # Conv1: Input channels = 1, Output channels = 64, kernel size = 7, stride = 2, padding = 3
+        [nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3), nn.ReLU()],
+        
+        # MaxPool: Pooling after first convolutional block, kernel size = 3, stride = 2, padding = 1
+        [nn.MaxPool2d(kernel_size=3, stride=2, padding=1), None],
+        
+        # Layer1: 3 blocks of 64 filters
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(64, 64, kernel_size=3, padding=1), nn.ReLU()],
+        
+        # Layer2: 4 blocks of 128 filters, with downsampling (stride = 2)
+        [nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(128, 128, kernel_size=3, padding=1), nn.ReLU()],
+        
+        # Layer3: 6 blocks of 256 filters, with downsampling (stride = 2)
+        [nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU()],
+        
+        # Layer4: 3 blocks of 512 filters, with downsampling (stride = 2)
+        [nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1), nn.ReLU()],
+        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(512, 512, kernel_size=3, padding=1), nn.ReLU()],
+        
+        # Adaptive average pooling (reduces spatial dimensions to 1x1)
         [nn.AdaptiveAvgPool2d((1, 1)), None]
-        ]
-   
-    conv_output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
-    conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
-    print(f"Output size after conv layers: {conv_output_size_flattened}")
+    ]
 
-    #Trying LSTM 
+    # Calculate the output size after convolutional layers to feed into the fully connected layers
+    # Assuming input shape of (batch_size, 1, 224, 224) typical for ResNet
+    conv_output_size = get_conv_output_size((1, 1, 224, 224), conv_layers)
+
+    conv_output_size_flattened = conv_output_size[1] * conv_output_size[2] * conv_output_size[3]
+
+    # Fully connected layers: Final output layer with num_classes
     fc_layers = [
-    [nn.Linear(conv_output_size_flattened, num_classes), None]]
+        [nn.Linear(conv_output_size_flattened, num_classes), None]
+    ]
 
     # Define LSTM configuration
     lstm_config = {
