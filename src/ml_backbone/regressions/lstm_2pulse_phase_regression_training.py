@@ -687,7 +687,7 @@ def main():
     
     num_classes = 4000#1024
     data = {
-        "hidden_size": 128,
+        "hidden_size": 256,
         "num_lstm_layers": 1,
         "bidirectional": True,
         "fc_layers": [32, 64],
