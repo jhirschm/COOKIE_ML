@@ -699,7 +699,7 @@ def main():
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
-    num_classes = 5   # Example number of classes
+    # num_classes = 5   # Example number of classes
 
     # Instantiate the CustomLSTMClassifier
     model = CustomLSTMClassifier(
@@ -845,6 +845,6 @@ def main():
     #     col_width=20,
     #     row_settings=["var_names"]
     # ))
-    print(summary(model, input_size=(1, 1, 512, 16)))
+    print(summary(model, input_size=(1, 16, 512)))
 if __name__ == "__main__":
     main()
