@@ -14,20 +14,32 @@ class RegressionModel(nn.Module):
         self.has_conv_layers = conv_layers is not None
         self.has_lstm_layers = lstm_config is not None
 
+        # if conv_layers is not None:
+        #     # Create convolutional layers based on the provided layer configuration
+        #     conv_modules = []
+        #     for layer, activation in conv_layers:
+        #         conv_modules.append(layer)
+        #         if activation is not None:
+        #             conv_modules.append(activation)
+            
+        #     self.conv_layers = nn.Sequential(*conv_modules)
+            
+        #     # Cast conv layers weights to specified dtype
+        #     for param in self.conv_layers.parameters():
+        #         param.data = param.data.to(self.dtype)
         if conv_layers is not None:
             # Create convolutional layers based on the provided layer configuration
             conv_modules = []
-            for layer, activation in conv_layers:
-                conv_modules.append(layer)
-                if activation is not None:
-                    conv_modules.append(activation)
+            for layer_details in conv_layers:
+                for layer in layer_details:
+                    if layer is not None:
+                        conv_modules.append(layer)
             
             self.conv_layers = nn.Sequential(*conv_modules)
             
             # Cast conv layers weights to specified dtype
             for param in self.conv_layers.parameters():
                 param.data = param.data.to(self.dtype)
-
         if lstm_config is not None:
             # Create LSTM layer based on the provided configuration
             self.lstm_layers = nn.LSTM(input_size=lstm_config['input_size'], 
