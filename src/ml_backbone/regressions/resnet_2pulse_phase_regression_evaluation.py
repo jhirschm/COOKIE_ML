@@ -531,16 +531,18 @@ def main():
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1/Resnext34_dif_Ypdf_3_wrapping_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/Resnext34_dif_Ximg_3_wrapping_3_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_best_model.pth"
-    best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
+    # best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
+
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
     # identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
-    identifier = "Resnext34_dif_Ximg_wrapping"
+    identifier = "Resnext34_dif_Ximg_wrapping_fullData"
     criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
