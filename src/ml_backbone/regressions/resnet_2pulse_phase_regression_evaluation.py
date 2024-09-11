@@ -242,8 +242,12 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 
                 outputs = denoise_model(inputs)
                 if phase_mispredict_analysis:
-                    inputs_list.append(inputs.cpu().detach())
-                    denoised_inputs_list.append(outputs.cpu().detach())             
+                    inputs_cpu = inputs.cpu().detach()
+                    outputs_cpu = outputs.cpu().detach()
+
+                    for i in range(inputs_cpu.size(0)):  # Loop over batch size (32 in this case)
+                        inputs_list.append(inputs_cpu[i].squeeze())  # Remove extra channel if needed, making it [512, 16]
+                        denoised_inputs_list.append(outputs_cpu[i].squeeze())  # Same for outputs         
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 if parallel:
@@ -315,8 +319,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 predicted_phases_decoded = onehot_to_phase(outputs, num_classes, phase_range=(0, torch.pi))
                 loss = criterion(outputs, phases_one_hot)
 
-                true_phase_list.append(phases_dif.cpu().numpy())
-                predicted_phase_list.append(predicted_phases_decoded.cpu().numpy())
+                true_phase_list.append(phases_dif.cpu().numpy().ravel())
+                predicted_phase_list.append(predicted_phases_decoded.cpu().numpy().ravel())
 
             # else:
             #     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
