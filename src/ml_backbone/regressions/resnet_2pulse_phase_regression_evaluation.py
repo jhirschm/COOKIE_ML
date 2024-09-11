@@ -199,10 +199,12 @@ def get_phase(outputs, num_classes, max_val=2*torch.pi):
 
 
 def test_model(model, test_dataloader, model_save_dir, identifier, device, denoising=False,criterion=None,
-               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10, phase_dif_pred=False, phase_1hotwrapping=False):
+               denoise_model=None, zero_mask_model=None, parallel=True, num_classes=1000, inverse_radon=False, multi_hotEncoding_eval=False, top_n_classes=10, phase_dif_pred=False, phase_1hotwrapping=False, phase_mispredict_analysis=False):
     test_losses = []
     true_phase_list = []
     predicted_phase_list = []
+    inputs_list = []
+    denoised_inputs_list = []
     running_test_loss = 0
     model.to(device)
 
@@ -239,6 +241,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 # labels = labels[0]
                 
                 outputs = denoise_model(inputs)
+                if phase_mispredict_analysis:
+                    inputs_list.append(inputs.cpu().detach())
+                    denoised_inputs_list.append(outputs.cpu().detach())             
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 if parallel:
@@ -453,9 +458,68 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.show()
     plt.savefig(plot_path)
 
-   
-            
+    if phase_mispredict_analysis:
+        input_list = np.array(inputs_list)
+        denoised_input_list = np.array(denoised_inputs_list)
+
+        #calculate residuals between arccos(cos(phase)) and arccos(cos(predicted))
+        residuals = np.arccos(np.cos(true_phase_list)) - predicted_phase_list
+        residuals = residuals.flatten()
+
+        # plot residuals vs input
+        plot_path = os.path.join(model_save_dir, identifier + "_ResidualsVsInput.pdf")    
+        plt.figure(figsize=(10, 6))
+        plt.scatter(np.arccos(np.cos(true_phase_list)).flatten(), residuals, color='blue', label='Residuals vs Input')
+        plt.xlabel('Input') 
+        plt.ylabel('Residuals')
+        plt.title('Residuals vs Input')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig(plot_path)
+
+        # For the predicted phases that are close extremely close to zero, plot the sinogram  from input list and denoised input list a add as text the arc cos cos of the true phase the output predicted phaae and the residual
+        # Make
+        save_dir = os.path.join(model_save_dir, identifier + "_SinogramResiduals")
+        # Define your threshold for detecting near-zero predicted phases
+        epsilon = 0.05
+
+        # Directory to save plots
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Assuming you have these lists filled
+        
+        # Iterate over the sinograms and their corresponding predicted and true phases
+        for idx, (input_sino, denoised_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, predicted_phase_list, true_phase_list)):
+            true_phase_adjusted = np.arccos(np.cos(true_phase))
+
+            # Check for cases where predicted phase is nearly zero but true phase isn't
+            if abs(predicted_phase) < epsilon and true_phase_adjusted > epsilon:
                 
+                # Calculate arccos(cos(true_phase)) for the label
+
+                # Plot the two sinograms (initial input and denoised input)
+                fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+                
+                # Plot the initial input sinogram
+                axes[0].imshow(input_sino.cpu().numpy(), cmap='gray', aspect='auto')
+                axes[0].set_title("Initial Input Sinogram")
+                axes[0].axis('off')
+                
+                # Plot the denoised input sinogram
+                axes[1].imshow(denoised_sino.cpu().numpy(), cmap='gray', aspect='auto')
+                axes[1].set_title("Denoised Input Sinogram")
+                axes[1].axis('off')
+                
+                # Add text annotations with the predicted and true phase
+                fig.suptitle(f"Predicted Phase: {predicted_phase:.4f}, Adjusted True Phase: {true_phase_adjusted:.4f}", fontsize=12)
+
+                # Save the plot in the specified directory
+                plot_filename = os.path.join(save_dir, f"sinogram_plot_{idx}.png")
+                plt.savefig(plot_filename, bbox_inches='tight')
+                
+                # Close the plot to avoid memory issues
+                plt.close(fig)
+
                 
                 
 
@@ -531,18 +595,18 @@ def main():
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1/Resnext34_dif_Ypdf_3_wrapping_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/Resnext34_dif_Ximg_3_wrapping_3_best_model.pth"
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_best_model.pth"
-    # best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
+    best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
+    # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
 
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
     # identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
-    identifier = "Resnext34_dif_Ximg_wrapping_fullData"
+    identifier = "Resnext34_dif_Ximg_wrapping_fullData_exrtaAnalysis"
     criterion = earth_mover_distance
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
@@ -600,7 +664,7 @@ def main():
 
 
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=True, denoise_model =autoencoder,
-                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True)
+                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True, phase_mispredict_analysis=True)
     
  # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
