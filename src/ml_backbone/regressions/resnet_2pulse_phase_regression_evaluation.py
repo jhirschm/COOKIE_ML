@@ -490,6 +490,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         
         # Iterate over the sinograms and their corresponding predicted and true phases
         for idx, (input_sino, denoised_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, predicted_phase_list, true_phase_list)):
+            print("Predicted Phase:", predicted_phase.shape)
+            print("True Phase:", true_phase.shape)
             true_phase_adjusted = np.arccos(np.cos(true_phase))
 
             # Check for cases where predicted phase is nearly zero but true phase isn't
@@ -564,7 +566,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
