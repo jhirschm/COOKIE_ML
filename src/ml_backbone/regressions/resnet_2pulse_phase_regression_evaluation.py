@@ -489,6 +489,10 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # Assuming you have these lists filled
         
         # Iterate over the sinograms and their corresponding predicted and true phases
+        print("Input List:", input_list.shape)
+        print("Denoised Input List:", denoised_input_list.shape)
+        print("Predicted Phase List:", predicted_phase_list.shape)
+        print("True Phase List:", true_phase_list.shape)
         for idx, (input_sino, denoised_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, predicted_phase_list, true_phase_list)):
             print("Predicted Phase:", predicted_phase.shape)
             print("True Phase:", true_phase.shape)
