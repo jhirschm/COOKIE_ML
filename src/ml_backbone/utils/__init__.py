@@ -7,6 +7,7 @@ from .custom_dataloader import (DataMilking_SemiSkimmed)
 from .custom_dataloader import (DataMilking_HalfAndHalf)
 from .custom_dataloader import (DataMilking_MilkCurds)
 from .custom_schedulers import (CustomScheduler)
+from .custom_schedulers import (CustomSchedulerWeightUpdate)
 
 
 
@@ -19,5 +20,6 @@ __all__ = [
     'DataMilking_SemiSkimmed',
     'DataMilking_HalfAndHalf',
     'CustomScheduler',
+    'CustomSchedulerWeightUpdate',
     'DataMilking_MilkCurds'
 ]
