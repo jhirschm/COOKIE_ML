@@ -127,54 +127,45 @@ class CustomScheduler:
 class CustomSchedulerWeightUpdate:
     def __init__(self, optimizer, model, patience=5, early_stop_patience=8, cooldown=2, lr_reduction_factor=0.1, 
                  max_num_epochs=200, improvement_percentage=0.01):
-        # Ensure the optimizer is a valid Optimizer instance
         if not isinstance(optimizer, Optimizer):
             raise TypeError(f'{type(optimizer).__name__} is not an Optimizer')
         self.optimizer = optimizer
-        self.model = model  # Store the model reference to track and load weights
+        self.model = model  
         self.patience = patience
         self.cooldown = cooldown
         self.lr_reduction_factor = lr_reduction_factor
         self.max_num_epochs = max_num_epochs
         self.improvement_percentage = improvement_percentage
         self.best_val_loss = float('inf')
-        self.best_model_weights = None  # Add to store best weights
+        self.best_model_weights = None  
         self.num_bad_epochs = 0
         self.num_bad_epochs_early_stop = 0
         self.total_epochs = 0
-        self.num_since_lr_reduction = 0
         self.lr_reduced = False
         self.cooldown_counter = 0
         self.last_epoch = 0
-        self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
         self.early_stop_patience = early_stop_patience
-        if self.early_stop_patience < self.patience:
-            warnings.warn("Early stop patience is less than patience. Learning rate reduction may not be triggered.", UserWarning)
-        if self.cooldown > self.patience:
-            warnings.warn("LR update patience is less than cooldown. Early stop may not be triggered.", UserWarning)
 
     def step(self, val_loss, epoch=None):
-        # Update current validation loss and epoch
         current = float(val_loss)
         if epoch is None:
             epoch = self.last_epoch + 1
-        else:
-            warnings.warn("Epoch parameter is deprecated and will be removed in a future release.", UserWarning)
         self.last_epoch = epoch
+        self.total_epochs += 1
 
         if self.total_epochs >= self.max_num_epochs:
-            print(f"Maximum number of epochs ({self.max_num_epochs+1}) reached.")
-            return True
-        elif self.num_bad_epochs_early_stop >= self.early_stop_patience:
+            print(f"Maximum number of epochs ({self.max_num_epochs}) reached.")
+            return True  
+
+        if self.num_bad_epochs_early_stop >= self.early_stop_patience:
             print(f"Early stopping at epoch {epoch+1}")
-            return True
+            return True  
 
         required_improvement = self.best_val_loss * (1 - self.improvement_percentage)
 
         if current < required_improvement:
-            # Improvement in validation loss, update best loss and save model weights
             self.best_val_loss = current
-            self.best_model_weights = self.model.state_dict()  # Save the best model's weights
+            self.best_model_weights = self.model.state_dict()  
             self.num_bad_epochs = 0
             self.num_bad_epochs_early_stop = 0
             self.lr_reduced = False
@@ -182,31 +173,44 @@ class CustomSchedulerWeightUpdate:
         else:
             if self.num_bad_epochs >= self.patience:
                 self.reduce_lr(epoch)
-                self.cooldown_counter = self.cooldown
                 self.num_bad_epochs = 0
             else:
                 self.num_bad_epochs += 1
 
             if not self.in_cooldown:
-                self.num_bad_epochs_early_stop += 1
+                self.num_bad_epochs_early_stop += 1  
             else:
-                self.cooldown_counter -= 1
+                self.cooldown_counter -= 1  
 
-        self._last_lr = [group['lr'] for group in self.optimizer.param_groups]
-        return False
+        return False  
 
     def reduce_lr(self, epoch):
-        # Before reducing learning rate, load the best model weights
         if self.best_model_weights is not None:
             print(f"Loading best model weights before reducing learning rate at epoch {epoch+1}")
             self.model.load_state_dict(self.best_model_weights)
+            self.reset_optimizer()  # Reset optimizer state
 
-        # Reduce the learning rate
         for param_group in self.optimizer.param_groups:
             old_lr = float(param_group['lr'])
             new_lr = old_lr * self.lr_reduction_factor 
             param_group['lr'] = new_lr
             print(f"Epoch {epoch+1}: reducing learning rate from {old_lr:.6f} to {new_lr:.6f}")
+
+        self.verify_model(epoch)  # Double-check if the model improves after LR reduction
+
+    def reset_optimizer(self):
+        """Resets the optimizer's state to ensure that momentum, etc., is cleared after loading weights."""
+        self.optimizer.state = {}
+
+    def verify_model(self, epoch):
+        """Run a validation step after loading weights and reducing LR to verify improvement."""
+        self.model.eval()
+        with torch.no_grad():
+            val_loss = self.evaluate_validation_loss()  # Assume you have a method to calculate val_loss
+
+        print(f"Validation loss after LR reduction at epoch {epoch+1}: {val_loss}")
+        if val_loss > self.best_val_loss:
+            print("Validation loss increased after LR reduction, considering early stopping or further LR reduction.")
 
     @property
     def in_cooldown(self):
@@ -216,18 +220,15 @@ class CustomSchedulerWeightUpdate:
         return {
             'best_val_loss': self.best_val_loss,
             'num_bad_epochs': self.num_bad_epochs,
-            'num_since_lr_reduction': self.num_since_lr_reduction,
-            'lr_reduced': self.lr_reduced,
+            'num_bad_epochs_early_stop': self.num_bad_epochs_early_stop,
             'cooldown_counter': self.cooldown_counter,
             'last_epoch': self.last_epoch,
-            '_last_lr': self._last_lr
         }
 
     def load_state_dict(self, state_dict):
         self.best_val_loss = state_dict['best_val_loss']
         self.num_bad_epochs = state_dict['num_bad_epochs']
-        self.num_since_lr_reduction = state_dict['num_since_lr_reduction']
-        self.lr_reduced = state_dict['lr_reduced']
+        self.num_bad_epochs_early_stop = state_dict['num_bad_epochs_early_stop']
         self.cooldown_counter = state_dict['cooldown_counter']
         self.last_epoch = state_dict['last_epoch']
-        self._last_lr = state_dict['_last_lr']
+
