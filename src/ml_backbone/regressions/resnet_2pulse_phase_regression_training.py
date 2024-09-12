@@ -809,9 +809,9 @@ def main():
     
     # model = ResNet(block=BasicBlock, layers=[2,2,1,1], num_classes=1000)
     num_classes = 4000#1024
-    model = resnet152(num_classes=num_classes)
+    # model = resnet152(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
-    # model = resnet50(num_classes=num_classes)
+    model = resnet50(num_classes=num_classes)
     # model = resnet34(num_classes=num_classes)
     # model = resnet18(num_classes=num_classes)
 
@@ -871,6 +871,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09102024_Resnext18_dif_Ximg_Denoised_1"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09112024_Resnext152_dif_Ximg_Denoised_1"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09122024_Resnext152_dif_Ximg_Denoised_1_newScheduler"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09122024_Resnext50_dif_Ximg_Denoised_1_newScheduler"
 
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
@@ -888,7 +889,7 @@ def main():
     max_epochs = 200
     # scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     scheduler = CustomSchedulerWeightUpdate(optimizer = optimizer, model=model, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
-    identifier = "Resnext152_dif_XimgDenoised_wrapping"
+    identifier = "Resnext50_dif_XimgDenoised_wrapping"
 
     '''
     denoising
