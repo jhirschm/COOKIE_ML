@@ -398,9 +398,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     # true_phase_difference = true_phases_decoded[:, 0] - true_phases_decoded[:, 1]
 
     # Calculate and print the average test loss
-    true_phase_list = np.array(true_phase_list)
+    true_phase_list = np.concatenate(true_phase_list, axis=0)  # Shape should now be (8192,)
+    predicted_phase_list = np.concatenate(predicted_phase_list, axis=0)  # Shape should now be (8192,)
     print("True Phase List:", true_phase_list)
-    predicted_phase_list = np.array(predicted_phase_list)
     print("Predicted Phase List:", predicted_phase_list)
     plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
     # Plot the values

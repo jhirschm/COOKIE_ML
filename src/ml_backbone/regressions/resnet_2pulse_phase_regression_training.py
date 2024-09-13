@@ -732,6 +732,7 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                     print("Reloading best model and checking validation loss before continuing training...")
                     f.write("Reloading best model and checking validation loss before continuing training...\n")
+                    running_val_loss = 0.0
                     with torch.no_grad():
                         for batch in val_dataloader:
                             inputs, labels, phases = batch
