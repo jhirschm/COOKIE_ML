@@ -239,6 +239,8 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
         best_val_loss = float('inf')
         best_epoch = 0
         start_epoch = 0
+        best_model_weights = None
+        best_optimizer_state = None
         if denoising and denoise_model is None and zero_mask_model is None:
             raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
@@ -717,8 +719,17 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
                 # Update the scheduler
-                should_stop, check_val = scheduler.step(val_loss, epoch)
-                if check_val:
+                should_stop, return_weights = scheduler.step(val_loss, epoch)
+                if return_weights:
+                    print("Reducing learning rate and returning to best model weights.")
+                    f.write("Reducing learning rate and returning to best model weights.\n")
+                    if best_model_weights is not None:
+                        print(f"Loading best model weights and optimizer state before reducing learning rate at epoch {epoch+1}")
+                        f.write(f"Loading best model weights and optimizer state before reducing learning rate at epoch {epoch+1}")
+                        model.load_state_dict(best_model_weights)
+                    
+                        optimizer.load_state_dict(best_optimizer_state)  # Restore optimizer state
+
                     print("Reloading best model and checking validation loss before continuing training...")
                     f.write("Reloading best model and checking validation loss before continuing training...\n")
                     with torch.no_grad():
@@ -948,7 +959,12 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
 
                     # Save the best model with a specified name and path in the model_dir
                     best_model_path = f"{model_save_dir}/{identifier}_best_model.pth"
+                    best_optim_path = f"{model_save_dir}/{identifier}_best_optimizer.pth"
+
+                    best_model_weights = model.state_dict()
+                    best_optimizer_state =  optimizer.state_dict()
                     torch.save(model.state_dict(), best_model_path)
+                    torch.save(optimizer.state_dict(), best_optim_path)
                 if not f.closed:
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     f.flush()  # Flush the buffer to write to the file

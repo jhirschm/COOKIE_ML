@@ -151,6 +151,7 @@ class CustomSchedulerWeightUpdate:
         self.early_stop_patience = early_stop_patience
 
     def step(self, val_loss, epoch=None):
+        load_model = False
         current = float(val_loss)
         if epoch is None:
             epoch = self.last_epoch + 1
@@ -182,9 +183,9 @@ class CustomSchedulerWeightUpdate:
             # No improvement: increment bad epochs counter
             if self.num_bad_epochs >= self.patience:
                 # Reduce learning rate if patience is exceeded
-                self.reduce_lr(epoch)
+                load_model = self.reduce_lr(epoch)
                 self.num_bad_epochs = 0  # Reset bad epochs counter
-                return False, True
+                return False, load_model
             else:
                 self.num_bad_epochs += 1
 
@@ -197,10 +198,12 @@ class CustomSchedulerWeightUpdate:
 
     def reduce_lr(self, epoch):
         if self.best_model_weights is not None:
-            print(f"Loading best model weights and optimizer state before reducing learning rate at epoch {epoch+1}")
-            self.model.load_state_dict(self.best_model_weights)
-            if self.best_optimizer_state is not None:
-                self.optimizer.load_state_dict(self.best_optimizer_state)  # Restore optimizer state
+            # print(f"Loading best model weights and optimizer state before reducing learning rate at epoch {epoch+1}")
+            # self.model.load_state_dict(self.best_model_weights)
+            # if self.best_optimizer_state is not None:
+            #     self.optimizer.load_state_dict(self.best_optimizer_state)  # Restore optimizer state
+            print("Load model")
+            return True
 
         # Reduce the learning rate for each parameter group
         for param_group in self.optimizer.param_groups:
