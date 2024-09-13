@@ -1,5 +1,6 @@
 import warnings
 from torch.optim import Optimizer
+import torch
 '''
 Patience defines when to reduce learning rate if had N number of bad epochs
 Cool down defines M number of epochs to disregard after updating learning rate if dont get improvement. However, if get improvement leave cool down
@@ -145,6 +146,7 @@ class CustomSchedulerWeightUpdate:
         self.cooldown_counter = 0
         self.last_epoch = 0
         self.early_stop_patience = early_stop_patience
+        # self.evaluate_validation_loss = loss_function  # Function to evaluate validation loss
 
     def step(self, val_loss, epoch=None):
         current = float(val_loss)
@@ -196,21 +198,21 @@ class CustomSchedulerWeightUpdate:
             param_group['lr'] = new_lr
             print(f"Epoch {epoch+1}: reducing learning rate from {old_lr:.6f} to {new_lr:.6f}")
 
-        self.verify_model(epoch)  # Double-check if the model improves after LR reduction
+        # self.verify_model(epoch)  # Double-check if the model improves after LR reduction
 
     def reset_optimizer(self):
         """Resets the optimizer's state to ensure that momentum, etc., is cleared after loading weights."""
         self.optimizer.state = {}
 
-    def verify_model(self, epoch):
-        """Run a validation step after loading weights and reducing LR to verify improvement."""
-        self.model.eval()
-        with torch.no_grad():
-            val_loss = self.evaluate_validation_loss()  # Assume you have a method to calculate val_loss
+    # def verify_model(self, epoch):
+    #     """Run a validation step after loading weights and reducing LR to verify improvement."""
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         val_loss = self.evaluate_validation_loss()  # Assume you have a method to calculate val_loss
 
-        print(f"Validation loss after LR reduction at epoch {epoch+1}: {val_loss}")
-        if val_loss > self.best_val_loss:
-            print("Validation loss increased after LR reduction, considering early stopping or further LR reduction.")
+    #     print(f"Validation loss after LR reduction at epoch {epoch+1}: {val_loss}")
+    #     if val_loss > self.best_val_loss:
+    #         print("Validation loss increased after LR reduction, considering early stopping or further LR reduction.")
 
     @property
     def in_cooldown(self):
