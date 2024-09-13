@@ -160,12 +160,12 @@ class CustomSchedulerWeightUpdate:
         # Maximum number of epochs check
         if self.total_epochs >= self.max_num_epochs:
             print(f"Maximum number of epochs ({self.max_num_epochs}) reached.")
-            return True  # Stop training
+            return True, False  # Stop training
 
         # Early stopping check
         if self.num_bad_epochs_early_stop >= self.early_stop_patience:
             print(f"Early stopping at epoch {epoch+1}")
-            return True  # Stop training
+            return True, False  # Stop training
 
         required_improvement = self.best_val_loss * (1 - self.improvement_percentage)
 
@@ -184,6 +184,7 @@ class CustomSchedulerWeightUpdate:
                 # Reduce learning rate if patience is exceeded
                 self.reduce_lr(epoch)
                 self.num_bad_epochs = 0  # Reset bad epochs counter
+                return False, True
             else:
                 self.num_bad_epochs += 1
 
@@ -192,7 +193,7 @@ class CustomSchedulerWeightUpdate:
             else:
                 self.cooldown_counter -= 1  # Decrease cooldown counter
 
-        return False  # Continue training
+        return False, False  # Continue training
 
     def reduce_lr(self, epoch):
         if self.best_model_weights is not None:
