@@ -204,6 +204,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     true_phase_list = []
     predicted_phase_list = []
     inputs_list = []
+    ypdfs_list = []
     denoised_inputs_list = []
     running_test_loss = 0
     model.to(device)
@@ -229,8 +230,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
   
     with torch.no_grad():
         for batch in test_dataloader:
-            inputs, labels, phases = batch
-            inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+            inputs, labels, phases, ypdfs = batch
+            inputs, labels, phases, ypdfs = inputs.to(device), labels.to(device), phases.to(device), ypdfs.to(device)
             if denoising and denoise_model is not None and zero_mask_model is not None:
                         
                 denoise_model.eval()
@@ -244,10 +245,12 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 if phase_mispredict_analysis:
                     inputs_cpu = inputs.cpu().detach()
                     outputs_cpu = outputs.cpu().detach()
+                    ypdfs_cpu = ypdfs.cpu().detach()
 
                     for i in range(inputs_cpu.size(0)):  # Loop over batch size (32 in this case)
                         inputs_list.append(inputs_cpu[i].squeeze())  # Remove extra channel if needed, making it [512, 16]
                         denoised_inputs_list.append(outputs_cpu[i].squeeze())  # Same for outputs         
+                        ypdfs_list.append(ypdfs_cpu[i].squeeze())  # Same for outputs
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 if parallel:
@@ -497,7 +500,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         print("Denoised Input List:", denoised_input_list.shape)
         print("Predicted Phase List:", predicted_phase_list.shape)
         print("True Phase List:", true_phase_list.shape)
-        for idx, (input_sino, denoised_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, predicted_phase_list, true_phase_list)):
+        for idx, (input_sino, denoised_sino, ypdf_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, ypdfs_list, predicted_phase_list, true_phase_list)):
             print("Predicted Phase:", predicted_phase.shape)
             print("True Phase:", true_phase.shape)
             true_phase_adjusted = np.arccos(np.cos(true_phase))
@@ -508,15 +511,19 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 # Calculate arccos(cos(true_phase)) for the label
 
                 # Plot the two sinograms (initial input and denoised input)
-                fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+                fig, axes = plt.subplots(1, 3, figsize=(15, 5))
                 
-                # Plot the initial input sinogram
-                axes[0].imshow(input_sino.cpu().numpy(), cmap='gray', aspect='auto')
-                axes[0].set_title("Initial Input Sinogram")
+                axes[0].imshow(ypdf_sino.cpu().numpy(), cmap='blue', aspect='auto')
+                axes[0].set_title("Ypdf Sinogram")
                 axes[0].axis('off')
+
+                # Plot the initial input sinogram
+                axes[1].imshow(input_sino.cpu().numpy(), cmap='blue', aspect='auto')
+                axes[1].set_title("Initial Input Sinogram")
+                axes[1].axis('off')
                 
                 # Plot the denoised input sinogram
-                axes[1].imshow(denoised_sino.cpu().numpy(), cmap='gray', aspect='auto')
+                axes[1].imshow(denoised_sino.cpu().numpy(), cmap='blue', aspect='auto')
                 axes[1].set_title("Denoised Input Sinogram")
                 axes[1].axis('off')
                 
@@ -574,7 +581,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -609,7 +616,7 @@ def main():
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08282024_Resnext34_2hotsplit_EMDloss_Ypdf_1/evaluate_outputs/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs2/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
 
     if not os.path.exists(model_save_dir):

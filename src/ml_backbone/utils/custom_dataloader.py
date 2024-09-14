@@ -16,7 +16,7 @@ class DataMilking_MilkCurds(Dataset):
     pulse_number or pulse_number_max to be specified. The other should be None. If neither are specified, will pull all shots. If both are specified, then 
     an exception will be thrown.
     '''
-    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2, inverse_radon=False): 
+    def __init__(self, root_dirs=[], input_name="Ypdf", pulse_handler=None, transform=None, test_batch=None, pulse_threshold=None, zero_to_one_rescale=False, pulse_min_binary=None, phases_labeled=False, phases_labeled_max=2, inverse_radon=False, ypdfs_included=False): 
         self.root_dirs = root_dirs
         self.transform = transform
         self.input_name = input_name
@@ -24,10 +24,12 @@ class DataMilking_MilkCurds(Dataset):
         self.inputs_arr = []
         self.labels_arr = []
         self.phases_arr = []
+        self.ypds_arr = []
         self.test_batch = test_batch
         self.phases_labeled = phases_labeled
         self.phases_labeled_max = phases_labeled_max
         self.inverse_radon = inverse_radon
+        self.ypdf_included = ypdfs_included
 
         
         for i, root_dir in enumerate(self.root_dirs):
@@ -49,8 +51,12 @@ class DataMilking_MilkCurds(Dataset):
                         if pulse_handler is None or (pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is None):
                             if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                                 self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             else: #input is an attribute
                                 self.inputs_arr.append(f[shot].attrs[self.input_name])
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             
                             # Label num pulses
                             if pulse_min_binary is not None:
@@ -88,8 +94,12 @@ class DataMilking_MilkCurds(Dataset):
                         elif pulse_handler[i]["pulse_number"] is not None and pulse_handler[i]["pulse_number_max"] is None and pulse_handler[i]["pulse_number"] == f[shot].attrs["npulses"] :
                             if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                                 self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             else: #input is an attribute
                                 self.inputs_arr.append(f[shot].attrs[self.input_name])
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             
                             # Label num pulses
                             encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
@@ -112,8 +122,12 @@ class DataMilking_MilkCurds(Dataset):
                         elif pulse_handler[i]["pulse_number"] is None and pulse_handler[i]["pulse_number_max"] is not None and f[shot].attrs["npulses"] <= pulse_handler[i]["pulse_number_max"]:
                             if self.input_name == "Ypdf" or self.input_name == "Ximg": #inputs is an image
                                 self.inputs_arr.append(torch.tensor(f[shot][self.input_name][()],dtype=torch.float32))
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             else: #input is an attribute
                                 self.inputs_arr.append(f[shot].attrs[self.input_name])
+                                if self.ypdf_included:
+                                    self.ypds_arr.append(torch.tensor(f[shot]["Ypdf"][()],dtype=torch.float32))
                             
                             # Label num pulses
                             encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
@@ -134,6 +148,8 @@ class DataMilking_MilkCurds(Dataset):
 
 
         self.inputs_arr = np.array(self.inputs_arr)
+        if self.ypdf_included:
+            self.ypds_arr = np.array(self.ypds_arr)
         if self.inverse_radon:
             new_inputs_arr = []
             n = 16
@@ -164,6 +180,8 @@ class DataMilking_MilkCurds(Dataset):
     def __getitem__(self, idx):
         
         data_point = self.inputs_arr[idx]
+        if self.ypdf_included:
+            ypdfs = self.ypds_arr[idx]
         labels = self.labels_arr[idx]
         if self.phases_labeled:
             phases = self.phases_arr[idx]
@@ -172,9 +190,14 @@ class DataMilking_MilkCurds(Dataset):
             if self.transform:
                 data_point = self.transform(data_point)
         
-        if self.phases_labeled:
+        if self.phases_labeled and self.ypdf_included:
+            return data_point, labels, phases, ypdfs
+        elif self.phases_labeled:
             return data_point, labels, phases
-        return data_point, labels
+        elif self.ypdf_included:
+            return data_point, labels, ypdfs
+        else:
+            return data_point, labels
 class DataMilking_HalfAndHalf(Dataset):
     '''
     HalfAndHalf allows user to pull from 1 or more directories and specify the pulse characteristics for each. Input and labels must be the same though. 
