@@ -513,17 +513,17 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 # Plot the two sinograms (initial input and denoised input)
                 fig, axes = plt.subplots(1, 3, figsize=(15, 5))
                 
-                axes[0].imshow(ypdf_sino.cpu().numpy(), cmap='blue', aspect='auto')
+                axes[0].imshow(ypdf_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
                 axes[0].set_title("Ypdf Sinogram")
                 axes[0].axis('off')
 
                 # Plot the initial input sinogram
-                axes[1].imshow(input_sino.cpu().numpy(), cmap='blue', aspect='auto')
+                axes[1].imshow(input_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
                 axes[1].set_title("Initial Input Sinogram")
                 axes[1].axis('off')
                 
                 # Plot the denoised input sinogram
-                axes[1].imshow(denoised_sino.cpu().numpy(), cmap='blue', aspect='auto')
+                axes[1].imshow(denoised_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
                 axes[1].set_title("Denoised Input Sinogram")
                 axes[1].axis('off')
                 
