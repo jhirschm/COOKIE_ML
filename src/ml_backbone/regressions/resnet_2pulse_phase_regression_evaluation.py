@@ -523,9 +523,9 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 axes[1].axis('off')
                 
                 # Plot the denoised input sinogram
-                axes[1].imshow(denoised_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
-                axes[1].set_title("Denoised Input Sinogram")
-                axes[1].axis('off')
+                axes[2].imshow(denoised_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
+                axes[2].set_title("Denoised Input Sinogram")
+                axes[2].axis('off')
                 
                 # Add text annotations with the predicted and true phase
                 fig.suptitle(f"Predicted Phase: {predicted_phase:.4f}, Adjusted True Phase: {true_phase_adjusted:.4f}", fontsize=12)
