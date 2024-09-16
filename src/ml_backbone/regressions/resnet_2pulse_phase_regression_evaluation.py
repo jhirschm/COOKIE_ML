@@ -325,7 +325,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 phases_dif = phases[:,0] - phases[:,1]
                 phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
                 predicted_phases_decoded = onehot_to_phase(outputs, num_classes, phase_range=(0, torch.pi))
-                print("Predicted Phases Decoded:", predicted_phases_decoded)
+                # print("Predicted Phases Decoded:", predicted_phases_decoded)
                 # loss = criterion(outputs, phases_one_hot)
 
                 true_phase_list.append(phases_dif.cpu().numpy().ravel())
@@ -458,22 +458,22 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         plt.figure(figsize=(10, 6))
 
         # Scatter plot with color-coded points
-        # scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
-        #                     predicted_phase_list, 
-        #                     c=predicted_pulses, 
-        #                     cmap=cmap, 
-        #                     label='Predicted vs True', 
-        #                     s=50, edgecolor='k', alpha=0.75)
-        plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
-        print("Predicted Pulses:", predicted_pulses[0:100])
-        print("Pred Phases:", predicted_phase_list[0:100])
-        print("True Phases:", np.arccos(np.cos(true_phase_list[0:100])))
+        scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
+                            predicted_phase_list, 
+                            c=predicted_pulses, 
+                            cmap=cmap, 
+                            label='Predicted vs True', 
+                            s=50, edgecolor='k', alpha=0.75)
+        # plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
+        # print("Predicted Pulses:", predicted_pulses[0:100])
+        # print("Pred Phases:", predicted_phase_list[0:100])
+        # print("True Phases:", np.arccos(np.cos(true_phase_list[0:100])))
 
 
         # # Add colorbar to show the mapping of colors to categories
-        # cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
-        # cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
-        # cbar.set_label('LSTM Classifier Categories')
+        cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
+        cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
+        cbar.set_label('LSTM Classifier Categories')
 
         # Plot the ideal prediction line
         plt.plot([np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
@@ -488,7 +488,30 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         plt.show()
 
         # Save the plot
-        plt.savefig(plot_path)              
+        plt.savefig(plot_path) 
+
+        # Calculate the phase difference (true - predicted) for all data points
+        phase_diff_all = np.abs(np.arccos(np.cos(true_phase_list)) - predicted_phase_list)
+
+        # Compute mean and standard deviation for the entire dataset
+        mean_all = np.mean(phase_diff_all)
+        std_all = np.std(phase_diff_all)
+
+        print(f"Mean of phase difference (all data): {mean_all}")
+        print(f"Standard deviation of phase difference (all data): {std_all}")
+
+        # Now filter for data points classified as "2 pulses" (3rd index, value = 2 in predicted_pulses)
+        mask_two_pulses = (predicted_pulses == 2)
+
+        # Apply the mask to get the phase differences only for the points classified as "2 pulses"
+        phase_diff_two_pulses = phase_diff_all[mask_two_pulses]
+
+        # Compute mean and standard deviation for the "2 pulses" subset
+        mean_two_pulses = np.mean(phase_diff_two_pulses)
+        std_two_pulses = np.std(phase_diff_two_pulses)
+
+        print(f"Mean of phase difference (2 pulses): {mean_two_pulses}")
+        print(f"Standard deviation of phase difference (2 pulses): {std_two_pulses}")             
 
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
