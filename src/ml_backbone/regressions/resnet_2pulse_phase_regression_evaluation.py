@@ -587,39 +587,6 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 plt.close(fig)
 
 
-                # Assuming input_size and num_classes are defined elsewhere
-                input_size = 512  # Define your input size
-                num_classes = 5   # Example number of classes
-
-                # Instantiate the CustomLSTMClassifier
-                classModel = CustomLSTMClassifier(
-                    input_size=input_size,
-                    hidden_size=data['hidden_size'],
-                    num_lstm_layers=data['num_lstm_layers'],
-                    num_classes=num_classes,
-                    bidirectional=data['bidirectional'],
-                    fc_layers=data['fc_layers'],
-                    dropout_p=data['dropout'],
-                    lstm_dropout=data['lstm_dropout'],
-                    layer_norm=data['layerNorm'],
-                    ignore_output_layer=False  # Set as needed based on your application
-                )
-                classModel.to(device)
-
-                best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/testLSTM_XimgDenoised_best_model.pth"
-                state_dict = torch.load(best_mode_classifier, map_location=device)
-                def remove_module_prefix(state_dict):
-                    new_state_dict = {}
-                    for k, v in state_dict.items():
-                        if k.startswith('module.'):
-                            new_state_dict[k[7:]] = v
-                        else:
-                            new_state_dict[k] = v
-                    return new_state_dict
-                state_dict = remove_module_prefix(state_dict)
-                for key in state_dict.keys():
-                    print(key, state_dict[key].shape)
-                classModel.load_state_dict(state_dict)
 
                 
                 
@@ -797,14 +764,7 @@ def main():
 
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/testLSTM_XimgDenoised_best_model.pth"
     state_dict = torch.load(best_mode_classifier, map_location=device)
-    def remove_module_prefix(state_dict):
-        new_state_dict = {}
-        for k, v in state_dict.items():
-            if k.startswith('module.'):
-                new_state_dict[k[7:]] = v
-            else:
-                new_state_dict[k] = v
-        return new_state_dict
+
     state_dict = remove_module_prefix(state_dict)
     for key in state_dict.keys():
         print(key, state_dict[key].shape)
