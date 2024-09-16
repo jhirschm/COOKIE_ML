@@ -497,10 +497,13 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         mean_all = np.mean(phase_diff_all)
         std_all = np.std(phase_diff_all)
 
+        print("--------------------")
         print(f"Mean of phase difference (all data): {mean_all}")
         print(f"Standard deviation of phase difference (all data): {std_all}")
 
         # Now filter for data points classified as "2 pulses" (3rd index, value = 2 in predicted_pulses)
+        predicted_pulses = int(predicted_pulses)
+        print(predicted_pulses)
         mask_two_pulses = (predicted_pulses == 2)
 
         # Apply the mask to get the phase differences only for the points classified as "2 pulses"
@@ -509,6 +512,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # Compute mean and standard deviation for the "2 pulses" subset
         mean_two_pulses = np.mean(phase_diff_two_pulses)
         std_two_pulses = np.std(phase_diff_two_pulses)
+        print("--------------------")
 
         print(f"Mean of phase difference (2 pulses): {mean_two_pulses}")
         print(f"Standard deviation of phase difference (2 pulses): {std_two_pulses}")             
