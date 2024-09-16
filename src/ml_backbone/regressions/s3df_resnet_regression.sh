@@ -28,7 +28,8 @@ export PYTHONIOENCODING=utf-8
 
 
 if [[ $# -ne 2 ]]; then
-    echo "Invalid number of arguments. Usage: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
+    echo "Invalid number of arguments. Usag
+    e: sbatch this_script.sh [training|evaluation] [single_pulse|double_pulse]"
     exit 1
 fi
 

@@ -20,6 +20,6 @@ __all__ = [
     'DataMilking_SemiSkimmed',
     'DataMilking_HalfAndHalf',
     'CustomScheduler',
-    'CustomSchedulerWeightUpdate',
+    ''
     'DataMilking_MilkCurds'
 ]

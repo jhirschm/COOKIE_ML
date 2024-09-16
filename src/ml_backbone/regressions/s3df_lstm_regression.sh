@@ -54,7 +54,7 @@ case "$action" in
     evaluation)
         case "$pulse_type" in
             single_pulse)
-                echo "Invalid"
+                python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_evaluation.py
                 ;;
             double_pulse)
                 python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/lstm_2pulse_phase_regression_evaluation.py
