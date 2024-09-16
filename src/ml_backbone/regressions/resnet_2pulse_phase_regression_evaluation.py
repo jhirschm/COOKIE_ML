@@ -675,7 +675,7 @@ def main():
     
     # identifier = "Resnext34_2hotsplit_EMDloss_Ypdf_train"
     identifier = "Resnext34_dif_Ximg_wrapping_fullData_exrtaAnalysis"
-    criterion = earth_mover_distance
+    criterion = nn.BCEWithLogitsLoss()
     state_dict = torch.load(best_model_regression_path, map_location=device)
     state_dict = remove_module_prefix(state_dict)
     
