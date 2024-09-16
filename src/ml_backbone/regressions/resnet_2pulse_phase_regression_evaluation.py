@@ -466,7 +466,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
         print("Predicted Pulses:", predicted_pulses[0:100])
         print("Pred Phases:", predicted_phase_list[0:100])
-        print("True Phases:", np.arccos(np.cos(true_phase_list[0:100]))
+        print("True Phases:", np.arccos(np.cos(true_phase_list[0:100])))
 
 
         # # Add colorbar to show the mapping of colors to categories
