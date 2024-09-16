@@ -502,7 +502,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         print(f"Standard deviation of phase difference (all data): {std_all}")
 
         # Now filter for data points classified as "2 pulses" (3rd index, value = 2 in predicted_pulses)
-        predicted_pulses = int(predicted_pulses)
+        predicted_pulses = np.array(predicted_pulses)
         print(predicted_pulses)
         mask_two_pulses = (predicted_pulses == 2)
 
