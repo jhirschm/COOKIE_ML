@@ -30,6 +30,7 @@ from sklearn.metrics import mean_squared_error
 import datetime
 from typing import List, Any
 from torchinfo import summary
+import matplotlib.cm as cm
 
 def get_conv_output_size(input_size, conv_layers):
     x = torch.randn(input_size)

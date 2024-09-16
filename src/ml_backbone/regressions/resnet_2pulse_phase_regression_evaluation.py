@@ -208,6 +208,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     ypdfs_list = []
     denoised_inputs_list = []
     running_test_loss = 0
+    true_pulses = []
+    predicted_pulses = []
     model.to(device)
 
     if denoising and denoise_model is None and zero_mask_model is None:
@@ -265,6 +267,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 zero_mask = zero_mask.to(device, torch.float32)
 
                 outputs = outputs * zero_mask
+                lstm_inputs = outputs.detach().clone()
+                lstm_inputs = lstm_inputs.to(device)
                 inputs = torch.unsqueeze(outputs, 1)
                 inputs = inputs.to(device, torch.float32)
 
@@ -325,6 +329,15 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
 
                 true_phase_list.append(phases_dif.cpu().numpy().ravel())
                 predicted_phase_list.append(predicted_phases_decoded.cpu().numpy().ravel())
+
+
+            if lstm_classifier_cases:
+                probs, preds = lstm_model.predict(lstm_inputs)
+                preds = preds.to(device)
+                probs = probs.to(device)
+    
+                predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
+                predicted_pulses.extend(predicted_pulse_single_label)
 
             # else:
             #     outputs_1 = get_phase(outputs[:,0:outputs.shape[1]//2], num_classes//2, max_val=2*torch.pi)
@@ -435,6 +448,41 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.grid(True)
     plt.show()
     plt.savefig(plot_path)
+
+    if lstm_classifier_cases:
+        plot_path = os.path.join(model_save_dir, identifier + "_ArccosCosTruePred_LSTMClassifier.pdf")
+        cmap = cm.get_cmap('viridis', 5)  # 5 distinct colors for categories 0-4
+
+            # Create the scatter plot with colors based on predicted_pulses
+        plt.figure(figsize=(10, 6))
+
+        # Scatter plot with color-coded points
+        scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
+                            predicted_phase_list, 
+                            c=predicted_pulses, 
+                            cmap=cmap, 
+                            label='Predicted vs True', 
+                            s=50, edgecolor='k', alpha=0.75)
+
+        # Add colorbar to show the mapping of colors to categories
+        cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
+        cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
+        cbar.set_label('LSTM Classifier Categories')
+
+        # Plot the ideal prediction line
+        plt.plot([np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+                [np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+                color='red', linestyle='--', label='Ideal Prediction')
+
+        plt.xlabel('True ArccosCos Phase Differences')
+        plt.ylabel('Predicted Phase Differences')
+        plt.title('ArccosCos True vs Predicted Phase Differences')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        # Save the plot
+        plt.savefig(plot_path)              
 
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
@@ -716,8 +764,55 @@ def main():
     autoencoder.load_state_dict(state_dict)
 
 
+
+    data = {
+        "hidden_size": 128,#128
+        "num_lstm_layers": 3,
+        "bidirectional": True,
+        "fc_layers": [32, 64],
+        "dropout": 0.2,
+        "lstm_dropout": 0.2,
+        "layerNorm": False,
+        # Other parameters are default or not provided in the example
+    }   
+
+    # Assuming input_size and num_classes are defined elsewhere
+    input_size = 512  # Define your input size
+    num_classes = 5   # Example number of classes
+
+    # Instantiate the CustomLSTMClassifier
+    classModel = CustomLSTMClassifier(
+        input_size=input_size,
+        hidden_size=data['hidden_size'],
+        num_lstm_layers=data['num_lstm_layers'],
+        num_classes=num_classes,
+        bidirectional=data['bidirectional'],
+        fc_layers=data['fc_layers'],
+        dropout_p=data['dropout'],
+        lstm_dropout=data['lstm_dropout'],
+        layer_norm=data['layerNorm'],
+        ignore_output_layer=False  # Set as needed based on your application
+    )
+    classModel.to(device)
+
+    best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/testLSTM_XimgDenoised_best_model.pth"
+    state_dict = torch.load(best_mode_classifier, map_location=device)
+    def remove_module_prefix(state_dict):
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            if k.startswith('module.'):
+                new_state_dict[k[7:]] = v
+            else:
+                new_state_dict[k] = v
+        return new_state_dict
+    state_dict = remove_module_prefix(state_dict)
+    for key in state_dict.keys():
+        print(key, state_dict[key].shape)
+    classModel.load_state_dict(state_dict)
+
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=True, denoise_model =autoencoder,
-                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True, phase_mispredict_analysis=True)
+                zero_mask_model = zero_model, parallel=True, num_classes=num_classes, inverse_radon=False, multi_hotEncoding_eval=False, phase_1hotwrapping=True, phase_mispredict_analysis=True,
+                lstm_classifier_cases=True, lstm_model=classModel)
     
  # print(summary(model=model, 
     #     input_size=(32, 1, 16, 512), # make sure this is "input_size", not "input_shape"
