@@ -63,9 +63,9 @@ def decode_2hot_to_phases(output_vector, n_classes, phase_range=(0, 2 * np.pi)):
     min_phase, max_phase = phase_range
 
     # Apply sigmoid to the output vector
-    print(output_vector)
+    # print(output_vector)
     probabilities = 1/(1+np.exp(-1*(output_vector)))
-    print(probabilities)
+    # print(probabilities)
 
     
     # Split the vector into two halves
@@ -457,17 +457,22 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         plt.figure(figsize=(10, 6))
 
         # Scatter plot with color-coded points
-        scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
-                            predicted_phase_list, 
-                            c=predicted_pulses, 
-                            cmap=cmap, 
-                            label='Predicted vs True', 
-                            s=50, edgecolor='k', alpha=0.75)
+        # scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
+        #                     predicted_phase_list, 
+        #                     c=predicted_pulses, 
+        #                     cmap=cmap, 
+        #                     label='Predicted vs True', 
+        #                     s=50, edgecolor='k', alpha=0.75)
+        plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
+        print("Predicted Pulses:", predicted_pulses[0:100])
+        print("Pred Phases:", predicted_phase_list[0:100])
+        print("True Phases:", np.arccos(np.cos(true_phase_list[0:100]))
 
-        # Add colorbar to show the mapping of colors to categories
-        cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
-        cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
-        cbar.set_label('LSTM Classifier Categories')
+
+        # # Add colorbar to show the mapping of colors to categories
+        # cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
+        # cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
+        # cbar.set_label('LSTM Classifier Categories')
 
         # Plot the ideal prediction line
         plt.plot([np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
@@ -545,13 +550,13 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # Assuming you have these lists filled
         
         # Iterate over the sinograms and their corresponding predicted and true phases
-        print("Input List:", input_list.shape)
-        print("Denoised Input List:", denoised_input_list.shape)
-        print("Predicted Phase List:", predicted_phase_list.shape)
-        print("True Phase List:", true_phase_list.shape)
+        # print("Input List:", input_list.shape)
+        # print("Denoised Input List:", denoised_input_list.shape)
+        # print("Predicted Phase List:", predicted_phase_list.shape)
+        # print("True Phase List:", true_phase_list.shape)
         for idx, (input_sino, denoised_sino, ypdf_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, ypdfs_list, predicted_phase_list, true_phase_list)):
-            print("Predicted Phase:", predicted_phase.shape)
-            print("True Phase:", true_phase.shape)
+            # print("Predicted Phase:", predicted_phase.shape)
+            # print("True Phase:", true_phase.shape)
             true_phase_adjusted = np.arccos(np.cos(true_phase))
 
             # Check for cases where predicted phase is nearly zero but true phase isn't
@@ -766,8 +771,8 @@ def main():
     state_dict = torch.load(best_mode_classifier, map_location=device)
 
     state_dict = remove_module_prefix(state_dict)
-    for key in state_dict.keys():
-        print(key, state_dict[key].shape)
+    # for key in state_dict.keys():
+    #     print(key, state_dict[key].shape)
     classModel.load_state_dict(state_dict)
 
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=True, denoise_model =autoencoder,
