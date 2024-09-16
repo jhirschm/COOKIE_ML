@@ -325,6 +325,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 phases_dif = phases[:,0] - phases[:,1]
                 phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
                 predicted_phases_decoded = onehot_to_phase(outputs, num_classes, phase_range=(0, torch.pi))
+                print("Predicted Phases Decoded:", predicted_phases_decoded)
                 # loss = criterion(outputs, phases_one_hot)
 
                 true_phase_list.append(phases_dif.cpu().numpy().ravel())
@@ -750,14 +751,14 @@ def main():
 
     # Assuming input_size and num_classes are defined elsewhere
     input_size = 512  # Define your input size
-    num_classes = 5   # Example number of classes
+    num_lstm_classes = 5   # Example number of classes
 
     # Instantiate the CustomLSTMClassifier
     classModel = CustomLSTMClassifier(
         input_size=input_size,
         hidden_size=data['hidden_size'],
         num_lstm_layers=data['num_lstm_layers'],
-        num_classes=num_classes,
+        num_classes=num_lstm_classes,
         bidirectional=data['bidirectional'],
         fc_layers=data['fc_layers'],
         dropout_p=data['dropout'],
