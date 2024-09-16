@@ -325,7 +325,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
                 phases_dif = phases[:,0] - phases[:,1]
                 phases_one_hot = phases_to_1hot_wrapping(phases_dif, num_classes, phase_range=(0, torch.pi))
                 predicted_phases_decoded = onehot_to_phase(outputs, num_classes, phase_range=(0, torch.pi))
-                loss = criterion(outputs, phases_one_hot)
+                # loss = criterion(outputs, phases_one_hot)
 
                 true_phase_list.append(phases_dif.cpu().numpy().ravel())
                 predicted_phase_list.append(predicted_phases_decoded.cpu().numpy().ravel())
