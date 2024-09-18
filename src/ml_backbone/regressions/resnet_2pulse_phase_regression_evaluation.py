@@ -453,7 +453,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     if lstm_classifier_cases:
         plot_path = os.path.join(model_save_dir, identifier + "_ArccosCosTruePred_LSTMClassifier.pdf")
         cmap = cm.get_cmap('viridis', 5)  # 5 distinct colors for categories 0-4
-
+        print("Predicted Pulses:", predicted_pulses[0:100])
             # Create the scatter plot with colors based on predicted_pulses
         plt.figure(figsize=(10, 6))
 
@@ -461,7 +461,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         scatter = plt.scatter(np.arccos(np.cos(true_phase_list)), 
                             predicted_phase_list, 
                             c=predicted_pulses, 
-                            cmap=cmap, 
+                            # cmap=cmap, 
+                            marker='o',
                             label='Predicted vs True', 
                             s=50, edgecolor='k', alpha=0.75)
         # plt.scatter(np.arccos(np.cos(true_phase_list)), predicted_phase_list, color='blue', label='Predicted vs True')
@@ -471,7 +472,7 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
 
 
         # Set colorbar, ensuring the ticks are in the middle of each color band
-        cbar = plt.colorbar(scatter, ticks=np.linspace(0.5, 4.5, 5))  # Midpoints for color categories
+        cbar = plt.colorbar(scatter, ticks=np.linspace(0, 4, 5))  # Midpoints for color categories
         cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
         cbar.set_label('LSTM Classifier Categories')
 
