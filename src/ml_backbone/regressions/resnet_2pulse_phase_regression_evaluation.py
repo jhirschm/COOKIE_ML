@@ -470,8 +470,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # print("True Phases:", np.arccos(np.cos(true_phase_list[0:100])))
 
 
-        # # Add colorbar to show the mapping of colors to categories
-        cbar = plt.colorbar(scatter, ticks=[0, 1, 2, 3, 4])
+        # Set colorbar, ensuring the ticks are in the middle of each color band
+        cbar = plt.colorbar(scatter, ticks=np.linspace(0.5, 4.5, 5))  # Midpoints for color categories
         cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
         cbar.set_label('LSTM Classifier Categories')
 
