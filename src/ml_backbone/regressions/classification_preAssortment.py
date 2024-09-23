@@ -4,6 +4,7 @@ from skimage.transform import iradon
 from sklearn.metrics import precision_score, recall_score, f1_score, hamming_loss, multilabel_confusion_matrix, accuracy_score
 import seaborn as sns
 import math
+import uuid  # To generate unique keys
 
 
 
@@ -66,6 +67,11 @@ def nearest_power_of_2(n):
 def save_filtered_data(model, dataloader, data_save_directory, file_prefix, max_examples_per_file, device, denoising=False,
                        denoise_model=None, zero_mask_model=None, parallel=True):
     
+    # Check if the save directory exists, if not create it
+    if not os.path.exists(data_save_directory):
+        os.makedirs(data_save_directory)
+        print(f"Directory {data_save_directory} created.")
+        
     model.to(device)
     if denoising and denoise_model is None and zero_mask_model is None:
         raise ValueError("Denoising is enabled but no denoising model is provided")
