@@ -273,12 +273,10 @@ def main():
     train_size = 1*int(0.8 * len(data_train))
 
    # Get the number of .h5 files in the train directory
-    datapath_train = "/path/to/train/directory"
     num_train_files = len([f for f in os.listdir(datapath_train) if f.endswith('.h5') and os.path.isfile(os.path.join(datapath_train, f))])
     print(f"Number of .h5 files in the train directory: {num_train_files}")
 
     # Get the number of .h5 files in the test directory
-    datapath_test = "/path/to/test/directory"
     num_test_files = len([f for f in os.listdir(datapath_test) if f.endswith('.h5') and os.path.isfile(os.path.join(datapath_test, f))])
     print(f"Number of .h5 files in the test directory: {num_test_files}")
     
