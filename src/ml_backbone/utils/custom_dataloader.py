@@ -89,9 +89,9 @@ class DataMilking_MilkCurds(Dataset):
                                 if self.energies_included:
                                     temp = np.zeros(self.energies_included_max)
                                     if f[shot].attrs["npulses"] <= self.energies_included_max:
-                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energy"]
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energies"]
                                     else:
-                                        temp = f[shot].attrs["energy"][0:self.energies_included_max]
+                                        temp = f[shot].attrs["energies"][0:self.energies_included_max]
                                     self.energies_arr.append(temp)
                             else:
                                 encode_pulses_temp = torch.zeros(self.pulse_threshold+1)
@@ -110,9 +110,9 @@ class DataMilking_MilkCurds(Dataset):
                                 if self.energies_included:
                                     temp = np.zeros(self.energies_included_max)
                                     if f[shot].attrs["npulses"] <= self.energies_included_max:
-                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energy"]
+                                        temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energies"]
                                     else:
-                                        temp = f[shot].attrs["energy"][0:self.energies_included_max]
+                                        temp = f[shot].attrs["energies"][0:self.energies_included_max]
                                     self.energies_arr.append(temp)
                                 
                             # print(f[shot].attrs["npulses"])
@@ -146,9 +146,9 @@ class DataMilking_MilkCurds(Dataset):
                             if self.energies_included:
                                 temp = np.zeros(self.energies_included_max)
                                 if f[shot].attrs["npulses"] <= self.energies_included_max:
-                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energy"]
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energies"]
                                 else:
-                                    temp = f[shot].attrs["energy"][0:self.energies_included_max]
+                                    temp = f[shot].attrs["energies"][0:self.energies_included_max]
                                 self.energies_arr.append(temp)                            
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
@@ -181,9 +181,9 @@ class DataMilking_MilkCurds(Dataset):
                             if self.energies_included:
                                 temp = np.zeros(self.energies_included_max)
                                 if f[shot].attrs["npulses"] <= self.energies_included_max:
-                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energy"]
+                                    temp[0:f[shot].attrs["npulses"]] = f[shot].attrs["energies"]
                                 else:
-                                    temp = f[shot].attrs["energy"][0:self.energies_included_max]
+                                    temp = f[shot].attrs["energies"][0:self.energies_included_max]
                                 self.energies_arr.append(temp)                                
                             # print(f[shot].attrs["npulses"])
                             # print(encode_pulses_temp)
