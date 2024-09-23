@@ -14,10 +14,7 @@
 
 
 # Check if the script argument is provided
-if [ -z "$1" ]; then
-    echo "No script specified. Usage: sbatch s3df_denoising.sh [training|fineTuning|evaluation]"
-    exit 1
-fi
+
 
 echo starting run 1 at: `date`
 # Check which GPU is being used
