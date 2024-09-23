@@ -167,8 +167,8 @@ def main():
     datapath_save_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/assorted/"
     datapath_save_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/assorted/"
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True, energies_included=True, energies_included_max=2)
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True,  energies_included=True, energies_included_max=2)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True, energies_included=True, energies_included_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True,  energies_included=True, energies_included_max=2)
 
 
    
@@ -279,7 +279,6 @@ def main():
 
    
     # Calculate the lengths for each split
-    train_size = 1*int(0.8 * len(data_train))
 
    # Get the number of .h5 files in the train directory
     num_train_files = len([f for f in os.listdir(datapath_train) if f.endswith('.h5') and os.path.isfile(os.path.join(datapath_train, f))])
@@ -290,7 +289,9 @@ def main():
     print(f"Number of .h5 files in the test directory: {num_test_files}")
     
     train_size = len(data_train)
+    print(f"Train size: {train_size}")
     test_size = len(data_test)
+    print(f"Test size: {test_size}")
     
     test_max_examples_per_file = test_size // num_test_files
     rounded_test_max_examples_per_file = nearest_power_of_2(test_max_examples_per_file)
