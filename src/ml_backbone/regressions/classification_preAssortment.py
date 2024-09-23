@@ -71,7 +71,7 @@ def save_filtered_data(model, dataloader, data_save_directory, file_prefix, max_
     if not os.path.exists(data_save_directory):
         os.makedirs(data_save_directory)
         print(f"Directory {data_save_directory} created.")
-        
+
     model.to(device)
     if denoising and denoise_model is None and zero_mask_model is None:
         raise ValueError("Denoising is enabled but no denoising model is provided")
@@ -125,7 +125,10 @@ def save_filtered_data(model, dataloader, data_save_directory, file_prefix, max_
             else:
                 inputs = inputs.to(device, torch.float32)
             
-            probs, preds = model.predict(inputs)
+            if parallel:
+                probs, preds = model.module.predict(inputs)
+            else:
+                probs, preds = model.predict(inputs)
             predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
             
             # Filtering only the examples classified as 2 pulses
