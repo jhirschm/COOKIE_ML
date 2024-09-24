@@ -1071,7 +1071,7 @@ def main():
 
     # Load Dataset and Feed to Dataloader
     # datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
-    datapath_train = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/2-Pulse_04232024/Processed_07312024_0to1/train/"
+    # datapath_train = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/2-Pulse_04232024/Processed_07312024_0to1/train/"
     datapath_train = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/2-Pulse_04232024/Processed_07312024_0to1/train/assorted"
     pulse_specification = None
 
@@ -1111,7 +1111,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09122024_Resnext152_dif_Ximg_Denoised_1_newScheduler"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09122024_Resnext50_dif_Ximg_Denoised_1_newScheduler"
 
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09232024_Resnet34_dif_Ximg_Denoised_assorted"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09232024_Resnet34_dif_Ximg_Denoised_assorted_2"
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
 
@@ -1126,8 +1126,8 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     max_epochs = 200
-    # scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
-    scheduler = CustomSchedulerWeightUpdate(optimizer = optimizer, model=model, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+    scheduler = CustomScheduler(optimizer, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
+    # scheduler = CustomSchedulerWeightUpdate(optimizer = optimizer, model=model, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
     identifier = "Resnext34_dif_XimgDenoised_wrapping_assorted"
 
     '''
