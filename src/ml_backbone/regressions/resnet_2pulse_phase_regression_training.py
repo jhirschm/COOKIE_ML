@@ -719,7 +719,10 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, s
                 print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
 
                 # Update the scheduler
-                should_stop, return_weights = scheduler.step(val_loss, epoch)
+                should_stop = scheduler.step(val_loss, epoch)
+                return_weights = False
+                # should_stop, return_weights = scheduler.step(val_loss, epoch)
+
                 if return_weights:
                     print("Reducing learning rate and returning to best model weights.")
                     f.write("Reducing learning rate and returning to best model weights.\n")
