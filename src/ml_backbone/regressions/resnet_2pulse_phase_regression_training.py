@@ -1099,6 +1099,7 @@ def main():
     # Create data loaders
     batch_size = 32
     batch_size = 8
+    batch_size = 16
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -1117,7 +1118,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09122024_Resnext50_dif_Ximg_Denoised_1_newScheduler"
 
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09232024_Resnet34_dif_Ximg_Denoised_assorted_2"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09252024_Resnet34_dif_Ximg_Denoised_assorted_smallerBatchSize"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09302024_Resnet34_dif_Ximg_Denoised_assorted_16BatchSize"
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ypdf_1"
 
@@ -1136,7 +1137,7 @@ def main():
     scheduler = CustomScheduler(optimizer, patience=5, early_stop_patience = 10, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
 
     # scheduler = CustomSchedulerWeightUpdate(optimizer = optimizer, model=model, patience=3, early_stop_patience = 8, cooldown=2, lr_reduction_factor=0.5, max_num_epochs = max_epochs, improvement_percentage=0.001)
-    identifier = "Resnext34_dif_XimgDenoised_wrapping_assorted_8"
+    identifier = "Resnext34_dif_XimgDenoised_wrapping_assorted_16"
 
     '''
     denoising
