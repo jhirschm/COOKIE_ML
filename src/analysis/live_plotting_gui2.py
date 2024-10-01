@@ -62,7 +62,7 @@ def update_plot(*args):
         ximg = h5_file[selected_key]['Ximg'][:]
         ypdf = h5_file[selected_key]['Ypdf'][:]
         # Assuming third_img is also Ypdf for now
-        third_img = h5_file[selected_key]['output'][:]
+        third_img = ypdf#h5_file[selected_key]['output'][:]
 
     # Clear previous plots
     ax1.clear()
