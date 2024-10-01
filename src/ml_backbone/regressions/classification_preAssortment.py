@@ -131,15 +131,21 @@ def save_filtered_data(model, dataloader, data_save_directory, file_prefix, max_
             else:
                 probs, preds = model.predict(inputs)
             predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
+            print(predicted_pulse_single_label)
             
             # Filtering only the examples classified as 2 pulses
             two_pulse_indices = np.where(predicted_pulse_single_label == 2)[0]
+            print("Two pulse indices")
+            print(two_pulse_indices)
             
             if len(two_pulse_indices) > 0:
                 # Save these examples to the current h5 file
                 for idx in two_pulse_indices:
                     # Generate a unique image key using file_count and example_count
-                    image_key = f"img_{file_count}_{example_count}_{str(uuid.uuid4())[:8]}"
+                    # image_key = f"img_{file_count}_{example_count}_{str(uuid.uuid4())[:8]}"
+                    image_key = f"img_{file_count}_{example_count}"
+                    print(image_key)
+
                     
                     # Save the filtered data in the HDF5 file under the new image_key
                     grp = save_h5f.create_group(image_key)
@@ -165,11 +171,11 @@ def main():
     # Load Dataset and Feed to Dataloader
     datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
     datapath_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/"
-    datapath_save_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/assorted/"
-    datapath_save_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/assorted/"
+    datapath_save_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/assorted_temp/"
+    datapath_save_train = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/train/assorted_temp/"
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True, energies_included=True, energies_included_max=2)
-    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True,  energies_included=True, energies_included_max=2)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", test_batch=5, pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True, energies_included=True, energies_included_max=2)
+    data_train = DataMilking_MilkCurds(root_dirs=[datapath_train], input_name="Ximg", test_batch=5, pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True,  energies_included=True, energies_included_max=2)
 
 
    
