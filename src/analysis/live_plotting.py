@@ -92,7 +92,7 @@ canvas = FigureCanvasTkAgg(fig, master=root)
 canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 #/Users/jhirschm/Documents/MRCO/Data_Changed/Test/2_subpulse_Mar13_2024_1.000_processed.h5
-files = os.listdir("/Users/jhirschm/Documents/MRCO/Data_Changed/Test/")
+# files = os.listdir("/Users/jhirschm/Documents/MRCO/Data_Changed/Test/")
 files = os.listdir("/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/2-Pulse_04232024/Processed_07312024_0to1/train/")
 # filename selector
 filename_var = tk.StringVar(value="2_subpulse_Mar13_2024_1.000_processed.h5")
