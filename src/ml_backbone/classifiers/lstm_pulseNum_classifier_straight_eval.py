@@ -41,7 +41,7 @@ def main():
     datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
     datapath_test = "/sdf/scratch/lcls/ds/prj/prjs2e21/scratch/fast_data_access/even-dist_Pulses_03302024/Processed_07262024_0to1/test/"
     # datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/2-Pulse_04232024/Processed_07312024_0to1/test/"
-
+    datapath_test = "/sdf/data/lcls/ds/prj/prjs2e21/results/pois-dist_Pulses_03302024/Processed_10092024_0to1/test/"
     pulse_specification = None
 
 
@@ -120,7 +120,7 @@ def main():
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase_temp"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase_10092024_2"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase_10092024_2_poisson"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
