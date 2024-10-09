@@ -22,7 +22,7 @@ ENERGY_ELEMENTS=512
 TEST_MODE=False
 
 TRAIN=0.0
-TEST=1.0
+TEST=1
 
 # Run the Python script with the specified arguments
 python3 /sdf/home/j/jhirschm/COOKIE_ML/src/data_processing/universal_cookiesimslim_processor.py $FILE_PATHS --scaler_name $SCALER_NAME  --savepath $SAVEPATH --energy_elements $ENERGY_ELEMENTS --train_test_split $TRAIN $TEST 

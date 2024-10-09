@@ -118,7 +118,11 @@ def main():
 
     # Calculate the number of samples for each set
     train_ratio, test_ratio = args.train_test_split
-    train_files, test_files = train_test_split(data_file_paths, test_size=(test_ratio))
+    if train_ratio == 0.0 or train_ratio == 0:
+        train_files = []
+        test_files = data_file_paths
+    else:
+        train_files, test_files = train_test_split(data_file_paths, test_size=(test_ratio))
 
     # Create subfolders for train, val, and test
     train_folder = os.path.join(args.savepath, 'train')
