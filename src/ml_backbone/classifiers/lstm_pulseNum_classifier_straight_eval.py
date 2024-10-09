@@ -120,7 +120,7 @@ def main():
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase_temp"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase_10092024"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
@@ -144,6 +144,7 @@ def main():
     # best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_07302024_ypdf_0to1_test3/testLSTM_best_model.pth"
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/testLSTM_best_model.pth"
     best_mode_classifier = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/testLSTM_XimgDenoised_best_model.pth"
+   
     state_dict = torch.load(best_mode_classifier, map_location=device)
     def remove_module_prefix(state_dict):
         new_state_dict = {}
@@ -226,7 +227,7 @@ def main():
     total_params = sum(param.numel() for param in classModel.parameters())
 
     print(f'Total number of parameters: {total_params}')
-    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False)
+    classModel.evaluate_model(test_dataloader, identifier, model_save_dir, device, denoising=True, denoise_model = autoencoder, zero_mask_model = zero_model, two_pulse_analysis=False, two_and_three_pulse_store=True)
     
     
     # results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")

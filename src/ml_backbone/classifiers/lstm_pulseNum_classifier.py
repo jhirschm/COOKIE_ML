@@ -338,7 +338,7 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False, two_pulse_analysis=False):
+    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False, two_pulse_analysis=False, two_and_three_pulse_store=False):
         # Lists to store true and predicted values for pulses
         true_1_pred_1 = []
         true_1_pred_2 = []
@@ -431,9 +431,46 @@ class CustomLSTMClassifier(nn.Module):
                             true_2_pred_1.append(phases[i].cpu().numpy())
                         if true_pulse == 2 and predicted_pulse == 2:
                             true_2_pred_2.append(phases[i].cpu().numpy())
+
+                if two_and_three_pulse_store:
+                    for i in range(len(true_pulse_single_label)):
+                        true_pulse = true_pulse_single_label[i]
+                        predicted_pulse = predicted_pulse_single_label[i]
+                        
+                        # save the input image for each list
+                        if true_pulse == 2 and predicted_pulse == 1:
+                            true_2_pred_1.append(inputs[i].cpu().numpy())
+                        if true_pulse == 2 and predicted_pulse == 2:
+                            true_2_pred_2.append(inputs[i].cpu().numpy())
+                        if true_pulse == 2 and predicted_pulse == 3:
+                            true_2_pred_3.append(inputs[i].cpu().numpy())
+                        if true_pulse == 3 and predicted_pulse == 2:
+                            true_3_pred_2.append(inputs[i].cpu().numpy())
+                        if true_pulse == 3 and predicted_pulse == 3:
+                            true_3_pred_3.append(inputs[i].cpu().numpy())
+                        if true_pulse == 3 and predicted_pulse == 4:
+                            true_3_pred_4p.append(inputs[i].cpu().numpy())
+
+                    
+
                 
             
                         
+
+        if two_and_three_pulse_store:
+            true_2_pred_1 = np.array(true_2_pred_1)
+            true_2_pred_2 = np.array(true_2_pred_2)
+            true_2_pred_3 = np.array(true_2_pred_3)
+            true_3_pred_2 = np.array(true_3_pred_2)
+            true_3_pred_3 = np.array(true_3_pred_3)
+            true_3_pred_4p = np.array(true_3_pred_4p)
+            # Save the arrays to a file
+            np.save(os.path.join(model_dir, identifier + "_true_2_pred_1.npy"), true_2_pred_1)
+            np.save(os.path.join(model_dir, identifier + "_true_2_pred_2.npy"), true_2_pred_2)
+            np.save(os.path.join(model_dir, identifier + "_true_2_pred_3.npy"), true_2_pred_3)
+            np.save(os.path.join(model_dir, identifier + "_true_3_pred_2.npy"), true_3_pred_2)
+            np.save(os.path.join(model_dir, identifier + "_true_3_pred_3.npy"), true_3_pred_3)
+            np.save(os.path.join(model_dir, identifier + "_true_3_pred_4p.npy"), true_3_pred_4p)
 
 
         if two_pulse_analysis:
