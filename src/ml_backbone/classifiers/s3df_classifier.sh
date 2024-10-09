@@ -1,6 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=ampere
 ##SBATCH --account=lcls:prjs2e21
+#SBATCH --account=lcls
+
 #SBATCH --job-name=reg
 #SBATCH --output=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --error=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
