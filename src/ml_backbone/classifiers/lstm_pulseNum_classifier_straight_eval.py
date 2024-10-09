@@ -120,7 +120,7 @@ def main():
 
         # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_073312024_5classCase/evalOutput_5classCase_temp"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase_10092024"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/lstm_classifier/run_09052024_5classCase/evalOutput_5classCase_10092024_2"
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)

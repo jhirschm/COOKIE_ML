@@ -570,8 +570,9 @@ class CustomLSTMClassifier(nn.Module):
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plot_path = os.path.join(model_dir, identifier + "_confusion_matrix.pdf")
+        plot_path = os.path.join(model_dir, identifier + "_confusion_matrix.svg")
         # Display the plot
-        plt.savefig(plot_path)
+        plt.savefig(plot_path, format='svg')
         plt.close()
 
         # Print and display metrics
