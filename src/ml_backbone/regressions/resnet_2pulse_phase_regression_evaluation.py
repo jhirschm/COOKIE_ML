@@ -708,6 +708,8 @@ def main():
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09022024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09232024_Resnet34_dif_Ximg_Denoised_assorted_2/evaluate_outputs2/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/quicktest3/evaluate_outputs/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10102024/"
+
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     
