@@ -667,7 +667,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", test_batch=10,pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg",pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=2, ypdfs_included=True)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -699,7 +699,7 @@ def main():
     best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08302024_Resnext34_dif_Ximg_1/Resnext34_dif_Ximg_3_wrapping_3_best_model.pth"
     best_model_regression_path = "q"
     best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
-    best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
+    # best_model_regression_path  = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/Resnext34_dif_XimgDenoised_wrapping_4_best_model.pth"
 
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09232024_Resnet34_dif_Ximg_Denoised_assorted_2/Resnext34_dif_XimgDenoised_wrapping_assorted_best_model.pth"
     
@@ -712,6 +712,8 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/quicktest3/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10102024/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs5_10152024_4/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10152024/"
+
 
 
     if not os.path.exists(model_save_dir):
