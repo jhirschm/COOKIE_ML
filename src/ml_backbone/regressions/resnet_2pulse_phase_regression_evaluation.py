@@ -486,14 +486,124 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         plt.title('ArccosCos True vs Predicted Phase Differences')
         plt.legend()
         plt.grid(True)
-        plt.show()
+        # plt.show()
 
         # Save the plot
         plt.savefig(plot_path) 
 
+        plot_path = os.path.join(model_save_dir, identifier + "_ArccosCosTruePred_LSTMClassifier_Residual.pdf")
+        cmap = cm.get_cmap('viridis', 5)  # 5 distinct colors for categories 0-4
+        print("Predicted Pulses:", predicted_pulses[0:100])
+
+        # Create a figure with two subplots (scatter plot and residuals plot)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [3, 1]})
+
+        # Scatter plot on the first subplot (ax1)
+        scatter = ax1.scatter(np.arccos(np.cos(true_phase_list)), 
+                            predicted_phase_list, 
+                            c=predicted_pulses, 
+                            cmap=cmap, 
+                            marker='o',
+                            label='Predicted vs True', 
+                            s=50, edgecolor='k', alpha=0.75)
+
+        # Set the colorbar for the scatter plot
+        cbar = plt.colorbar(scatter, ax=ax1, ticks=np.linspace(0, 4, 5))  # Midpoints for color categories
+        cbar.ax.set_yticklabels(['0', '1', '2', '3', '4+'])
+        cbar.set_label('LSTM Classifier Categories')
+
+        # Plot the ideal prediction line on the first subplot
+        ax1.plot([np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+                [np.arccos(np.cos(true_phase_list)).min(), np.arccos(np.cos(true_phase_list)).max()], 
+                color='red', linestyle='--', label='Ideal Prediction')
+
+        # Set labels and title for the first plot
+        ax1.set_xlabel('True ArccosCos Phase Differences')
+        ax1.set_ylabel('Predicted Phase Differences')
+        ax1.set_title('ArccosCos True vs Predicted Phase Differences')
+        ax1.legend()
+        ax1.grid(True)
+
+        # Residuals plot on the second subplot (ax2)
+        residuals = predicted_phase_list - np.arccos(np.cos(true_phase_list))
+        ax2.scatter(np.arccos(np.cos(true_phase_list)), residuals, c=predicted_pulses, cmap=cmap, s=50, edgecolor='k', alpha=0.75)
+
+        # Add a horizontal line for zero residuals (perfect prediction)
+        ax2.axhline(0, color='red', linestyle='--', label='Zero Residuals')
+
+        # Set labels and title for the residuals plot
+        ax2.set_xlabel('True ArccosCos Phase Differences')
+        ax2.set_ylabel('Residuals')
+        ax2.set_title('Residuals Plot')
+        ax2.legend()
+        ax2.grid(True)
+
+        # Adjust layout so plots don't overlap
+        plt.tight_layout()
+
+
+        # Save the figure
+        fig.savefig(plot_path)
+
+        plot_path_two_pulses = os.path.join(model_save_dir, identifier + "_ArccosCosTruePred_TwoPulses_LSTMClassifier_Residual.pdf")
+
+        # Apply the mask to filter for two-pulse data
+        predicted_pulses = np.array(predicted_pulses)
+        mask_two_pulses = (predicted_pulses == 2)
+
+        # Filter the true and predicted phase lists using the mask
+        filtered_true_phases = np.arccos(np.cos(true_phase_list))[mask_two_pulses]
+        filtered_predicted_phases = predicted_phase_list[mask_two_pulses]
+
+        # Create a figure with two subplots (scatter plot and residuals plot)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [3, 1]})
+
+        # Scatter plot for two-pulse data on the first subplot (ax1)
+        ax1.scatter(filtered_true_phases, 
+                    filtered_predicted_phases, 
+                    c='blue', 
+                    marker='o',
+                    label='Two Pulses (Predicted vs True)', 
+                    s=50, edgecolor='k', alpha=0.75)
+
+        # Plot the ideal prediction line on the first subplot
+        ax1.plot([filtered_true_phases.min(), filtered_true_phases.max()], 
+                [filtered_true_phases.min(), filtered_true_phases.max()], 
+                color='red', linestyle='--', label='Ideal Prediction')
+
+        # Set labels and title for the first plot
+        ax1.set_xlabel('True ArccosCos Phase Differences (Two Pulses)')
+        ax1.set_ylabel('Predicted Phase Differences (Two Pulses)')
+        ax1.set_title('ArccosCos True vs Predicted Phase Differences (Two Pulses)')
+        ax1.legend()
+        ax1.grid(True)
+
+        # Residuals plot on the second subplot (ax2)
+        residuals_two_pulses = filtered_predicted_phases - filtered_true_phases
+        ax2.scatter(filtered_true_phases, residuals_two_pulses, c='blue', s=50, edgecolor='k', alpha=0.75)
+
+        # Add a horizontal line for zero residuals (perfect prediction)
+        ax2.axhline(0, color='red', linestyle='--', label='Zero Residuals')
+
+        # Set labels and title for the residuals plot
+        ax2.set_xlabel('True ArccosCos Phase Differences (Two Pulses)')
+        ax2.set_ylabel('Residuals (Two Pulses)')
+        ax2.set_title('Residuals Plot (Two Pulses)')
+        ax2.legend()
+        ax2.grid(True)
+
+        # Adjust layout so plots don't overlap
+        plt.tight_layout()
+
+        # Show the plots
+        plt.show()
+
+        # Save the figure
+        fig.savefig(plot_path_two_pulses)
+
         # Calculate the phase difference (true - predicted) for all data points
         phase_diff_all = np.abs(np.arccos(np.cos(true_phase_list)) - predicted_phase_list)
-
+        rmse = np.sqrt(np.mean((np.arccos(np.cos(true_phase_list)) - predicted_phase_list)**2))
         # Compute mean and standard deviation for the entire dataset
         mean_all = np.mean(phase_diff_all)
         std_all = np.std(phase_diff_all)
@@ -501,6 +611,8 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         print("--------------------")
         print(f"Mean of phase difference (all data): {mean_all}")
         print(f"Standard deviation of phase difference (all data): {std_all}")
+        print(f"RMSE: {rmse}")
+
 
         # Now filter for data points classified as "2 pulses" (3rd index, value = 2 in predicted_pulses)
         predicted_pulses = np.array(predicted_pulses)
@@ -513,10 +625,12 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # Compute mean and standard deviation for the "2 pulses" subset
         mean_two_pulses = np.mean(phase_diff_two_pulses)
         std_two_pulses = np.std(phase_diff_two_pulses)
+        rmse = np.sqrt(np.mean((np.arccos(np.cos(true_phase_list)[mask_two_pulses]) - predicted_phase_list[mask_two_pulses])**2))
         print("--------------------")
 
         print(f"Mean of phase difference (2 pulses): {mean_two_pulses}")
-        print(f"Standard deviation of phase difference (2 pulses): {std_two_pulses}")             
+        print(f"Standard deviation of phase difference (2 pulses): {std_two_pulses}") 
+        print(f"RMSE (2 Pulses): {rmse}")            
 
     plot_path = os.path.join(model_save_dir, identifier + "_SinTruePred.pdf")
     # Plot the values
@@ -712,7 +826,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/quicktest3/evaluate_outputs/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10102024/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs5_10152024_4/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10152024/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10172024/"
 
 
 
