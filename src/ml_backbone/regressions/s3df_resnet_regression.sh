@@ -54,6 +54,7 @@ case "$action" in
         ;;
     
     evaluation)
+        #SBATCH --gpus 1
         case "$pulse_type" in
             single_pulse)
                 python3 /sdf/home/j/jhirschm/COOKIE_ML/src/ml_backbone/regressions/resnet_phase_regression_evaluation.py

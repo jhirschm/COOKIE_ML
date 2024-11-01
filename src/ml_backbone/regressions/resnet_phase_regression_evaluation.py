@@ -226,7 +226,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -255,7 +255,7 @@ def main():
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5/evaluate_outputs"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgDenoisedTrained/evaluate_outputs"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgTrained/evaluate_outputs_10102024"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgTrained/evaluate_outputs_11012024"
 
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5/resNetregression_18_2000classes_best_model.pth"
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgDenoisedTrained/resNetregression_18_2000classes_XimgDenoised_best_model.pth"
@@ -315,7 +315,7 @@ def main():
     autoencoder.to(device)
     state_dict = torch.load(best_autoencoder_model_path, map_location=device)
     autoencoder.load_state_dict(state_dict)
-
+    print(summary(model, input_size=(1, 1, 512, 16)))
     test_model(model, test_dataloader, model_save_dir, identifier, device, criterion=criterion, denoising=False, denoise_model =autoencoder,
                 zero_mask_model = zero_model, parallel=True, num_classes=num_classes)
     # print(summary(model=model, 
@@ -325,6 +325,5 @@ def main():
     #     col_width=20,
     #     row_settings=["var_names"]
     # ))
-    print(summary(model, input_size=(1, 1, 512, 16)))
 if __name__ == "__main__":
     main()
