@@ -662,6 +662,32 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
     plt.show()
     plt.savefig(plot_path)
 
+
+    # Specify the directory for saving pickle files
+    pickle_save_dir = model_save_dir  # Assuming `model_save_dir` is already defined
+
+    # Data to save
+    data_dict = {
+        "true_phase_list": true_phase_list,
+        "predicted_phase_list": predicted_phase_list,
+        "predicted_pulses": predicted_pulses,
+        "mean_all": mean_all,
+        "std_all": std_all,
+        "rmse": rmse,
+        "mean_two_pulses": mean_two_pulses,
+        "std_two_pulses": std_two_pulses,
+        "rmse_two_pulses": rmse_two_pulses,
+        "phase_diff_all": phase_diff_all,
+        "phase_diff_two_pulses": phase_diff_two_pulses
+    }
+
+    # Save data as pickle file
+    pickle_path = os.path.join(pickle_save_dir, identifier + "_plot_data.pkl")
+    with open(pickle_path, 'wb') as f:
+        pickle.dump(data_dict, f)
+
+    print(f"Data for plotting saved to: {pickle_path}")
+
     if phase_mispredict_analysis:
         input_list = np.array(inputs_list)
         denoised_input_list = np.array(denoised_inputs_list)
@@ -827,6 +853,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10102024/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs5_10152024_4/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10172024/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_11112024/"
 
 
 
