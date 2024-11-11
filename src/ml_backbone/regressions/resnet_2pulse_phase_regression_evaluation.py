@@ -712,6 +712,58 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # Directory to save plots
         os.makedirs(save_dir, exist_ok=True)
 
+        # Initialize dictionary to store examples with large phase differences
+
+        save_data_dir = os.path.join(model_save_dir, identifier + "errorExamples")
+        os.makedirs(save_data_dir, exist_ok=True)
+
+        examples_to_save = {1: [], 2: [], 3: []}
+        max_examples_per_class = 10
+        thresh = .8  # Threshold for zero-like predicted phase
+
+        # Loop through the sinogram data and check phase differences
+        for idx, (input_sino, denoised_sino, ypdf_sino, predicted_phase, true_phase) in enumerate(
+                zip(inputs_list, denoised_inputs_list, ypdfs_list, predicted_phase_list, true_phase_list)):
+
+            # Adjust true phase to be in the range [0, pi]
+            true_phase_adjusted = np.arccos(np.cos(true_phase))
+            predicted_phase_adjusted = np.arccos(np.cos(predicted_phase))
+
+            # Calculate phase difference
+            phase_difference = abs(true_phase_adjusted - predicted_phase_adjusted)
+
+             # Filter cases based on class and phase difference
+            if phase_difference > thresh and int(predicted_pulses[idx]) in examples_to_save:
+                class_label = int(predicted_pulses[idx])
+
+                # Save the input sinogram, denoised sinogram, ypdf sinogram, and phase values in a dictionary
+                example_data = {
+                    "input_sino": input_sino.cpu().numpy(),
+                    "denoised_sino": denoised_sino.cpu().numpy(),
+                    "ypdf_sino": ypdf_sino.cpu().numpy(),
+                    "predicted_phase": float(predicted_phase_adjusted),
+                    "true_phase": float(true_phase_adjusted),
+                    "phase_difference": phase_difference
+                }
+                # Add example data to the list for the class, then sort by phase difference and limit to 10 examples
+                examples_to_save[class_label].append(example_data)
+                examples_to_save[class_label] = sorted(examples_to_save[class_label], key=lambda x: x['phase_difference'], reverse=True)[:max_examples_per_class]
+        # Save the examples data to files for each class
+        for class_label, examples in examples_to_save.items():
+            if examples:  # Only save if there are examples
+                # Save each example in a separate file for the specified class
+                for i, example in enumerate(examples):
+                    save_path = os.path.join(save_data_dir, f"class_{class_label}_example_{i}.npz")
+                    np.savez(save_path,
+                            input_sino=example["input_sino"],
+                            denoised_sino=example["denoised_sino"],
+                            ypdf_sino=example["ypdf_sino"],
+                            predicted_phase=example["predicted_phase"],
+                            true_phase=example["true_phase"],
+                            phase_difference=example["phase_difference"])
+
+        print(f"Saved examples with large phase differences for classes 1, 2, and 3 to {save_data_dir}.")
+
         # Assuming you have these lists filled
         
         # Iterate over the sinograms and their corresponding predicted and true phases
@@ -719,42 +771,42 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         # print("Denoised Input List:", denoised_input_list.shape)
         # print("Predicted Phase List:", predicted_phase_list.shape)
         # print("True Phase List:", true_phase_list.shape)
-        for idx, (input_sino, denoised_sino, ypdf_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, ypdfs_list, predicted_phase_list, true_phase_list)):
-            # print("Predicted Phase:", predicted_phase.shape)
-            # print("True Phase:", true_phase.shape)
-            true_phase_adjusted = np.arccos(np.cos(true_phase))
+        # for idx, (input_sino, denoised_sino, ypdf_sino, predicted_phase, true_phase) in enumerate(zip(inputs_list, denoised_inputs_list, ypdfs_list, predicted_phase_list, true_phase_list)):
+        #     # print("Predicted Phase:", predicted_phase.shape)
+        #     # print("True Phase:", true_phase.shape)
+        #     true_phase_adjusted = np.arccos(np.cos(true_phase))
 
-            # Check for cases where predicted phase is nearly zero but true phase isn't
-            if abs(predicted_phase) < epsilon and true_phase_adjusted > epsilon:
+        #     # Check for cases where predicted phase is nearly zero but true phase isn't
+        #     if abs(predicted_phase) < epsilon and true_phase_adjusted > epsilon:
                 
-                # Calculate arccos(cos(true_phase)) for the label
+        #         # Calculate arccos(cos(true_phase)) for the label
 
-                # Plot the two sinograms (initial input and denoised input)
-                fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+        #         # Plot the two sinograms (initial input and denoised input)
+        #         fig, axes = plt.subplots(1, 3, figsize=(15, 5))
                 
-                axes[0].imshow(ypdf_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
-                axes[0].set_title("Ypdf Sinogram")
-                axes[0].axis('off')
+        #         axes[0].imshow(ypdf_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
+        #         axes[0].set_title("Ypdf Sinogram")
+        #         axes[0].axis('off')
 
-                # Plot the initial input sinogram
-                axes[1].imshow(input_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
-                axes[1].set_title("Initial Input Sinogram")
-                axes[1].axis('off')
+        #         # Plot the initial input sinogram
+        #         axes[1].imshow(input_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
+        #         axes[1].set_title("Initial Input Sinogram")
+        #         axes[1].axis('off')
                 
-                # Plot the denoised input sinogram
-                axes[2].imshow(denoised_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
-                axes[2].set_title("Denoised Input Sinogram")
-                axes[2].axis('off')
+        #         # Plot the denoised input sinogram
+        #         axes[2].imshow(denoised_sino.cpu().numpy(), cmap=plt.get_cmap('Blues'), aspect='auto')
+        #         axes[2].set_title("Denoised Input Sinogram")
+        #         axes[2].axis('off')
                 
-                # Add text annotations with the predicted and true phase
-                fig.suptitle(f"Predicted Phase: {predicted_phase:.4f}, Adjusted True Phase: {true_phase_adjusted:.4f}", fontsize=12)
+        #         # Add text annotations with the predicted and true phase
+        #         fig.suptitle(f"Predicted Phase: {predicted_phase:.4f}, Adjusted True Phase: {true_phase_adjusted:.4f}", fontsize=12)
 
-                # Save the plot in the specified directory
-                plot_filename = os.path.join(save_dir, f"sinogram_plot_{idx}.png")
-                plt.savefig(plot_filename, bbox_inches='tight')
+        #         # Save the plot in the specified directory
+        #         plot_filename = os.path.join(save_dir, f"sinogram_plot_{idx}.png")
+        #         plt.savefig(plot_filename, bbox_inches='tight')
                 
-                # Close the plot to avoid memory issues
-                plt.close(fig)
+        #         # Close the plot to avoid memory issues
+        #         plt.close(fig)
 
 
 
@@ -849,7 +901,7 @@ def main():
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10102024/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_1/evaluate_outputs5_10152024_4/"
     model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_10172024/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_11112024/"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_09082024_Resnext34_dif_Ximg_Denoised_2/evaluate_outputs5_11112024_2/"
 
 
 
