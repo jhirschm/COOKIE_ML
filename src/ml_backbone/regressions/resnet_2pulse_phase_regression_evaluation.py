@@ -671,14 +671,10 @@ def test_model(model, test_dataloader, model_save_dir, identifier, device, denoi
         "true_phase_list": true_phase_list,
         "predicted_phase_list": predicted_phase_list,
         "predicted_pulses": predicted_pulses,
+        "mask_two_pulses": mask_two_pulses,
         "mean_all": mean_all,
         "std_all": std_all,
-        "rmse": rmse,
-        "mean_two_pulses": mean_two_pulses,
-        "std_two_pulses": std_two_pulses,
-        "rmse_two_pulses": rmse_two_pulses,
-        "phase_diff_all": phase_diff_all,
-        "phase_diff_two_pulses": phase_diff_two_pulses
+        "rmse": rmse
     }
 
     # Save data as pickle file
