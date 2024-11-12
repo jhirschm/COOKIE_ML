@@ -145,7 +145,21 @@ def test_model(model, test_dataloader,  model_save_dir, identifier, device, crit
               # Calculate the mean squared error                      
             
                         
+        # Specify the directory for saving pickle files
+        pickle_save_dir = model_save_dir  # Assuming `model_save_dir` is already defined
 
+        # Data to save
+        data_dict = {
+            "true_phase_array": true_phase_array,
+            "predicted_phase_array": predicted_phase_array
+        }
+
+        # Save data as pickle file
+        pickle_path = os.path.join(pickle_save_dir, identifier + "_plot_data.pkl")
+        with open(pickle_path, 'wb') as f:
+            pickle.dump(data_dict, f)
+
+        print(f"Data for plotting saved to: {pickle_path}")
 
         
         plot_path = os.path.join(model_save_dir, identifier + "_TruePred.pdf")
@@ -226,7 +240,7 @@ def main():
     pulse_specification = None
 
 
-    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, test_batch=1, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
+    data_test = DataMilking_MilkCurds(root_dirs=[datapath_test], input_name="Ximg", pulse_handler=None, transform=None, pulse_threshold=4, zero_to_one_rescale=False, phases_labeled=True, phases_labeled_max=1)
 
     # data_val = DataMilking_MilkCurds(root_dirs=[datapath_val], input_name="Ypdf", pulse_handler=None, transform=None, pulse_threshold=4, test_batch=3)
 
@@ -255,7 +269,7 @@ def main():
 
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5/evaluate_outputs"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgDenoisedTrained/evaluate_outputs"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgTrained/evaluate_outputs_11012024"
+    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgTrained/evaluate_outputs_11122024"
 
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5/resNetregression_18_2000classes_best_model.pth"
     # best_model_regression_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/regression/run_08142024_regressionResnet18_5_XimgDenoisedTrained/resNetregression_18_2000classes_XimgDenoised_best_model.pth"
