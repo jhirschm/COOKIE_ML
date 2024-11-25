@@ -7,7 +7,9 @@ import torch
 import torch.nn as nn
 
 import torch.nn.functional as F
-
+groq_path = "/home/jhirschm/groqflow"
+sys.path.append(groq_path) # Assumes on rdsrv420 with groqflow installed correctly
+from groqflow import groqit
 def remove_module_prefix(state_dict):
         new_state_dict = {}
         for k, v in state_dict.items():
