@@ -73,17 +73,17 @@ def main():
     height, width = 16, 512
     inputs = {"x": torch.randn(batch_size, input_channels, height, width)}
 
-    summary_file = "~/Downloads/zero_pulse_classifier.txt"
+    summary_file = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/zero_pulse_classifier.txt"
 
     # Redirect stdout to the file
     with open(summary_file, "w") as f:
         model_summary= summary(classifier, input_size=inputs["x"].shape,verbose = 0)
         f.write(str(model_summary))
 
-    torch.save(classifier, "~/Downloads/zero_pulse_classifier.pt")
+    torch.save(classifier, "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/zero_pulse_classifier.pt")
     print(f"Model summary saved to {summary_file}")
 
-    summary_file = "~/Downloads/ximg_to_ypdf_autoencoder.txt"
+    summary_file = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/ximg_to_ypdf_autoencoder.txt"
 
     # Redirect stdout to the file
     
@@ -91,7 +91,7 @@ def main():
         model_summary= summary(autoencoder, input_size=inputs["x"].shape,verbose = 0)
         f.write(str(model_summary))
 
-    torch.save(Ximg_to_Ypdf_Autoencoder, "~/Downloads/ximg_to_ypdf_autoencoder.pt")
+    torch.save(Ximg_to_Ypdf_Autoencoder, "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/ximg_to_ypdf_autoencoder.pt")
     print(f"Model summary saved to {summary_file}")
     
     
