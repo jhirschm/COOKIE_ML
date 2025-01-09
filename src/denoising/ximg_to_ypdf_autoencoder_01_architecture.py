@@ -58,42 +58,41 @@ def main():
         return x.shape
 
     output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
-    # print(f"Output size after conv layers: {output_size}")
+    print(f"Output size after conv layers: {output_size}")
 
     # Use the calculated size for the fully connected layer input
-    # fc_layers = [
-    #     [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
-    #     [nn.Linear(4, 1), None]
-    # ]
+    fc_layers = [
+        [nn.Linear(output_size[1] * output_size[2] * output_size[3], 4), nn.ReLU()],
+        [nn.Linear(4, 1), None]
+    ]
 
-    # classifier = Zero_PulseClassifier(conv_layers, fc_layers)
+    classifier = Zero_PulseClassifier(conv_layers, fc_layers)
 
-    # batch_size = 1
-    # input_channels = 1
-    # height, width = 16, 512
-    # inputs = {"x": torch.randn(batch_size, input_channels, height, width)}
+    batch_size = 1
+    input_channels = 1
+    height, width = 16, 512
+    inputs = {"x": torch.randn(batch_size, input_channels, height, width)}
 
-    # summary_file = "~/Downloads/zero_pulse_classifier.txt"
+    summary_file = "~/Downloads/zero_pulse_classifier.txt"
 
-    # # Redirect stdout to the file
-    # with open(summary_file, "w") as f:
-    #     sys.stdout = f
-    #     summary(classifier, input_size=inputs["x"])
-    #     sys.stdout = sys.__stdout__  # Reset stdout to default
+    # Redirect stdout to the file
+    with open(summary_file, "w") as f:
+        model_summary= summary(classifier, input_size=inputs["x"].shape,verbose = 0)
+        f.write(str(model_summary))
 
-    # torch.save(classifier, "~/Downloads/zero_pulse_classifier.pt")
-    # print(f"Model summary saved to {summary_file}")
+    torch.save(classifier, "~/Downloads/zero_pulse_classifier.pt")
+    print(f"Model summary saved to {summary_file}")
 
-    # summary_file = "~/Downloads/ximg_to_ypdf_autoencoder.txt"
+    summary_file = "~/Downloads/ximg_to_ypdf_autoencoder.txt"
 
-    # # Redirect stdout to the file
-    # with open(summary_file, "w") as f:
-    #     sys.stdout = f
-    #     summary(Ximg_to_Ypdf_Autoencoder, input_size=inputs["x"])
-    #     sys.stdout = sys.__stdout__  # Reset stdout to default
+    # Redirect stdout to the file
+    
+    with open(summary_file, "w") as f:
+        model_summary= summary(autoencoder, input_size=inputs["x"].shape,verbose = 0)
+        f.write(str(model_summary))
 
-    # torch.save(Ximg_to_Ypdf_Autoencoder, "~/Downloads/ximg_to_ypdf_autoencoder.pt")
-    # print(f"Model summary saved to {summary_file}")
+    torch.save(Ximg_to_Ypdf_Autoencoder, "~/Downloads/ximg_to_ypdf_autoencoder.pt")
+    print(f"Model summary saved to {summary_file}")
     
     
 
