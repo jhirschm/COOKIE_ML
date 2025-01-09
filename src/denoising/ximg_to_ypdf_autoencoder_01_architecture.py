@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import torch
 import torch.nn as nn
-from torchsummary import summary
+from torchinfo import summary
 # Get the directory of the currently running file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,7 +57,7 @@ def main():
                 print(f"Shape after layer {i}: {x.shape}")
         return x.shape
 
-    output_size = get_conv_output_size((1, 1, 16, 512), conv_layers)
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
     # print(f"Output size after conv layers: {output_size}")
 
     # Use the calculated size for the fully connected layer input
