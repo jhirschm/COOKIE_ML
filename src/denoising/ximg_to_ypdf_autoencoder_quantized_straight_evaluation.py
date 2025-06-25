@@ -91,7 +91,7 @@ def main():
         {nn.Linear,
          nn.Conv2d,
          nn.ConvTranspose2d},
-         dtype=torch.qint8
+         dtype=torch.float16
     )
     # Example usage
     conv_layers = [
