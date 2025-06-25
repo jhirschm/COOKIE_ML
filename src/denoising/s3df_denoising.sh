@@ -36,6 +36,9 @@ case "$1" in
     evaluation)
         python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
         ;;
+    evaluation_quantized)
+        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_quantized_straight_evaluation.py
+        ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
         exit 1
