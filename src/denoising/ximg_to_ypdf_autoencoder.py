@@ -214,12 +214,13 @@ class Zero_PulseClassifier(nn.Module):
         
         true_pulses = []
         predicted_pulses = []
-
+        
         self.to(device)
 
         
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
+       
 
         with torch.no_grad():
             for batch in test_dataloader:
@@ -617,6 +618,23 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
                 elif isinstance(module[idx], nn.ConvTranspose2d) and isinstance(module[idx + 1], nn.ReLU):
                     torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
+
+    def quantize_static(self, calibration_dataloader):
+        self.eval()
+        self.fuse_model()
+        self.qconfig = get_default_qconfig('fbgemm')
+
+        prepared_model = prepare(self)
+
+        with torch.no_grad():
+            for batch in calibration_dataloader:
+                inputs, _ = batch
+                inputs = torch.unsqueeze(inputs, 1)
+                inputs = inputs.to('cpu', dtype=torch.float32)
+                prepared_model(inputs)
+
+        quantized_model = convert(prepared_model)
+        return quantized_model
 
     def fine_tune(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, initial_weights_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1):
         self.to(device)

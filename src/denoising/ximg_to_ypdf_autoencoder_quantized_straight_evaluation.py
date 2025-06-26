@@ -88,6 +88,7 @@ def main():
     ])
     
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+    print(dir(autoencoder)) 
     #     autoencoder,
     #     {nn.Linear,
     #      nn.Conv2d,
@@ -155,7 +156,7 @@ def main():
     # print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     identifier = "testAutoencoder_quantized_eval"
-    autoencoder_int8 = autoencoder.quantize(test_dataloader)
+    autoencoder_int8 = autoencoder.quantize_static(test_dataloader)
     # Check if directory exists, otherwise create it
     
     # print("********* Quantized Model *************")
