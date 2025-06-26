@@ -1,4 +1,4 @@
-import torch.ao.quantization
+from torch.ao.quantization import get_default_qconfig
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
 from ximg_to_ypdf_autoencoder import Zero_PulseClassifier
 from denoising_util import *

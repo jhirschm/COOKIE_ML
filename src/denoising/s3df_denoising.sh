@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=32g
 #SBATCH --time=0-24:00:00
-#SBATCH --gpus 2
+#SBATCH --gpus 0
 # source ~/.bashrc
 # source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
