@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import copy
 import joblib
 from torch.nn import init
+import torch
+from torch.ao.quantization import get_default_qconfig, prepare, convert
 
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import (

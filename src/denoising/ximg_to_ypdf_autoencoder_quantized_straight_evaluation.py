@@ -1,4 +1,6 @@
+import torch
 from torch.ao.quantization import get_default_qconfig
+
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder
 from ximg_to_ypdf_autoencoder import Zero_PulseClassifier
 from denoising_util import *
@@ -86,13 +88,13 @@ def main():
     ])
     
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
-    autoencoder_int8 = torch.ao.quantization.quantize_dynamic(
-        autoencoder,
-        {nn.Linear,
-         nn.Conv2d,
-         nn.ConvTranspose2d},
-         dtype=torch.qint8
-    )
+    #     autoencoder,
+    #     {nn.Linear,
+    #      nn.Conv2d,
+    #      nn.ConvTranspose2d},
+    #      dtype=torch.qint8
+    # )
+    
     # Example usage
     conv_layers = [
         [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
@@ -131,9 +133,9 @@ def main():
     # best_model_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_06302024_singlePulseAndZeroPulse_ErrorWeighted_3/autoencoder_best_model.pth"
     # best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07042024_zeroPredict/classifier_best_model.pth"
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
-    autoencoder_int8.to(device)
+    autoencoder.to(device)
     state_dict = torch.load(best_model_path, map_location=device)
-    autoencoder_int8.load_state_dict(state_dict)
+    autoencoder.load_state_dict(state_dict)
 
     classifier.to(device)
     state_dict = torch.load(best_model_zero_mask_path, map_location=device)
@@ -149,9 +151,18 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    print(summary(autoencoder_int8, input_size=(1, 1, 512, 16)))
+    print("********* Non quantized Model *************")
+    print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     identifier = "testAutoencoder_quantized_eval"
+    autoencoder_int8 = autoencoder.quantize(test_dataloader)
+    # Check if directory exists, otherwise create it
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+    print("********* Quantized Model *************")
+    print(summary(autoencoder_int8, input_size=(1, 1, 512, 16)))
+
+
     autoencoder_int8.evaluate_model(test_dataloader, criterion, device, save_results=True, results_dir=model_save_dir, results_filename=f"{identifier}_results.h5", zero_masking = True, zero_masking_model=classifier)
     results_file = os.path.join(model_save_dir, f"{identifier}_results.txt")
     with open(results_file, 'w') as f:
@@ -168,7 +179,7 @@ def main():
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
         f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses.\n")
-        f.write((summary(autoencoder_int8, input_size=(1, 1, 512, 16))))
+        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     
     

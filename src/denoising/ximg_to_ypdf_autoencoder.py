@@ -610,6 +610,13 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                         
 
         return avg_loss
+    def fuse_model(self):
+        for name, module in [('encoder', self.encoder), ('decoder', self.decoder)]:
+            for idx in range(len(module) - 1):
+                if isinstance(module[idx], nn.Conv2d) and isinstance(module[idx + 1], nn.ReLU):
+                    torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
+                elif isinstance(module[idx], nn.ConvTranspose2d) and isinstance(module[idx + 1], nn.ReLU):
+                    torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
 
     def fine_tune(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, initial_weights_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1):
         self.to(device)
