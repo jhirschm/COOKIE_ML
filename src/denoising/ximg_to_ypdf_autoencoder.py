@@ -616,8 +616,8 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
             for idx in range(len(module) - 1):
                 if isinstance(module[idx], nn.Conv2d) and isinstance(module[idx + 1], nn.ReLU):
                     torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
-                elif isinstance(module[idx], nn.ConvTranspose2d) and isinstance(module[idx + 1], nn.ReLU):
-                    torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
+                # elif isinstance(module[idx], nn.ConvTranspose2d) and isinstance(module[idx + 1], nn.ReLU):
+                #     torch.ao.quantization.fuse_modules(module, [str(idx), str(idx + 1)], inplace=True)
 
     def quantize_static(self, calibration_dataloader):
         self.eval()
