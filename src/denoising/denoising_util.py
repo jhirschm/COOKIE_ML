@@ -20,6 +20,8 @@ import joblib
 from torch.nn import init
 import torch
 from torch.ao.quantization import get_default_qconfig, prepare, convert
+from torch.ao.quantization import default_observer, default_weight_observer
+from torch.ao.quantization.qconfig import QConfig
 
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import (

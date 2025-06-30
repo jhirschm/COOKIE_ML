@@ -622,7 +622,11 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
     def quantize_static(self, calibration_dataloader):
         self.eval()
         self.fuse_model()
-        self.qconfig = get_default_qconfig('fbgemm')
+        # self.qconfig = get_default_qconfig('fbgemm')
+        self.qconfig = QConfig(
+            activation=default_observer,          # default: per-tensor activations
+            weight=default_weight_observer        # per-tensor weights (not per-channel)
+        )
 
         prepared_model = prepare(self)
 
