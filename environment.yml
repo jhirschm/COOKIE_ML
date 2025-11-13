@@ -1,0 +1,23 @@
+name: cookie_ml
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - cudatoolkit=11.3.1
+  - pytorch
+  - torchaudio
+  - torchvision
+  - matplotlib
+  - numpy
+  - scikit-learn
+  - h5py
+  - pytorch-cuda=12.1
+  - jupyterlab
+  - conda-forge::torchinfo
+  - conda-forge::torchmetrics
+  - scikit-image
+  - ninja
+  - seaborn
+  - conda-forge::opencv
+prefix: /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/envs/cookie_ml
