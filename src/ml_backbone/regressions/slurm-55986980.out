@@ -1,3 +1,0 @@
-CUDA_VISIBLE_DEVICES: 0
-/var/spool/slurmd/job55986980/slurm_script: line 7: nvcc: command not found
-Finished

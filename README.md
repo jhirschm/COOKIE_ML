@@ -1,6 +1,7 @@
 ![logo](./logos/SLAC-lab-hires.png)
-# Draft Template for SLAC repositories
 
+
+# Draft Template for SLAC repositories
 This is a proposed template for SLAC software development.  
 We hope that this template can be used to encourage best practices in both code organization and SLAC/Stanford collaboration compliance.  
 The default state is set to 'private' but we are encouraging open sharing of DOE funded developments with funding attribution and potentially hosting at [OSTI DOE-CODE](https://www.osti.gov/doecode/).  
@@ -15,4 +16,9 @@ We are beginning with the BSD-2 lisence but this is an open discussion between c
 
 
 
+
+The code operation is largely described in the supplementary material for the paper, "A Hybrid Neural Architecture: Online Attosecond X-ray Characterization".
+The data can be found on Standors digital repository or re-generated via the CookieSimSlim simulator. 
+
+Please note that model paths and data file paths are hard-coded in the python files. Make sure to check carefully before running so you are aware exactly which model is being used and where the data is being read from/written to. 
 
