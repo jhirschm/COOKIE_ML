@@ -143,6 +143,10 @@ def main():
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
+    
+    if not os.path.exists(os.path.join(model_save_dir, "inference_results")):
+        os.makedirs(os.path.join(model_save_dir, "inference_results"))
+    
     print(summary(autoencoder, input_size=(1, 1, 512, 16)))
 
     identifier = "testAutoencoder_inference"

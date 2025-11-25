@@ -579,7 +579,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
-                print("output from encoder size: ", outputs.size)
+                print("output from encoder size: ", outputs.size())
                 if zero_masking and zero_masking_model is not None:
                     probs, zero_mask  = zero_masking_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
@@ -606,7 +606,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     labels_np = labels.cpu().numpy()
                     # results[i] = (inputs_np, outputs_np, labels_np, loss.item())
                     results[i] = (inputs_np, outputs_np, labels_np)
-                    
+
                 i+=1
 
         avg_loss = running_loss / len(dataloader)
