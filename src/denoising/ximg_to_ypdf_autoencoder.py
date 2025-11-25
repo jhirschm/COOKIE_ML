@@ -579,6 +579,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
+                print("output from encoder size: ", outputs.size)
                 if zero_masking and zero_masking_model is not None:
                     probs, zero_mask  = zero_masking_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
@@ -589,7 +590,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     # print(zero_mask.shape)
                     zero_mask = zero_mask.to(device, torch.float32)
 
-                    outputs = outputs * zero_mask
+                    if zero_mask.sum() < 1:
+                        outputs *= 0
+                    # outputs = outputs * zero_mask
 
                 if not skip_eval:
                     labels = labels.squeeze()
