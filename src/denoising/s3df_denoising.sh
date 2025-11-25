@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=ampere
-##SBATCH --account=lcls:prjs2e21
+#SBATCH --account=lcls:prjs2e21
 #SBATCH --job-name=reg
 #SBATCH --output=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --error=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
@@ -12,7 +12,7 @@
 source ~/.bashrc
 source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
-CODE_PATH = "/sdf/home/b/bmencer/jack_code/"
+CODE_PATH="/sdf/home/b/bmencer/jack_code/"
 
 # Check if the script argument is provided
 if [ -z "$1" ]; then
@@ -38,7 +38,7 @@ case "$1" in
         python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
         ;;
     encoder_inference)
-        python3 $CODE_PATH/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_encoder_inference.py
+        python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_encoder_inference.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
