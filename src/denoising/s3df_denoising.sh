@@ -9,9 +9,10 @@
 #SBATCH --mem-per-cpu=32g
 #SBATCH --time=0-24:00:00
 #SBATCH --gpus 2
-# source ~/.bashrc
-# source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
+source ~/.bashrc
+source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
+CODE_PATH = "/sdf/home/b/bmencer/jack_code/"
 
 # Check if the script argument is provided
 if [ -z "$1" ]; then
@@ -35,6 +36,9 @@ case "$1" in
         ;;
     evaluation)
         python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
+        ;;
+    encoder_inference)
+        python3 $CODE_PATH/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_encoder_inference.py
         ;;
     *)
         echo "Invalid script specified. Usage: sbatch this_script.sh [training|fineTuning|evaluation]"
