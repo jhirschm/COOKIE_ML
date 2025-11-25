@@ -579,7 +579,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
-                print("output from encoder size: ", outputs.size())
+                # print("output from encoder size: ", outputs.size())
                 if zero_masking and zero_masking_model is not None:
                     probs, zero_mask  = zero_masking_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
@@ -614,7 +614,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         if save_results and results_dir and results_filename:
             results_filepath = os.path.join(results_dir, results_filename)
             with h5py.File(results_filepath, 'w') as h5file:
-                for batch_idx, (inputs_np, outputs_np, labels_np, loss) in results.items():
+                for batch_idx, (inputs_np, outputs_np, labels_np) in results.items():
                     for example_idx in range(inputs_np.shape[0]):
                         group = h5file.create_group(f"{batch_idx}_{example_idx}")
                         # group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
