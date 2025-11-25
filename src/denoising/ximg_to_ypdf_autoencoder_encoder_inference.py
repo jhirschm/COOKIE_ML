@@ -126,6 +126,7 @@ def main():
     best_model_zero_mask_path = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07272024_zeroPredict/classifier_best_model.pth"
     autoencoder.to(device)
     state_dict = torch.load(best_model_path, map_location=device)
+    state_dict = {k: v for k, v in state_dict.items() if k.startswith('encoder.')}
     autoencoder.load_state_dict(state_dict)
 
     classifier.to(device)
