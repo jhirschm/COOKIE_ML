@@ -166,7 +166,7 @@ def main():
         f.write("\nAdditional Notes\n")
         f.write("----------------\n")
         f.write("Results for inspection on test. Running on even pulses but trained on 1 pulse. Max 10 pulses.\n")
-        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
+        #f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     
     
