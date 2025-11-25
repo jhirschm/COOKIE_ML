@@ -166,7 +166,7 @@ def main():
 
     # Calculate the output size after conv layers
     def get_conv_output_size(input_size, conv_layers):
-        x = torch.rgit@github.com:jhirschm/COOKIE_ML.gitandn(input_size)
+        x = torch.randn(input_size)
         model = nn.Sequential(*[layer for layer_pair in conv_layers for layer in layer_pair if layer is not None])
         x = model(x)
         return x.shape
