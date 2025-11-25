@@ -29,7 +29,7 @@ decoder_layers = np.array([
 ])
 
 
-autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder = True)
 
 inputs = {"x": torch.rand(1, 1, 512, 16)} 
 gmodel = groqit(autoencoder, inputs, groqview=True, rebuild="always", build_name="model "+str(1))

@@ -363,18 +363,19 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         for param in self.encoder.parameters():
             param.data = param.data.to(self.dtype)
         
-        # Create decoder based on the provided layer configuration
-        decoder_modules = []
-        for i in range(len(decoder_layers)):
-            layer = decoder_layers[i,0]
-            activation = decoder_layers[i,1]
-            decoder_modules.append(layer)
-            if activation is not None:
-                decoder_modules.append(activation)
-        
-        self.decoder = nn.Sequential(*decoder_modules)
-        for param in self.decoder.parameters():
-            param.data = param.data.to(self.dtype)
+        if not self.outputEncoder:
+            # Create decoder based on the provided layer configuration
+            decoder_modules = []
+            for i in range(len(decoder_layers)):
+                layer = decoder_layers[i,0]
+                activation = decoder_layers[i,1]
+                decoder_modules.append(layer)
+                if activation is not None:
+                    decoder_modules.append(activation)
+            
+            self.decoder = nn.Sequential(*decoder_modules)
+            for param in self.decoder.parameters():
+                param.data = param.data.to(self.dtype)
 
         
 
@@ -382,10 +383,12 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         # Side network forward pass
         
         y = self.encoder(x)
+        if self.outputEncoder:
+            return y
         x = self.decoder(y)
 
-        if self.outputEncoder:
-            return y, x
+        # if self.outputEncoder:
+        #     return y, x
         return x
     
     def freeze_all_layers(self):
@@ -555,6 +558,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         self.eval()
         running_loss = 0.0
         results = {}
+        if criterion == None:
+            skip_eval = True
+        else:
+            skip_eval = False
 
         if zero_masking and zero_masking_model is None:
             raise ValueError("zero_masking_model must be provided if zero_masking is True")
@@ -567,7 +574,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 inputs = inputs.to(device, torch.float32)
                 # labels = labels[0]
                 labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
+
                 outputs = self(inputs)
+                
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 if zero_masking and zero_masking_model is not None:
@@ -582,10 +591,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
                     outputs = outputs * zero_mask
 
-
-                labels = labels.squeeze()
-                loss = criterion(outputs, labels)
-                running_loss += loss.item()
+                if not skip_eval:
+                    labels = labels.squeeze()
+                    loss = criterion(outputs, labels)
+                    running_loss += loss.item()
 
                 if save_results:
                     # Convert tensors to numpy arrays
@@ -598,15 +607,18 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         avg_loss = running_loss / len(dataloader)
 
         if save_results and results_dir and results_filename:
-            results_filepath = f"{results_dir}/{results_filename}"
+            results_filepath = os.path.join(results_dir, results_filename)
             with h5py.File(results_filepath, 'w') as h5file:
                 for batch_idx, (inputs_np, outputs_np, labels_np, loss) in results.items():
                     for example_idx in range(inputs_np.shape[0]):
                         group = h5file.create_group(f"{batch_idx}_{example_idx}")
-                        group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
-                        group.create_dataset('output', data=outputs_np[example_idx].reshape(16, 512))
-                        group.create_dataset('target', data=labels_np[example_idx].reshape(16, 512))
-                        group.attrs['loss'] = loss  # Store the loss as an attribute
+                        # group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
+                        # group.create_dataset('output', data=outputs_np[example_idx].reshape(16, 512))
+                        # group.create_dataset('target', data=labels_np[example_idx].reshape(16, 512))
+                        group.create_dataset('input', data=inputs_np[example_idx])
+                        group.create_dataset('output', data=outputs_np[example_idx])
+                        group.create_dataset('target', data=labels_np[example_idx])
+                        # group.attrs['loss'] = loss  # Store the loss as an attribute
                         
 
         return avg_loss
