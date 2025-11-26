@@ -71,7 +71,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8)
 
-
+    '''
     # Example usage
     encoder_layers = np.array([
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
@@ -92,7 +92,26 @@ def main():
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
 
+    '''
+    encoder_layers = np.array([
+        [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
+        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 260)
 
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(16, 16, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+        
+
+
+    
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
 
     # Define the loss function and optimizer
