@@ -71,7 +71,7 @@ def main():
     val_dataloader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=8)
     test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8)
 
-    '''
+    '''  original
     # Example usage
     encoder_layers = np.array([
         [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
@@ -92,20 +92,34 @@ def main():
         # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     ])
 
-    '''
+    ''' 
+    # (16 x 32)
+    # encoder_layers = np.array([
+    #     [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
+    #     [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+    #     [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+    #     [nn.Conv2d(16, 1, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 32)
+
+    # decoder_layers = np.array([
+    #     [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+    #     [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+    #     [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+    #     [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+
     encoder_layers = np.array([
         [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
         [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
-        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
         [nn.Conv2d(16, 1, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 260)
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 32)
 
     decoder_layers = np.array([
         [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
         [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
         [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
         
@@ -130,7 +144,7 @@ def main():
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder"
+    identifier = "autoencoder_16x64"
     autoencoder.to(device)
     # Get detailed GPU information if using CUDA
     if device.type == 'cuda':
