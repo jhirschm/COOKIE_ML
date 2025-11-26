@@ -100,14 +100,14 @@ def main():
         [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
         [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
-        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv2d(16, 1, kernel_size=3, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 260)
 
     decoder_layers = np.array([
         [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
         [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
         [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 16, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+        [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
         
 
 
@@ -198,7 +198,7 @@ def main():
         f.write(f"Data handled using DataMilking_HalfAndHalf with no pulse handler.\n")
         f.write(f"Batch Size: {train_dataloader.batch_size}\n")
         f.write(f"Train Size: {train_size}, Validation Size: {val_size}, Test Size: {test_size}\n")
-        f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
+        #f.write((summary(autoencoder, input_size=(1, 1, 512, 16))))
 
     print(f"Training completed. Results saved to {results_file}")
 
