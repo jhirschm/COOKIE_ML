@@ -122,14 +122,15 @@ def main():
     # model_save_dir = "/Users/jhirschm/Documents/MRCO/Data_Changed/Test"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/"
-    model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_09042024_multiPulse_final/"
+    date = str(datetime.now().strftime("%d%m%Y"))
+    model_save_dir = f"/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_{date}_multiPulse_small_latent/"
 
 
     # Check if directory exists, otherwise create it
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    identifier = "autoencoder_6"
+    identifier = "autoencoder"
     autoencoder.to(device)
     # Get detailed GPU information if using CUDA
     if device.type == 'cuda':

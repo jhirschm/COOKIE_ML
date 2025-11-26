@@ -7,8 +7,8 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=32g
-#SBATCH --time=0-24:00:00
-#SBATCH --gpus 2
+#SBATCH --time=0-01:00:00
+#SBATCH --gpus 0
 source ~/.bashrc
 source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
@@ -29,7 +29,7 @@ export PYTHONIOENCODING=utf-8
 
 case "$1" in
     training)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training.py
+        python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training.py
         ;;
     fineTuning)
         python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training_fineTuning.py
