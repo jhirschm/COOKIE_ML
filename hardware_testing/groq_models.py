@@ -10,9 +10,11 @@ from typing import Dict, List
 # import groq API convolution
 from groq_convolution import conv1d
 from groq_convolution.main import test_1dconv, get_tsp_runner
-from groq_convolution.conv1d import VECTOR_SIZE
+from groq_convolution.conv1d import GroqConv1D, VECTOR_SIZE
 
 from groq_convolution.compile_lpu_convolution import compile_g_api_1dconv
+from groq_convolution.torch_convolution import TorchConv1D
+from compile_lpu_model import compile_with_g_api
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -109,18 +111,19 @@ kernel = (
 )  # Convert to numpy float16
 layer_configuration = layer_configurations[0]
 
-compiled_program = compile_g_api_1dconv(layer_configuration, kernel)
 
-# run the program on TSP
-runner = get_tsp_runner(compiled_program["iop_file"])
+tsp_model = GroqConv1D(
+    conv_kernel=kernel,
+    batch_num=layer_configuration["batch_num"],
+    data_length=layer_configuration["image_size"],
+    padding=layer_configuration["padding"],
+)
 
 image = np.random.randn(
     layer_configuration["batch_num"],
     layer_configuration["in_channel_num"],
     layer_configuration["image_size"],
 ).astype(np.float32)
-
-image_fp16 = image.astype(np.float16)
 
 num_of_input_vectors = (image.shape[-1] + VECTOR_SIZE - 1) // VECTOR_SIZE
 padding_size = num_of_input_vectors * VECTOR_SIZE - image.shape[-1]
@@ -130,6 +133,12 @@ image_padded = np.pad(
     mode="constant",
     constant_values=0.0,
 ).astype(np.float16)
+
+
+compiled_program = compile_with_g_api(tsp_model, image_padded)
+
+# run the program on TSP
+runner = get_tsp_runner(compiled_program["iop_file"])
 
 
 inputs = {"image": image_padded}
