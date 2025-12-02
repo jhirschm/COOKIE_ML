@@ -9,7 +9,8 @@ from typing import Dict, List
 
 # import groq API convolution
 from groq_convolution import conv1d
-from groq_convolution.main import test_1dconv
+from groq_convolution.main import test_1dconv, get_tsp_runner
+from groq_convolution.conv1d import VECTOR_SIZE
 
 from groq_convolution.compile_lpu_convolution import compile_g_api_1dconv
 
@@ -110,6 +111,64 @@ layer_configuration = layer_configurations[0]
 
 compiled_program = compile_g_api_1dconv(layer_configuration, kernel)
 
+# run the program on TSP
+runner = get_tsp_runner(compiled_program["iop_file"])
+
+image = np.random.randn(
+    layer_configuration["batch_num"],
+    layer_configuration["in_channel_num"],
+    layer_configuration["image_size"],
+).astype(np.float32)
+
+image_fp16 = image.astype(np.float16)
+
+num_of_input_vectors = (image.shape[-1] + VECTOR_SIZE - 1) // VECTOR_SIZE
+padding_size = num_of_input_vectors * VECTOR_SIZE - image.shape[-1]
+image_padded = np.pad(
+    image,
+    pad_width=((0, 0), (0, 0), (0, padding_size)),
+    mode="constant",
+    constant_values=0.0,
+).astype(np.float16)
+
+
+inputs = {"image": image_padded}
+results_groq = runner(**inputs)
+output_tensor = results_groq["convolution_result"]
+
+with torch.no_grad():
+    image_torch = torch.from_numpy(image)
+    conv_torch = autoencoder(image_torch)
+    conv_torch = conv_torch.detach().numpy()
+
+if np.allclose(output_tensor, conv_torch, atol=0.01):
+    print(f"Groq result matches torch result in test case {layer_configuration}.")
+
+    """Returns allclose result along with statistics."""
+    diff = np.abs(output_tensor - conv_torch)
+    relative_diff = np.abs(diff / (np.abs(conv_torch) + 1e-8))
+
+    stats = {
+        "mean_abs_error": np.mean(diff),
+        "max_abs_error": np.max(diff),
+        "mean_rel_error": np.mean(relative_diff),
+        "max_rel_error": np.max(relative_diff),
+        "rmse": np.sqrt(np.mean(diff**2)),
+    }
+
+    print(stats)
+else:
+    print("Groq ouput: ")
+    print(output_tensor[:, -16:-1])
+    print("Torch output:")
+    print(conv_torch[0, :, -16:-1])
+
+    max_error = np.max(np.abs(output_tensor - conv_torch))
+    print(max_error)
+
+    raise RuntimeError(
+        f"Groq result differs from torch result in test case {layer_configuration}"
+    )
 
 inputs = {"x": torch.rand(1, 1, 512, 16)}
 
