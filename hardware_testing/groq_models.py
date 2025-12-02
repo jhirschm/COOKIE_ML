@@ -47,17 +47,26 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[torch.T
     return encoder_weights
 
 
-layer_configurations = [
-    {
-        "kernel_size": 4,
-        "image_size": 1 * 320,
-        "in_channel_num": 1,
-        "out_channel_num": 5,
-        "batch_num": 1,
-        "stride": 1,
-        "padding": 0,
-    }
-]
+layer1_configuration = {
+    "kernel_size": 4,
+    "image_size": 1 * 320,
+    "in_channel_num": 1,
+    "out_channel_num": 5,
+    "batch_num": 1,
+    "stride": 1,
+    "padding": 0,
+}
+
+layer2_configuration = {
+    "kernel_size": 4,
+    "image_size": layer1_configuration["image_size"],
+    "in_channel_num": layer1_configuration["out_channel_num"],
+    "out_channel_num": 10,
+    "batch_num": 1,
+    "stride": 1,
+    "padding": 0,
+}
+layer_configurations = [layer1_configuration]  # , layer2_configuration]
 
 # Encoding layers
 encoder_layers = [
@@ -101,28 +110,24 @@ autoencoder = Ximg_to_Ypdf_Autoencoder(
 state_dict = autoencoder.state_dict()
 kernels = extract_encoder_weights(state_dict)
 
-for key, value in state_dict.items():
-    print(key, value.shape)
-    print(value)
 
 # compile the program for Groq hardware implementation
-kernel = (
-    kernels[0].detach().cpu().numpy().astype(np.float16)
-)  # Convert to numpy float16
-layer_configuration = layer_configurations[0]
 
 
-tsp_model = GroqConv1D(
-    conv_kernel=kernel,
-    batch_num=layer_configuration["batch_num"],
-    data_length=layer_configuration["image_size"],
-    padding=layer_configuration["padding"],
-)
+tsp_layers = []
+for layer_configuration, kernel in zip(layer_configurations, kernels):
+    tsp_layer = GroqConv1D(
+        conv_kernel=kernel.detach().cpu().numpy().astype(np.float16),
+        batch_num=layer_configuration["batch_num"],
+        data_length=layer_configuration["image_size"],
+        padding=layer_configuration["padding"],
+    )
+    tsp_layers.append(tsp_layer)
 
 image = np.random.randn(
-    layer_configuration["batch_num"],
-    layer_configuration["in_channel_num"],
-    layer_configuration["image_size"],
+    layer_configurations[0]["batch_num"],
+    layer_configurations[0]["in_channel_num"],
+    layer_configurations[0]["image_size"],
 ).astype(np.float32)
 
 num_of_input_vectors = (image.shape[-1] + VECTOR_SIZE - 1) // VECTOR_SIZE
@@ -135,7 +140,7 @@ image_padded = np.pad(
 ).astype(np.float16)
 
 
-compiled_program = compile_with_g_api(tsp_model, image_padded)
+compiled_program = compile_with_g_api(tsp_layers, image_padded)
 
 # run the program on TSP
 runner = get_tsp_runner(compiled_program["iop_file"])
