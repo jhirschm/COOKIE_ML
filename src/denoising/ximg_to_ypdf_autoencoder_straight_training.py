@@ -94,11 +94,26 @@ def main():
 
     ''' 
     # (16 x 32)
+    encoder_layers = np.array([ # (1,1,16,512)
+        [nn.Conv2d(1, 1, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
+        [nn.Conv2d(1, 2, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+        [nn.Conv2d(2, 5, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+        [nn.Conv2d(5, 10, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]])] #  (1,10,16,32) -> (1,1,16,320)
+    # The ouput of the econder needs to be transposed to (1, 1, 16, 32, 10) and then flattened (1, 1, 16, 320)
+
+    decoder_layers = np.array([
+        [nn.ConvTranspose2d(10, 5, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(5, 2, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(2, 1, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(1, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+
     # encoder_layers = np.array([
     #     [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
     #     [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
-    #     [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
     #     [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
     #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
     #     [nn.Conv2d(16, 1, kernel_size=3, padding=1), nn.ReLU()],
@@ -107,21 +122,7 @@ def main():
     # decoder_layers = np.array([
     #     [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
     #     [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-    #     [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
     #     [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
-
-    encoder_layers = np.array([
-        [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
-        [nn.Conv2d(16, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
-        [nn.Conv2d(16, 1, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) # (batch_size, 1, 16, 32)
-
-    decoder_layers = np.array([
-        [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
         
 
 
