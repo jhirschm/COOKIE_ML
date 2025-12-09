@@ -48,23 +48,23 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[torch.T
 
 
 layer1_configuration = {
-    "kernel_size": 4,
-    "image_size": 1 * 320,
+    "kernel_size": 3,
+    "image_size": 320,
     "in_channel_num": 1,
-    "out_channel_num": 5,
+    "out_channel_num": 16,
     "batch_num": 1,
     "stride": 1,
-    "padding": 0,
+    "padding": 1,
 }
 
 layer2_configuration = {
-    "kernel_size": 4,
+    "kernel_size": 3,
     "image_size": layer1_configuration["image_size"],
     "in_channel_num": layer1_configuration["out_channel_num"],
     "out_channel_num": 10,
     "batch_num": 1,
     "stride": 1,
-    "padding": 0,
+    "padding": 1,
 }
 layer_configurations = [layer1_configuration]  # , layer2_configuration]
 
@@ -119,7 +119,6 @@ for layer_configuration, kernel in zip(layer_configurations, kernels):
     tsp_layer = GroqConv1D(
         conv_kernel=kernel.detach().cpu().numpy().astype(np.float16),
         batch_num=layer_configuration["batch_num"],
-        data_length=layer_configuration["image_size"],
         padding=layer_configuration["padding"],
     )
     tsp_layers.append(tsp_layer)
@@ -130,37 +129,29 @@ image = np.random.randn(
     layer_configurations[0]["image_size"],
 ).astype(np.float32)
 
-num_of_input_vectors = (image.shape[-1] + VECTOR_SIZE - 1) // VECTOR_SIZE
-padding_size = num_of_input_vectors * VECTOR_SIZE - image.shape[-1]
-image_padded = np.pad(
-    image,
-    pad_width=((0, 0), (0, 0), (0, padding_size)),
-    mode="constant",
-    constant_values=0.0,
-).astype(np.float16)
+image_fp16 = image.astype(np.float16)
 
-
-compiled_program = compile_with_g_api(tsp_layers, image_padded)
+compiled_program = compile_with_g_api(tsp_layers, image_fp16)
 
 # run the program on TSP
 runner = get_tsp_runner(compiled_program["iop_file"])
 
 
-inputs = {"image": image_padded}
+inputs = {"image": image_fp16}
 results_groq = runner(**inputs)
 output_tensor = results_groq["convolution_result"]
 
 with torch.no_grad():
     image_torch = torch.from_numpy(image)
-    conv_torch = autoencoder(image_torch)
-    conv_torch = conv_torch.detach().numpy()
+    result_torch = autoencoder(image_torch)
+    result_torch = result_torch.detach().numpy()
 
-if np.allclose(output_tensor, conv_torch, atol=0.01):
+if np.allclose(output_tensor, result_torch, atol=0.01):
     print(f"Groq result matches torch result in test case {layer_configuration}.")
 
     """Returns allclose result along with statistics."""
-    diff = np.abs(output_tensor - conv_torch)
-    relative_diff = np.abs(diff / (np.abs(conv_torch) + 1e-8))
+    diff = np.abs(output_tensor - result_torch)
+    relative_diff = np.abs(diff / (np.abs(result_torch) + 1e-8))
 
     stats = {
         "mean_abs_error": np.mean(diff),
@@ -175,9 +166,9 @@ else:
     print("Groq ouput: ")
     print(output_tensor[:, -16:-1])
     print("Torch output:")
-    print(conv_torch[0, :, -16:-1])
+    print(result_torch[0, :, -16:-1])
 
-    max_error = np.max(np.abs(output_tensor - conv_torch))
+    max_error = np.max(np.abs(output_tensor - result_torch))
     print(max_error)
 
     raise RuntimeError(
