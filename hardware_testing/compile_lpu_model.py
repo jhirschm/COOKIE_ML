@@ -7,21 +7,37 @@ import groq.api as g
 
 from typing import Any, Union
 
+from groq_convolution.conv1d import VECTOR_SIZE
+
 
 def compile_with_g_api(
     tsp_layers, input: np.ndarray
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    # TODO: check for float16
+    # with g.ProgramContext() as pc:
+
     input_mt = g.input_tensor(
         shape=input.shape,
         dtype=g.float16,
         name="image",
         layout="H1(W), -1, S2",
+        split_sizes=VECTOR_SIZE,
     )
 
-    for tsp_layer in tsp_layers:
-        result_mt = tsp_layer(input_mt, time=0)
+    predecessors = [None]
+    time_loc = 0
+    for layer_idx, tsp_layer in enumerate(tsp_layers):
+        with g.ResourceScope(
+            name=f"encoder_layer_{layer_idx}",
+            is_buffered=True,
+            time=time_loc,
+            predecessors=predecessors,
+        ) as encoder_layer_scope:
+
+            result_mt = tsp_layer(input_mt, time=0)
+
+        predecessors = [encoder_layer_scope]
+        time_loc = None
         input_mt = result_mt
 
     result_mt.set_program_output()
@@ -37,8 +53,13 @@ def compile_with_g_api(
             gen_vis_data=True,
         )
 
-    except:
-        raise Exception("Failed to build convolution program!")
+    except Exception as e:
+        print(f"Error message: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+
+        traceback.print_exc()
+        raise e
 
     g.write_visualizer_data("groqview_convolution1D")
 

@@ -49,7 +49,7 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[torch.T
 
 layer1_configuration = {
     "kernel_size": 3,
-    "image_size": 320,
+    "image_size": 512,
     "in_channel_num": 1,
     "out_channel_num": 16,
     "batch_num": 1,
@@ -66,7 +66,7 @@ layer2_configuration = {
     "stride": 1,
     "padding": 1,
 }
-layer_configurations = [layer1_configuration]  # , layer2_configuration]
+layer_configurations = [layer1_configuration, layer2_configuration]
 
 # Encoding layers
 encoder_layers = [
@@ -120,6 +120,7 @@ for layer_configuration, kernel in zip(layer_configurations, kernels):
         conv_kernel=kernel.detach().cpu().numpy().astype(np.float16),
         batch_num=layer_configuration["batch_num"],
         padding=layer_configuration["padding"],
+        overlapped_scopes=True,
     )
     tsp_layers.append(tsp_layer)
 
