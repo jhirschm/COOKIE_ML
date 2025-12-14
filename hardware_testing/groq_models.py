@@ -6,15 +6,23 @@ import torch
 import numpy as np
 import torch.nn as nn
 from typing import Dict, List
+from enum import Enum
 
-# import groq API convolution
-from groq_convolution import conv1d
-from groq_convolution.main import test_1dconv, get_tsp_runner
-from groq_convolution.conv1d import GroqConv1D, VECTOR_SIZE
 
-from groq_convolution.compile_lpu_convolution import compile_g_api_1dconv
-from groq_convolution.torch_convolution import TorchConv1D
-from compile_lpu_model import compile_with_g_api
+# import tsp runner
+from groq_convolution.main import get_tsp_runner
+
+from compile_lpu_model import compile_encoder_with_g_api, compile_encoder_with_compiler
+import groq.api as g
+
+
+class CompilerType(Enum):
+    gAPI = "gAPI"
+    Compiler = "Compiler"
+
+
+compiler_type = CompilerType.Compiler
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -29,7 +37,7 @@ from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
 
 
-def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[torch.Tensor]:
+def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[np.ndarray]:
     """
     Extract encoder.*.weight fields from a state_dict and return them as a list.
 
@@ -43,7 +51,9 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[torch.T
     # Filter for keys that start with "encoder." and end with ".weight"
     for key in sorted(state_dict.keys()):
         if key.startswith("encoder.") and key.endswith(".weight"):
-            encoder_weights.append(state_dict[key])
+            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
+            encoder_weights.append(weight)
+
     return encoder_weights
 
 
@@ -114,16 +124,6 @@ kernels = extract_encoder_weights(state_dict)
 # compile the program for Groq hardware implementation
 
 
-tsp_layers = []
-for layer_configuration, kernel in zip(layer_configurations, kernels):
-    tsp_layer = GroqConv1D(
-        conv_kernel=kernel.detach().cpu().numpy().astype(np.float16),
-        batch_num=layer_configuration["batch_num"],
-        padding=layer_configuration["padding"],
-        overlapped_scopes=True,
-    )
-    tsp_layers.append(tsp_layer)
-
 image = np.random.randn(
     layer_configurations[0]["batch_num"],
     layer_configurations[0]["in_channel_num"],
@@ -132,15 +132,33 @@ image = np.random.randn(
 
 image_fp16 = image.astype(np.float16)
 
-compiled_program = compile_with_g_api(tsp_layers, image_fp16)
+if compiler_type == CompilerType.gAPI:
+
+    output_tensor_name = "encoder_result"
+
+    compiled_program = compile_encoder_with_g_api(
+        layer_configurations, kernels, image_fp16, output_tensor_name
+    )
+
+    inputs = {"image": image_fp16}
+
+elif compiler_type == CompilerType.Compiler:
+
+    output_tensor_name = "output000"
+
+    image_torch = torch.from_numpy(image)
+    compiled_program = compile_encoder_with_compiler(autoencoder, image_torch)
+    inputs = {"arg000": image}
+
+    print(inputs["arg000"].shape)
+else:
+    raise ValueError(f"Invalid compiler type: {compiler_type}")
+
 
 # run the program on TSP
 runner = get_tsp_runner(compiled_program["iop_file"])
-
-
-inputs = {"image": image_fp16}
 results_groq = runner(**inputs)
-output_tensor = results_groq["convolution_result"]
+output_tensor = results_groq[output_tensor_name]
 
 with torch.no_grad():
     image_torch = torch.from_numpy(image)
@@ -148,7 +166,7 @@ with torch.no_grad():
     result_torch = result_torch.detach().numpy()
 
 if np.allclose(output_tensor, result_torch, atol=0.01):
-    print(f"Groq result matches torch result in test case {layer_configuration}.")
+    print(f"Groq result matches torch result in test case {layer_configurations}.")
 
     """Returns allclose result along with statistics."""
     diff = np.abs(output_tensor - result_torch)
@@ -173,7 +191,7 @@ else:
     print(max_error)
 
     raise RuntimeError(
-        f"Groq result differs from torch result in test case {layer_configuration}"
+        f"Groq result differs from torch result in test case {layer_configurations}"
     )
 
 inputs = {"x": torch.rand(1, 1, 512, 16)}

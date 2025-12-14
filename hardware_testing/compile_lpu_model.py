@@ -4,67 +4,79 @@ Use to compile convolution programs for LPU
 
 import numpy as np
 import groq.api as g
+from enum import Enum
 
-from typing import Any, Union
+from typing import Any, Union, List, Dict
 
-from groq_convolution.conv1d import VECTOR_SIZE
+from groq_convolution.compile_lpu_convolution import (
+    compile_g_api,
+    compile_with_compiler,
+)
+from groq_convolution.conv1d import GroqConv1D, VECTOR_SIZE
+
+import torch
 
 
-def compile_with_g_api(
-    tsp_layers, input: np.ndarray
+class CompilerType(Enum):
+    gAPI = "gAPI"
+    gMLIR = "gMLIR"
+    Compiler = "Compiler"
+
+
+def compile_encoder_with_compiler(
+    model: torch.nn.Module,
+    image: torch.Tensor,
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    # with g.ProgramContext() as pc:
+    # Set file names used below
+    output_dir = "encoderCompiler"
 
-    input_mt = g.input_tensor(
-        shape=input.shape,
-        dtype=g.float16,
-        name="image",
-        layout="H1(W), -1, S2",
-        split_sizes=VECTOR_SIZE,
+    program_name = "encoder"
+
+    return compile_with_compiler(
+        model, image, program_name, output_dir, gen_vis_data=True
     )
 
-    predecessors = [None]
-    time_loc = 0
-    for layer_idx, tsp_layer in enumerate(tsp_layers):
-        with g.ResourceScope(
-            name=f"encoder_layer_{layer_idx}",
-            is_buffered=True,
-            time=time_loc,
-            predecessors=predecessors,
-        ) as encoder_layer_scope:
 
-            result_mt = tsp_layer(input_mt, time=0)
+def compile_encoder_with_g_api(
+    layer_configurations: List[Dict[str, int]],
+    kernels: List[np.ndarray],
+    input: np.ndarray,
+    output_tensor_name: str = "encoder_result",
+) -> Union[dict[str, Union[str, Any]], Any]:
 
-        predecessors = [encoder_layer_scope]
-        time_loc = None
-        input_mt = result_mt
+    with g.ProgramContext() as pc:
 
-    result_mt.set_program_output()
-    ourput_dir = "./convolution1D"
-    program_name = "convolution1D"
-
-    try:
-
-        iop_file = g.compile(
-            base_name=program_name,
-            output_dir=ourput_dir,
-            result_tensor=result_mt,
-            gen_vis_data=True,
+        input_mt = g.input_tensor(
+            shape=input.shape,
+            dtype=g.float16,
+            name="image",
+            layout="H1(W), -1, S2",
+            split_sizes=VECTOR_SIZE,
         )
 
-    except Exception as e:
-        print(f"Error message: {e}")
-        print(f"Error type: {type(e).__name__}")
-        import traceback
+        tsp_layers = []
+        for layer_configuration, kernel in zip(layer_configurations, kernels):
+            tsp_layer = GroqConv1D(
+                conv_kernel=kernel,
+                batch_num=layer_configuration["batch_num"],
+                padding=layer_configuration["padding"],
+                overlapped_scopes=True,
+            )
+            tsp_layers.append(tsp_layer)
 
-        traceback.print_exc()
-        raise e
+        try:
+            return compile_g_api(
+                tsp_layers,
+                input_mt,
+                output_dir="./encoderGAPI",
+                program_name="encoder",
+                output_tensor_name="encoder_result",
+            )
+        except Exception as e:
+            print(f"Error message: {e}")
+            print(f"Error type: {type(e).__name__}")
+            import traceback
 
-    g.write_visualizer_data("groqview_convolution1D")
-
-    return {
-        "iop_file": iop_file,
-        "ourput_dir": ourput_dir,
-        "program_name": program_name,
-    }
+            traceback.print_exc()
+            raise e
