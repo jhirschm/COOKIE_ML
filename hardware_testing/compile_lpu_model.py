@@ -13,7 +13,9 @@ from groq_convolution.compile_lpu_convolution import (
     compile_with_compiler,
     get_iop_stats,
 )
-from groq_convolution.conv1d import GroqConv1D, VECTOR_SIZE
+from groq_convolution.conv1d import GroqConv1D, ResourceScopeName
+from groq_convolution.groq_pooling import GroqMaxPooling1D
+from groq_convolution.constants import VECTOR_SIZE
 
 import torch
 
@@ -61,8 +63,21 @@ def compile_encoder_with_g_api(
             tsp_layer = GroqConv1D(
                 conv_kernel=kernel,
                 batch_num=layer_configuration["batch_num"],
-                padding=layer_configuration["padding"],
-                activation_function=layer_configuration.get("activation", "none"),
+                padding=layer_configuration["conv_padding"],
+                activation_function=layer_configuration.get(
+                    "conv_activation_function", "none"
+                ),
+                overlapped_scopes=True,
+                return_at_scope=ResourceScopeName.UNPACK_CONV_RES,
+            )
+            tsp_layers.append(tsp_layer)
+
+            tsp_layer = GroqMaxPooling1D(
+                in_channel_num=layer_configuration["pooling_in_channel_num"],
+                kernel_size=layer_configuration["pooling_kernel_size"],
+                stride=layer_configuration["pooling_stride"],
+                batch_num=layer_configuration["batch_num"],
+                padding=layer_configuration["pooling_padding"],
                 overlapped_scopes=True,
             )
             tsp_layers.append(tsp_layer)

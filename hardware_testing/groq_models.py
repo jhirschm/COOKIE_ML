@@ -58,43 +58,71 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[np.ndar
 
 
 layer1_configuration = {
-    "kernel_size": 3,
-    "image_size": 512,
-    "in_channel_num": 1,
-    "out_channel_num": 16,
     "batch_num": 1,
-    "stride": 1,
-    "padding": 1,
-    "activation": "ReLU",
+    "image_size": 512,
+    "conv_kernel_size": 3,
+    "conv_in_channel_num": 1,
+    "conv_out_channel_num": 16,
+    "conv_stride": 1,
+    "conv_padding": 1,
+    "conv_activation_function": "ReLU",
+    "pooling_in_channel_num": 16,
+    "pooling_kernel_size": 2,
+    "pooling_stride": 2,
+    "pooling_padding": 0,
 }
 
 layer2_configuration = {
-    "kernel_size": 3,
-    "image_size": layer1_configuration["image_size"],
-    "in_channel_num": layer1_configuration["out_channel_num"],
-    "out_channel_num": 10,
     "batch_num": 1,
-    "stride": 1,
-    "padding": 1,
-    "activation": "ReLU",
+    "image_size": layer1_configuration["image_size"],
+    "conv_kernel_size": 3,
+    "conv_in_channel_num": layer1_configuration["pooling_in_channel_num"],
+    "conv_out_channel_num": 10,
+    "conv_stride": 1,
+    "conv_padding": 1,
+    "conv_activation_function": "ReLU",
+    "pooling_in_channel_num": 10,
+    "pooling_kernel_size": 2,
+    "pooling_stride": 2,
+    "pooling_padding": 0,
 }
 layer_configurations = [layer1_configuration, layer2_configuration]
 
-# Encoding layers
-encoder_layers = [
-    [
-        nn.Conv1d(  # convolutional layer
-            layer_conf["in_channel_num"],
-            layer_conf["out_channel_num"],
-            kernel_size=layer_conf["kernel_size"],
-            stride=layer_conf["stride"],
-            padding=layer_conf["padding"],
-            bias=False,
-        ),
-        nn.ReLU(),  # activation function
-    ]
-    for layer_conf in layer_configurations
-]
+
+# Torch Encoding layers
+encoder_layers = []
+for layer_conf in layer_configurations:
+
+    sub_layers = []
+    sub_layers.append(
+        [
+            nn.Conv1d(  # convolutional layer
+                layer_conf["conv_in_channel_num"],
+                layer_conf["conv_out_channel_num"],
+                kernel_size=layer_conf["conv_kernel_size"],
+                stride=layer_conf["conv_stride"],
+                padding=layer_conf["conv_padding"],
+                bias=False,
+            ),
+            (
+                nn.ReLU() if layer_conf["conv_activation_function"] == "ReLU" else None
+            ),  # activation function
+        ]
+    )
+
+    sub_layers.append(
+        [
+            nn.MaxPool1d(  # pooling layer
+                kernel_size=layer_conf["pooling_kernel_size"],
+                stride=layer_conf["pooling_stride"],
+                padding=layer_conf["pooling_padding"],
+            ),
+            None,
+        ]
+    )
+
+    encoder_layers.extend(sub_layers)
+
 
 # encoder_layers = [
 #     [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
@@ -128,7 +156,7 @@ kernels = extract_encoder_weights(state_dict)
 
 image = np.random.randn(
     layer_configurations[0]["batch_num"],
-    layer_configurations[0]["in_channel_num"],
+    layer_configurations[0]["conv_in_channel_num"],
     layer_configurations[0]["image_size"],
 ).astype(np.float32)
 
