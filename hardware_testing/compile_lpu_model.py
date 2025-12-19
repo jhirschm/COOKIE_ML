@@ -11,6 +11,7 @@ from typing import Any, Union, List, Dict
 from groq_convolution.compile_lpu_convolution import (
     compile_g_api,
     compile_with_compiler,
+    get_iop_stats,
 )
 from groq_convolution.conv1d import GroqConv1D, VECTOR_SIZE
 
@@ -67,13 +68,22 @@ def compile_encoder_with_g_api(
             tsp_layers.append(tsp_layer)
 
         try:
-            return compile_g_api(
+            compiled_program = compile_g_api(
                 tsp_layers,
                 input_mt,
                 output_dir="./encoderGAPI",
                 program_name="encoder",
                 output_tensor_name="encoder_result",
             )
+
+            # Get iop stats
+            iop_stats_output = get_iop_stats(
+                compiled_program["output_dir"], compiled_program["program_name"]
+            )
+            print(iop_stats_output)
+
+            return compiled_program
+
         except Exception as e:
             print(f"Error message: {e}")
             print(f"Error type: {type(e).__name__}")
