@@ -21,7 +21,7 @@ class CompilerType(Enum):
     Compiler = "Compiler"
 
 
-compiler_type = CompilerType.Compiler
+compiler_type = CompilerType.gAPI
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -65,6 +65,7 @@ layer1_configuration = {
     "batch_num": 1,
     "stride": 1,
     "padding": 1,
+    "activation": "ReLU",
 }
 
 layer2_configuration = {
@@ -75,6 +76,7 @@ layer2_configuration = {
     "batch_num": 1,
     "stride": 1,
     "padding": 1,
+    "activation": "ReLU",
 }
 layer_configurations = [layer1_configuration, layer2_configuration]
 
@@ -89,7 +91,7 @@ encoder_layers = [
             padding=layer_conf["padding"],
             bias=False,
         ),
-        nn.Identity(),  # activation function
+        nn.ReLU(),  # activation function
     ]
     for layer_conf in layer_configurations
 ]

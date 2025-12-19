@@ -61,6 +61,7 @@ def compile_encoder_with_g_api(
                 conv_kernel=kernel,
                 batch_num=layer_configuration["batch_num"],
                 padding=layer_configuration["padding"],
+                activation_function=layer_configuration.get("activation", "none"),
                 overlapped_scopes=True,
             )
             tsp_layers.append(tsp_layer)
