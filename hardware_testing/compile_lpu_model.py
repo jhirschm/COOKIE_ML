@@ -1,5 +1,8 @@
 """
-Use to compile convolution programs for LPU
+Module for compiling convolution programs for Groq LPU (Language Processing Unit).
+
+This module provides functions to compile encoder models using different compilation
+methods (gAPI, gMLIR, or Compiler) for execution on Groq hardware accelerators.
 """
 
 import numpy as np
@@ -21,6 +24,14 @@ import torch
 
 
 class CompilerType(Enum):
+    """Enumeration of available compiler types for Groq LPU compilation.
+
+    Attributes:
+        gAPI: Use the Groq API (gAPI) compiler for compilation.
+        gMLIR: Use the gMLIR compiler for compilation.
+        Compiler: Use the standard Groq compiler for compilation.
+    """
+
     gAPI = "gAPI"
     gMLIR = "gMLIR"
     Compiler = "Compiler"
@@ -31,7 +42,29 @@ def compile_encoder_with_compiler(
     image: torch.Tensor,
     program_name: str = "encoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
+    """Compile an encoder model using the Groq Compiler.
 
+    This function compiles a PyTorch encoder model for execution on Groq hardware
+    using the standard Groq compiler. The compiled program is saved to the
+    "encoderCompiler" output directory.
+
+    Args:
+        model: PyTorch neural network module representing the encoder to compile.
+        image: Example input tensor used for shape inference during compilation.
+            Should match the expected input shape of the model.
+        program_name: Name of the compiled program. Defaults to "encoder".
+
+    Returns:
+        Dictionary containing compilation results with keys:
+            - "iop_file": Path to the compiled IOP file
+            - "output_dir": Directory where compiled files are saved
+            - "program_name": Name of the compiled program
+            Additional keys may be present depending on the compiler output.
+
+    Raises:
+        Exception: If compilation fails, the underlying exception is raised
+            with error details.
+    """
     # Set file names used below
     output_dir = "encoderCompiler"
 
@@ -47,6 +80,50 @@ def compile_encoder_with_g_api(
     output_tensor_name: str = "encoder_result",
     program_name: str = "encoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
+    """Compile an encoder model using the Groq API (gAPI) compiler.
+
+    This function compiles a multi-layer encoder consisting of convolutional and
+    pooling layers for execution on Groq hardware using the gAPI compiler.
+    Each layer configuration should define both convolution and pooling parameters.
+
+    Args:
+        layer_configurations: List of dictionaries, each containing configuration
+            for one encoder layer. Each dictionary should include:
+            - "batch_num": Batch size
+            - "conv_in_channel_num": Input channels for convolution
+            - "conv_out_channel_num": Output channels for convolution
+            - "conv_kernel_size": Convolution kernel size
+            - "conv_stride": Convolution stride
+            - "conv_padding": Convolution padding
+            - "conv_activation_function": Activation function name (e.g., "ReLU")
+            - "pooling_in_channel_num": Input channels for pooling
+            - "pooling_kernel_size": Pooling kernel size
+            - "pooling_stride": Pooling stride
+            - "pooling_padding": Pooling padding
+        kernels: List of numpy arrays representing convolution kernels/weights
+            for each layer. Should match the order of layer_configurations.
+        input: Example input numpy array used for shape inference. Should be
+            float16 dtype and match the expected input shape (batch, channels, length).
+        output_tensor_name: Name of the output tensor in the compiled program.
+            Defaults to "encoder_result".
+        program_name: Name of the compiled program. Defaults to "encoder".
+
+    Returns:
+        Dictionary containing compilation results with keys:
+            - "iop_file": Path to the compiled IOP file
+            - "output_dir": Directory where compiled files are saved ("./encoderGAPI")
+            - "program_name": Name of the compiled program
+            Additional keys may be present depending on the compiler output.
+
+    Raises:
+        Exception: If compilation fails, the underlying exception is raised
+            with error details and a full traceback is printed.
+
+    Note:
+        The function automatically creates GroqConv1D and GroqMaxPooling1D layers
+        for each configuration and compiles them with overlapped scopes for
+        optimized execution on Groq hardware.
+    """
 
     with g.ProgramContext(program_id=program_name) as pc:
 

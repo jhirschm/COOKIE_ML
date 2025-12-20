@@ -215,6 +215,8 @@ else:
 runner = GroqRunner(timing_report=True)
 runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
 
+
+# measure the performance of the hardware implementation
 iteration_num = 500
 elapsed_time = 0
 for _ in range(iteration_num):
