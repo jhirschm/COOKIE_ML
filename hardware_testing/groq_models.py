@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 # from groqflow import groqit
 import torch
@@ -11,6 +12,7 @@ from enum import Enum
 
 # import tsp runner
 from groq_convolution.main import get_tsp_runner
+from groq_convolution.runner import GroqRunner
 
 from compile_lpu_model import compile_encoder_with_g_api, compile_encoder_with_compiler
 import groq.api as g
@@ -69,7 +71,7 @@ layer1_configuration = {
     "pooling_in_channel_num": 16,
     "pooling_kernel_size": 2,
     "pooling_stride": 2,
-    "pooling_padding": 0,
+    "pooling_padding": 1,
 }
 
 layer2_configuration = {
@@ -86,7 +88,28 @@ layer2_configuration = {
     "pooling_stride": 2,
     "pooling_padding": 0,
 }
-layer_configurations = [layer1_configuration, layer2_configuration]
+
+layer3_configuration = {
+    "batch_num": 1,
+    "image_size": layer2_configuration["image_size"],
+    "conv_kernel_size": 3,
+    "conv_in_channel_num": layer2_configuration["pooling_in_channel_num"],
+    "conv_out_channel_num": 20,
+    "conv_stride": 1,
+    "conv_padding": 1,
+    "conv_activation_function": "ReLU",
+    "pooling_in_channel_num": 20,
+    "pooling_kernel_size": 2,
+    "pooling_stride": 2,
+    "pooling_padding": 0,
+}
+
+
+layer_configurations = [
+    layer1_configuration,
+    layer2_configuration,
+    layer3_configuration,
+]
 
 
 # Torch Encoding layers
@@ -161,13 +184,14 @@ image = np.random.randn(
 ).astype(np.float32)
 
 image_fp16 = image.astype(np.float16)
+program_name = "encoder"
 
 if compiler_type == CompilerType.gAPI:
 
     output_tensor_name = "encoder_result"
 
     compiled_program = compile_encoder_with_g_api(
-        layer_configurations, kernels, image_fp16, output_tensor_name
+        layer_configurations, kernels, image_fp16, output_tensor_name, program_name
     )
 
     inputs = {"image": image_fp16}
@@ -177,7 +201,9 @@ elif compiler_type == CompilerType.Compiler:
     output_tensor_name = "output000"
 
     image_torch = torch.from_numpy(image)
-    compiled_program = compile_encoder_with_compiler(autoencoder, image_torch)
+    compiled_program = compile_encoder_with_compiler(
+        autoencoder, image_torch, program_name
+    )
     inputs = {"arg000": image}
 
     print(inputs["arg000"].shape)
@@ -186,9 +212,43 @@ else:
 
 
 # run the program on TSP
-runner = get_tsp_runner(compiled_program["iop_file"])
-results_groq = runner(**inputs)
+runner = GroqRunner(timing_report=True)
+runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
+
+iteration_num = 500
+elapsed_time = 0
+for _ in range(iteration_num):
+
+    test_image = np.random.randn(
+        layer_configurations[0]["batch_num"],
+        layer_configurations[0]["conv_in_channel_num"],
+        layer_configurations[0]["image_size"],
+    ).astype(np.float16)
+
+    start_time = time.perf_counter()
+    results_groq = runner.invoke({"image": test_image})
+    end_time = time.perf_counter()
+    elapsed_time += end_time - start_time
+
+elapsed_time = elapsed_time / iteration_num
+
+results_groq = runner.invoke(inputs)
+
+timings = runner.get_timings()
+print("\n=== Timing Results ===")
+for key, value in timings.items():
+    if key in ["upload_iop_file", "create_buffers"]:
+        print(f"{key}: {value} microseconds")
+    else:
+        print(f"{key}: {value/iteration_num} microseconds")
+print("=" * 25)
+
+print(
+    f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
+)
+
 output_tensor = results_groq[output_tensor_name]
+print("output_tensor.shape: ", output_tensor.shape)
 
 with torch.no_grad():
     image_torch = torch.from_numpy(image)

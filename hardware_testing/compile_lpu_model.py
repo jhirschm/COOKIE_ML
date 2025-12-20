@@ -29,12 +29,11 @@ class CompilerType(Enum):
 def compile_encoder_with_compiler(
     model: torch.nn.Module,
     image: torch.Tensor,
+    program_name: str = "encoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
     # Set file names used below
     output_dir = "encoderCompiler"
-
-    program_name = "encoder"
 
     return compile_with_compiler(
         model, image, program_name, output_dir, gen_vis_data=True
@@ -46,9 +45,10 @@ def compile_encoder_with_g_api(
     kernels: List[np.ndarray],
     input: np.ndarray,
     output_tensor_name: str = "encoder_result",
+    program_name: str = "encoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    with g.ProgramContext() as pc:
+    with g.ProgramContext(program_id=program_name) as pc:
 
         input_mt = g.input_tensor(
             shape=input.shape,
