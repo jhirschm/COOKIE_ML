@@ -14,16 +14,21 @@ from enum import Enum
 from groq_convolution.main import get_tsp_runner
 from groq_convolution.runner import GroqRunner
 
-from compile_lpu_model import compile_encoder_with_g_api, compile_encoder_with_compiler
+from compile_lpu_model import (
+    compile_encoder_with_gapi,
+    compile_encoder_with_compiler,
+    compile_encoder_with_gstruct,
+)
 import groq.api as g
 
 
 class CompilerType(Enum):
     gAPI = "gAPI"
     Compiler = "Compiler"
+    gstruct = "gstruct"
 
 
-compiler_type = CompilerType.gAPI
+compiler_type = CompilerType.gstruct
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -64,11 +69,11 @@ layer1_configuration = {
     "image_size": 512,
     "conv_kernel_size": 3,
     "conv_in_channel_num": 1,
-    "conv_out_channel_num": 16,
+    "conv_out_channel_num": 1,
     "conv_stride": 1,
-    "conv_padding": 1,
-    "conv_activation_function": "ReLU",
-    "pooling_in_channel_num": 16,
+    "conv_padding": 0,
+    "conv_activation_function": "none",
+    "pooling_in_channel_num": 1,
     "pooling_kernel_size": 2,
     "pooling_stride": 2,
     "pooling_padding": 1,
@@ -79,10 +84,10 @@ layer2_configuration = {
     "image_size": layer1_configuration["image_size"],
     "conv_kernel_size": 3,
     "conv_in_channel_num": layer1_configuration["pooling_in_channel_num"],
-    "conv_out_channel_num": 10,
+    "conv_out_channel_num": 1,
     "conv_stride": 1,
     "conv_padding": 1,
-    "conv_activation_function": "ReLU",
+    "conv_activation_function": "none",
     "pooling_in_channel_num": 10,
     "pooling_kernel_size": 2,
     "pooling_stride": 2,
@@ -97,18 +102,16 @@ layer3_configuration = {
     "conv_out_channel_num": 20,
     "conv_stride": 1,
     "conv_padding": 1,
-    "conv_activation_function": "ReLU",
+    "conv_activation_function": "none",
     "pooling_in_channel_num": 20,
     "pooling_kernel_size": 2,
     "pooling_stride": 2,
     "pooling_padding": 0,
 }
 
-
 layer_configurations = [
     layer1_configuration,
     layer2_configuration,
-    layer3_configuration,
 ]
 
 
@@ -132,7 +135,7 @@ for layer_conf in layer_configurations:
             ),  # activation function
         ]
     )
-
+    """
     sub_layers.append(
         [
             nn.MaxPool1d(  # pooling layer
@@ -143,6 +146,7 @@ for layer_conf in layer_configurations:
             None,
         ]
     )
+    """
 
     encoder_layers.extend(sub_layers)
 
@@ -164,7 +168,10 @@ decoder_layers = None
 
 
 autoencoder = Ximg_to_Ypdf_Autoencoder(
-    encoder_layers, decoder_layers=decoder_layers, outputEncoder=True
+    encoder_layers,
+    decoder_layers=decoder_layers,
+    outputEncoder=True,
+    dtype=torch.float32,
 )
 
 
@@ -189,24 +196,44 @@ program_name = "encoder"
 if compiler_type == CompilerType.gAPI:
 
     output_tensor_name = "encoder_result"
+    input_tensor_name = "image"
 
-    compiled_program = compile_encoder_with_g_api(
+    compiled_program = compile_encoder_with_gapi(
         layer_configurations, kernels, image_fp16, output_tensor_name, program_name
     )
 
-    inputs = {"image": image_fp16}
+    inputs = {input_tensor_name: image_fp16}
 
 elif compiler_type == CompilerType.Compiler:
 
-    output_tensor_name = "output000"
-
-    image_torch = torch.from_numpy(image)
-    compiled_program = compile_encoder_with_compiler(
-        autoencoder, image_torch, program_name
+    autoencoder_to_compile = Ximg_to_Ypdf_Autoencoder(
+        encoder_layers,
+        decoder_layers=decoder_layers,
+        outputEncoder=True,
+        dtype=torch.float16,
     )
-    inputs = {"arg000": image}
 
-    print(inputs["arg000"].shape)
+    output_tensor_name = "output000"
+    input_tensor_name = "arg000"
+
+    image_torch = torch.from_numpy(image_fp16)
+    compiled_program = compile_encoder_with_compiler(
+        autoencoder_to_compile, image_torch, program_name
+    )
+    inputs = {input_tensor_name: image_fp16}
+
+elif compiler_type == CompilerType.gstruct:
+
+    output_tensor_name = "encoder_result"
+    input_tensor_name = "image"
+
+    compiled_program = compile_encoder_with_gstruct(
+        layer_configurations, kernels, image_fp16, output_tensor_name, program_name
+    )
+    inputs = {input_tensor_name: image_fp16}
+
+    program_name = "unnamed"
+
 else:
     raise ValueError(f"Invalid compiler type: {compiler_type}")
 
@@ -215,7 +242,7 @@ else:
 runner = GroqRunner(timing_report=True)
 runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
 
-
+"""
 # measure the performance of the hardware implementation
 iteration_num = 500
 elapsed_time = 0
@@ -228,14 +255,14 @@ for _ in range(iteration_num):
     ).astype(np.float16)
 
     start_time = time.perf_counter()
-    results_groq = runner.invoke({"image": test_image})
+    results_groq = runner.invoke({input_tensor_name: test_image})
     end_time = time.perf_counter()
     elapsed_time += end_time - start_time
 
 elapsed_time = elapsed_time / iteration_num
-
+"""
 results_groq = runner.invoke(inputs)
-
+"""
 timings = runner.get_timings()
 print("\n=== Timing Results ===")
 for key, value in timings.items():
@@ -248,15 +275,32 @@ print("=" * 25)
 print(
     f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
 )
-
+"""
 output_tensor = results_groq[output_tensor_name]
 print("output_tensor.shape: ", output_tensor.shape)
+# output_tensor = np.transpose(output_tensor, (1, 2, 3, 4, 5, 0)).copy()
+# output_tensor = output_tensor.view(np.float16).squeeze(5)
+
+# tmp_tensor = results_groq["eee"]
 
 with torch.no_grad():
     image_torch = torch.from_numpy(image)
     result_torch = autoencoder(image_torch)
     result_torch = result_torch.detach().numpy()
 
+
+# print("tmp_tensor.shape: ", tmp_tensor.shape)
+# print("input2: ", tmp_tensor[0, 0, 0, 0, 0:12])
+print("groq_output: ", output_tensor[0:16, 0, 0:12])
+has_nan = np.any(np.isnan(output_tensor))
+print(f"Contains NaN: {has_nan}")
+if has_nan:
+    nan_count = np.sum(np.isnan(output_tensor))
+    print(
+        f"Number of NaN elements: {nan_count} out of {output_tensor.size} total elements"
+    )
+
+exit()
 if np.allclose(output_tensor, result_torch, atol=0.01):
     print(f"Groq result matches torch result in test case {layer_configurations}.")
 

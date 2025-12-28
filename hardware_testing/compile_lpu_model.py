@@ -16,8 +16,8 @@ from groq_convolution.compile_lpu_convolution import (
     compile_with_compiler,
     get_iop_stats,
 )
-from groq_convolution.conv1d import GroqConv1D, ResourceScopeName
-from groq_convolution.groq_pooling import GroqMaxPooling1D
+from groq_convolution.gapi_conv1d import GroqConv1D, ResourceScopeName
+from groq_convolution.gapi_pooling import GroqMaxPooling1D
 from groq_convolution.constants import VECTOR_SIZE
 
 import torch
@@ -73,7 +73,7 @@ def compile_encoder_with_compiler(
     )
 
 
-def compile_encoder_with_g_api(
+def compile_encoder_with_gapi(
     layer_configurations: List[Dict[str, int]],
     kernels: List[np.ndarray],
     input: np.ndarray,
@@ -183,3 +183,103 @@ def compile_encoder_with_g_api(
 
             traceback.print_exc()
             raise e
+
+
+def compile_encoder_with_gstruct(
+    layer_configurations: List[Dict[str, int]],
+    kernels: List[np.ndarray],
+    input: np.ndarray,
+    output_tensor_name: str = "encoder_result",
+    program_name: str = "encoder",
+) -> Union[dict[str, Union[str, Any]], Any]:
+
+    from gstruct.ops import conv1d as gstruct_conv1d, Conv1dStageName
+    from gstruct.ops import maxpool1d as gstruct_maxpool1d
+    from gstruct import tiled_memref, dtypes, groq_buffer, gstruct_to_mlir, mlir_to_iop
+
+    output_dir = "./encoderGstruct"
+
+    try:
+
+        in_channel_num = layer_configurations[0]["conv_in_channel_num"]
+        out_channel_num = layer_configurations[0]["conv_out_channel_num"]
+        batch_num = layer_configurations[0]["batch_num"]
+        image_size = layer_configurations[0]["image_size"]
+
+        split_num = (image_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+
+        tinput = tiled_memref(
+            (batch_num, in_channel_num, image_size),
+            dtypes.f16,
+            ends=(split_num * 320 - image_size,),
+        )
+        input_buffer = groq_buffer.input("image", tinput)
+
+        input = input_buffer
+        print("input.shape: ", input.out_tmemrefs[0])
+
+        idx = 0
+
+        for layer_configuration, kernel in zip(layer_configurations, kernels):
+
+            if idx == 0:
+                return_at_stage = Conv1dStageName.FINAL_TRANSPOSE
+            else:
+                return_at_stage = Conv1dStageName.INPUT_MASKING
+
+            print("return_at_stage: ", return_at_stage)
+
+            output_tensor = gstruct_conv1d(
+                input=input,
+                conv_kernel=kernel,
+                in_channel_num=layer_configuration["conv_in_channel_num"],
+                out_channel_num=layer_configuration["conv_out_channel_num"],
+                padding=layer_configuration["conv_padding"],
+                batch_num=layer_configuration["batch_num"],
+                stride=layer_configuration["conv_stride"],
+                return_at_stage=return_at_stage,
+            )
+
+            # if idx == 1:
+            #    print("??? output_tensor.shape: ", output_tensor[0].out_tmemrefs[0])
+
+            idx += 1
+
+            # print("conv_unpacked.shape: ", output_tensor.out_tmemrefs[0])
+            """
+            output_tensor = gstruct_maxpool1d(
+                image=output_tensor,
+                kernel_size=layer_configuration["pooling_kernel_size"],
+                channel_num=layer_configuration["pooling_in_channel_num"],
+                stride=layer_configuration["pooling_stride"],
+                batch_num=layer_configuration["batch_num"],
+                padding=layer_configuration["pooling_padding"],
+            )
+            print("maxpool: ", output_tensor.out_tmemrefs[0])
+            """
+            input = output_tensor
+
+        output_buffer = groq_buffer.output(output_tensor_name, output_tensor)
+        # output_buffer2 = groq_buffer.output("eee", output_tensor[1])
+        mlirtext = gstruct_to_mlir([output_buffer])  # , output_buffer2])
+        iop_file = mlir_to_iop(
+            mlirtext, program_name, output_dir, is_opt=False
+        )  # ; assert False
+
+        program_name = "unnamed"
+        compiled_program = {
+            "iop_file": iop_file,
+            "output_dir": output_dir,
+            "program_name": program_name,
+        }
+
+    except Exception as e:
+        print(layer_configurations)
+        print(f"Error message: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+
+        traceback.print_exc()
+        return None
+
+    return compiled_program
