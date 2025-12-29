@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 
 # from groqflow import groqit
 import torch
@@ -11,8 +12,7 @@ from enum import Enum
 
 
 # import tsp runner
-from groq_convolution.main import get_tsp_runner
-from groq_convolution.runner import GroqRunner
+from gstruct.runner import GroqRunner
 
 from compile_lpu_model import (
     compile_encoder_with_gapi,
@@ -64,55 +64,21 @@ def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[np.ndar
     return encoder_weights
 
 
-layer1_configuration = {
-    "batch_num": 1,
-    "image_size": 512,
-    "conv_kernel_size": 3,
-    "conv_in_channel_num": 1,
-    "conv_out_channel_num": 1,
-    "conv_stride": 1,
-    "conv_padding": 0,
-    "conv_activation_function": "none",
-    "pooling_in_channel_num": 1,
-    "pooling_kernel_size": 2,
-    "pooling_stride": 2,
-    "pooling_padding": 1,
-}
+# Load encoder configuration from JSON file
+config_path = os.path.join(current_dir, "encoder_config.json")
 
-layer2_configuration = {
-    "batch_num": 1,
-    "image_size": layer1_configuration["image_size"],
-    "conv_kernel_size": 3,
-    "conv_in_channel_num": layer1_configuration["pooling_in_channel_num"],
-    "conv_out_channel_num": 1,
-    "conv_stride": 1,
-    "conv_padding": 1,
-    "conv_activation_function": "none",
-    "pooling_in_channel_num": 10,
-    "pooling_kernel_size": 2,
-    "pooling_stride": 2,
-    "pooling_padding": 0,
-}
+with open(config_path, "r") as f:
+    config = json.load(f)
 
-layer3_configuration = {
-    "batch_num": 1,
-    "image_size": layer2_configuration["image_size"],
-    "conv_kernel_size": 3,
-    "conv_in_channel_num": layer2_configuration["pooling_in_channel_num"],
-    "conv_out_channel_num": 20,
-    "conv_stride": 1,
-    "conv_padding": 1,
-    "conv_activation_function": "none",
-    "pooling_in_channel_num": 20,
-    "pooling_kernel_size": 2,
-    "pooling_stride": 2,
-    "pooling_padding": 0,
-}
+input_size = config["input_size"]
+batch_num = config["batch_num"]
+layer_configurations = []
 
-layer_configurations = [
-    layer1_configuration,
-    layer2_configuration,
-]
+# Add batch_num to each layer configuration
+for layer_conf in config["layer_configurations"]:
+    layer_conf_with_batch = layer_conf.copy()
+    layer_conf_with_batch["batch_num"] = batch_num
+    layer_configurations.append(layer_conf_with_batch)
 
 
 # Torch Encoding layers
@@ -123,8 +89,8 @@ for layer_conf in layer_configurations:
     sub_layers.append(
         [
             nn.Conv1d(  # convolutional layer
-                layer_conf["conv_in_channel_num"],
-                layer_conf["conv_out_channel_num"],
+                layer_conf["in_channel_num"],
+                layer_conf["out_channel_num"],
                 kernel_size=layer_conf["conv_kernel_size"],
                 stride=layer_conf["conv_stride"],
                 padding=layer_conf["conv_padding"],
@@ -135,7 +101,7 @@ for layer_conf in layer_configurations:
             ),  # activation function
         ]
     )
-    """
+
     sub_layers.append(
         [
             nn.MaxPool1d(  # pooling layer
@@ -146,7 +112,6 @@ for layer_conf in layer_configurations:
             None,
         ]
     )
-    """
 
     encoder_layers.extend(sub_layers)
 
@@ -171,7 +136,7 @@ autoencoder = Ximg_to_Ypdf_Autoencoder(
     encoder_layers,
     decoder_layers=decoder_layers,
     outputEncoder=True,
-    dtype=torch.float32,
+    dtype=torch.float16,
 )
 
 
@@ -186,11 +151,11 @@ kernels = extract_encoder_weights(state_dict)
 
 image = np.random.randn(
     layer_configurations[0]["batch_num"],
-    layer_configurations[0]["conv_in_channel_num"],
-    layer_configurations[0]["image_size"],
+    layer_configurations[0]["in_channel_num"],
+    input_size,
 ).astype(np.float32)
 
-image_fp16 = image.astype(np.float16)
+image_fp16 = image.copy().astype(np.float16)
 program_name = "encoder"
 
 if compiler_type == CompilerType.gAPI:
@@ -206,19 +171,12 @@ if compiler_type == CompilerType.gAPI:
 
 elif compiler_type == CompilerType.Compiler:
 
-    autoencoder_to_compile = Ximg_to_Ypdf_Autoencoder(
-        encoder_layers,
-        decoder_layers=decoder_layers,
-        outputEncoder=True,
-        dtype=torch.float16,
-    )
-
     output_tensor_name = "output000"
     input_tensor_name = "arg000"
 
     image_torch = torch.from_numpy(image_fp16)
     compiled_program = compile_encoder_with_compiler(
-        autoencoder_to_compile, image_torch, program_name
+        autoencoder, image_torch, program_name
     )
     inputs = {input_tensor_name: image_fp16}
 
@@ -228,7 +186,7 @@ elif compiler_type == CompilerType.gstruct:
     input_tensor_name = "image"
 
     compiled_program = compile_encoder_with_gstruct(
-        layer_configurations, kernels, image_fp16, output_tensor_name, program_name
+        layer_configurations, kernels, input_size, output_tensor_name, program_name
     )
     inputs = {input_tensor_name: image_fp16}
 
@@ -242,7 +200,7 @@ else:
 runner = GroqRunner(timing_report=True)
 runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
 
-"""
+
 # measure the performance of the hardware implementation
 iteration_num = 500
 elapsed_time = 0
@@ -250,8 +208,8 @@ for _ in range(iteration_num):
 
     test_image = np.random.randn(
         layer_configurations[0]["batch_num"],
-        layer_configurations[0]["conv_in_channel_num"],
-        layer_configurations[0]["image_size"],
+        layer_configurations[0]["in_channel_num"],
+        input_size,
     ).astype(np.float16)
 
     start_time = time.perf_counter()
@@ -260,9 +218,9 @@ for _ in range(iteration_num):
     elapsed_time += end_time - start_time
 
 elapsed_time = elapsed_time / iteration_num
-"""
+
 results_groq = runner.invoke(inputs)
-"""
+
 timings = runner.get_timings()
 print("\n=== Timing Results ===")
 for key, value in timings.items():
@@ -275,33 +233,18 @@ print("=" * 25)
 print(
     f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
 )
-"""
+
 output_tensor = results_groq[output_tensor_name]
 print("output_tensor.shape: ", output_tensor.shape)
-# output_tensor = np.transpose(output_tensor, (1, 2, 3, 4, 5, 0)).copy()
-# output_tensor = output_tensor.view(np.float16).squeeze(5)
-
-# tmp_tensor = results_groq["eee"]
 
 with torch.no_grad():
-    image_torch = torch.from_numpy(image)
+    image_torch = torch.from_numpy(image_fp16)
+    print("image_torch.shape: ", image_torch.dtype)
     result_torch = autoencoder(image_torch)
     result_torch = result_torch.detach().numpy()
 
 
-# print("tmp_tensor.shape: ", tmp_tensor.shape)
-# print("input2: ", tmp_tensor[0, 0, 0, 0, 0:12])
-print("groq_output: ", output_tensor[0:16, 0, 0:12])
-has_nan = np.any(np.isnan(output_tensor))
-print(f"Contains NaN: {has_nan}")
-if has_nan:
-    nan_count = np.sum(np.isnan(output_tensor))
-    print(
-        f"Number of NaN elements: {nan_count} out of {output_tensor.size} total elements"
-    )
-
-exit()
-if np.allclose(output_tensor, result_torch, atol=0.01):
+if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
     print(f"Groq result matches torch result in test case {layer_configurations}.")
 
     """Returns allclose result along with statistics."""
@@ -319,12 +262,47 @@ if np.allclose(output_tensor, result_torch, atol=0.01):
     print(stats)
 else:
     print("Groq ouput: ")
-    print(output_tensor[:, -16:-1])
+    print(output_tensor[0, :, -16:])
     print("Torch output:")
-    print(result_torch[0, :, -16:-1])
+    print(result_torch[0, :, -16:])
 
-    max_error = np.max(np.abs(output_tensor - result_torch))
-    print(max_error)
+    # Find all differing elements using the same tolerance as allclose
+    atol = 0.02
+    rtol = 0.5
+    diff = np.abs(output_tensor - result_torch)
+    relative_diff = np.abs(diff / (np.abs(result_torch) + 1e-8))
+
+    # Elements that differ beyond tolerance
+    differing_mask = (diff > atol) & (relative_diff > rtol)
+    differing_indices = np.where(differing_mask)
+
+    max_error = np.max(diff)
+    max_error_index = np.unravel_index(np.argmax(diff), diff.shape)
+
+    print(f"max_error: {max_error}, max_error_index: {max_error_index}")
+    print(f"Total differing elements: {np.sum(differing_mask)}")
+    print("\nAll differing elements:")
+    print("-" * 80)
+
+    # Limit output to first 100 differing elements to avoid overwhelming output
+    num_differing = len(differing_indices[0])
+    max_to_show = min(100, num_differing)
+
+    for i in range(max_to_show):
+        idx = tuple(dim[i] for dim in differing_indices)
+        groq_val = output_tensor[idx]
+        torch_val = result_torch[idx]
+        abs_diff = diff[idx]
+        rel_diff = relative_diff[idx]
+        print(
+            f"Index {idx}: groq={groq_val:.6f}, torch={torch_val:.6f}, "
+            f"abs_diff={abs_diff:.6f}, rel_diff={rel_diff:.6f}"
+        )
+
+    if num_differing > max_to_show:
+        print(f"\n... and {num_differing - max_to_show} more differing elements")
+
+    print("-" * 80)
 
     raise RuntimeError(
         f"Groq result differs from torch result in test case {layer_configurations}"

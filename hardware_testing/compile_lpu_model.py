@@ -90,13 +90,12 @@ def compile_encoder_with_gapi(
         layer_configurations: List of dictionaries, each containing configuration
             for one encoder layer. Each dictionary should include:
             - "batch_num": Batch size
-            - "conv_in_channel_num": Input channels for convolution
-            - "conv_out_channel_num": Output channels for convolution
+            - "in_channel_num": Input channels for convolution
+            - "out_channel_num": Output channels for convolution and pooling
             - "conv_kernel_size": Convolution kernel size
             - "conv_stride": Convolution stride
             - "conv_padding": Convolution padding
             - "conv_activation_function": Activation function name (e.g., "ReLU")
-            - "pooling_in_channel_num": Input channels for pooling
             - "pooling_kernel_size": Pooling kernel size
             - "pooling_stride": Pooling stride
             - "pooling_padding": Pooling padding
@@ -150,7 +149,7 @@ def compile_encoder_with_gapi(
             tsp_layers.append(tsp_layer)
 
             tsp_layer = GroqMaxPooling1D(
-                in_channel_num=layer_configuration["pooling_in_channel_num"],
+                in_channel_num=layer_configuration["out_channel_num"],
                 kernel_size=layer_configuration["pooling_kernel_size"],
                 stride=layer_configuration["pooling_stride"],
                 batch_num=layer_configuration["batch_num"],
@@ -188,7 +187,7 @@ def compile_encoder_with_gapi(
 def compile_encoder_with_gstruct(
     layer_configurations: List[Dict[str, int]],
     kernels: List[np.ndarray],
-    input: np.ndarray,
+    input_size: int,
     output_tensor_name: str = "encoder_result",
     program_name: str = "encoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
@@ -201,17 +200,15 @@ def compile_encoder_with_gstruct(
 
     try:
 
-        in_channel_num = layer_configurations[0]["conv_in_channel_num"]
-        out_channel_num = layer_configurations[0]["conv_out_channel_num"]
+        in_channel_num = layer_configurations[0]["in_channel_num"]
         batch_num = layer_configurations[0]["batch_num"]
-        image_size = layer_configurations[0]["image_size"]
 
-        split_num = (image_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+        split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
         tinput = tiled_memref(
-            (batch_num, in_channel_num, image_size),
+            (batch_num, in_channel_num, input_size),
             dtypes.f16,
-            ends=(split_num * 320 - image_size,),
+            ends=(split_num * 320 - input_size,),
         )
         input_buffer = groq_buffer.input("image", tinput)
 
@@ -222,22 +219,24 @@ def compile_encoder_with_gstruct(
 
         for layer_configuration, kernel in zip(layer_configurations, kernels):
 
-            if idx == 0:
-                return_at_stage = Conv1dStageName.FINAL_TRANSPOSE
-            else:
-                return_at_stage = Conv1dStageName.INPUT_MASKING
+            return_at_stage = Conv1dStageName.UNPACK_CONV_RES
+
+            activation_function = layer_configuration.get(
+                "conv_activation_function", "none"
+            )
 
             print("return_at_stage: ", return_at_stage)
 
             output_tensor = gstruct_conv1d(
                 input=input,
                 conv_kernel=kernel,
-                in_channel_num=layer_configuration["conv_in_channel_num"],
-                out_channel_num=layer_configuration["conv_out_channel_num"],
+                in_channel_num=layer_configuration["in_channel_num"],
+                out_channel_num=layer_configuration["out_channel_num"],
                 padding=layer_configuration["conv_padding"],
                 batch_num=layer_configuration["batch_num"],
                 stride=layer_configuration["conv_stride"],
                 return_at_stage=return_at_stage,
+                activation_fnc=activation_function,
             )
 
             # if idx == 1:
@@ -246,22 +245,24 @@ def compile_encoder_with_gstruct(
             idx += 1
 
             # print("conv_unpacked.shape: ", output_tensor.out_tmemrefs[0])
-            """
+
             output_tensor = gstruct_maxpool1d(
                 image=output_tensor,
                 kernel_size=layer_configuration["pooling_kernel_size"],
-                channel_num=layer_configuration["pooling_in_channel_num"],
+                channel_num=layer_configuration["out_channel_num"],
                 stride=layer_configuration["pooling_stride"],
                 batch_num=layer_configuration["batch_num"],
                 padding=layer_configuration["pooling_padding"],
             )
-            print("maxpool: ", output_tensor.out_tmemrefs[0])
-            """
+
             input = output_tensor
 
         output_buffer = groq_buffer.output(output_tensor_name, output_tensor)
-        # output_buffer2 = groq_buffer.output("eee", output_tensor[1])
-        mlirtext = gstruct_to_mlir([output_buffer])  # , output_buffer2])
+        mlirtext = gstruct_to_mlir(
+            [
+                output_buffer,
+            ]
+        )
         iop_file = mlir_to_iop(
             mlirtext, program_name, output_dir, is_opt=False
         )  # ; assert False
