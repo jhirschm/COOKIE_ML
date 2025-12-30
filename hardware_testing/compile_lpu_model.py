@@ -28,13 +28,13 @@ class CompilerType(Enum):
 
     Attributes:
         gAPI: Use the Groq API (gAPI) compiler for compilation.
-        gMLIR: Use the gMLIR compiler for compilation.
+        ttl: Use the TiledTensorLanguage to compile the program.
         Compiler: Use the standard Groq compiler for compilation.
     """
 
     gAPI = "gAPI"
-    gMLIR = "gMLIR"
     Compiler = "Compiler"
+    ttl = "tiled_tensor_language"
 
 
 def compile_encoder_with_compiler(
@@ -184,7 +184,7 @@ def compile_encoder_with_gapi(
             raise e
 
 
-def compile_encoder_with_gstruct(
+def compile_encoder_with_ttl(
     layer_configurations: List[Dict[str, int]],
     kernels: List[np.ndarray],
     input_size: int,

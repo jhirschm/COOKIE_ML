@@ -17,18 +17,13 @@ from gstruct.runner import GroqRunner
 from compile_lpu_model import (
     compile_encoder_with_gapi,
     compile_encoder_with_compiler,
-    compile_encoder_with_gstruct,
+    compile_encoder_with_ttl,
+    CompilerType,
 )
 import groq.api as g
 
 
-class CompilerType(Enum):
-    gAPI = "gAPI"
-    Compiler = "Compiler"
-    gstruct = "gstruct"
-
-
-compiler_type = CompilerType.gstruct
+compiler_type = CompilerType.Compiler
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -180,12 +175,12 @@ elif compiler_type == CompilerType.Compiler:
     )
     inputs = {input_tensor_name: image_fp16}
 
-elif compiler_type == CompilerType.gstruct:
+elif compiler_type == CompilerType.ttl:
 
     output_tensor_name = "encoder_result"
     input_tensor_name = "image"
 
-    compiled_program = compile_encoder_with_gstruct(
+    compiled_program = compile_encoder_with_ttl(
         layer_configurations, kernels, input_size, output_tensor_name, program_name
     )
     inputs = {input_tensor_name: image_fp16}
