@@ -219,7 +219,7 @@ def compile_encoder_with_ttl(
 
         for layer_configuration, kernel in zip(layer_configurations, kernels):
 
-            return_at_stage = Conv1dStageName.UNPACK_CONV_RES
+            return_at_stage = Conv1dStageName.EXPLODED_CONV_RES
 
             activation_function = layer_configuration.get(
                 "conv_activation_function", "none"

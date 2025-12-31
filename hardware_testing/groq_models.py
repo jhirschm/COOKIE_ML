@@ -23,7 +23,7 @@ from compile_lpu_model import (
 import groq.api as g
 
 
-compiler_type = CompilerType.Compiler
+compiler_type = CompilerType.ttl
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
