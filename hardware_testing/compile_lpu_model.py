@@ -253,6 +253,8 @@ def compile_encoder_with_ttl(
                 stride=layer_configuration["pooling_stride"],
                 batch_num=layer_configuration["batch_num"],
                 padding=layer_configuration["pooling_padding"],
+                exploded_input=True,
+                channel_stride=4,
             )
 
             input = output_tensor
