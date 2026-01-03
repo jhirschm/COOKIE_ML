@@ -194,7 +194,7 @@ def compile_encoder_with_ttl(
 
     from gstruct.ops import conv1d as gstruct_conv1d, Conv1dStageName
     from gstruct.ops import maxpool1d as gstruct_maxpool1d
-    from gstruct import tiled_memref, dtypes, groqBuffer, gstruct_to_mlir, mlir_to_iop
+    from gstruct import tiledMemref, dtypes, groqBuffer, gstruct_to_mlir, mlir_to_iop
 
     output_dir = "./encoderGstruct"
 
@@ -205,7 +205,7 @@ def compile_encoder_with_ttl(
 
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-        tinput = tiled_memref(
+        tinput = tiledMemref(
             (batch_num, in_channel_num, input_size),
             dtypes.f16,
             ends=(split_num * 320 - input_size,),

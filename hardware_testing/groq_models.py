@@ -67,10 +67,12 @@ with open(config_path, "r") as f:
 
 input_size = config["input_size"]
 batch_num = config["batch_num"]
+print("config: ", config)
+encoder_config = config["encoder"]
 layer_configurations = []
 
 # Add batch_num to each layer configuration
-for layer_conf in config["layer_configurations"]:
+for layer_conf in encoder_config["layer_configurations"]:
     layer_conf_with_batch = layer_conf.copy()
     layer_conf_with_batch["batch_num"] = batch_num
     layer_configurations.append(layer_conf_with_batch)
