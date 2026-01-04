@@ -37,5 +37,31 @@
                 "out_channel_num": 64
             }
         ]
+    },
+    "zero_mask_classifier": {
+        "layer_configurations": [
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 1,
+                "out_channel_num": 16
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 16,
+                "out_channel_num": 32
+            }
+        ]
     }
 }
