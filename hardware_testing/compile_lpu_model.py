@@ -185,23 +185,29 @@ def compile_encoder_with_gapi(
 
 
 def compile_encoder_with_ttl(
-    layer_configurations: List[Dict[str, int]],
-    kernels: List[np.ndarray],
+    layer_configurations_encoder: List[Dict[str, int]],
+    layer_configurations_decoder: List[Dict[str, int]],
+    kernels: Dict[str, List[np.ndarray]],
     input_size: int,
-    output_tensor_name: str = "encoder_result",
-    program_name: str = "encoder",
+    output_tensor_name: str = "autoencoder_result",
+    program_name: str = "autoencoder",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    from gstruct.ops import conv1d as gstruct_conv1d, Conv1dStageName
+    from gstruct.ops import conv1d as ttl_conv1d, Conv1dStageName
+    from gstruct.ops import (
+        convtranspose1d as ttl_convtranspose1d,
+    )
     from gstruct.ops import maxpool1d as gstruct_maxpool1d
     from gstruct import TiledMemref, dtypes, GroqBuffer, gstruct_to_mlir, mlir_to_iop
 
-    output_dir = "./encoderGstruct"
+    output_dir = "./autoencoderTTL"
 
     try:
 
-        in_channel_num = layer_configurations[0]["in_channel_num"]
-        batch_num = layer_configurations[0]["batch_num"]
+        in_channel_num = layer_configurations_encoder[0]["in_channel_num"]
+        batch_num = layer_configurations_encoder[0]["batch_num"]
+
+        encoder_kernels = kernels["encoder_weights"]
 
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
@@ -217,7 +223,9 @@ def compile_encoder_with_ttl(
 
         idx = 0
 
-        for layer_configuration, kernel in zip(layer_configurations, kernels):
+        for layer_configuration, kernel in zip(
+            layer_configurations_encoder, encoder_kernels
+        ):
 
             return_at_stage = Conv1dStageName.EXPLODED_CONV_RES
 
@@ -227,7 +235,7 @@ def compile_encoder_with_ttl(
 
             print("return_at_stage: ", return_at_stage)
 
-            output_tensor = gstruct_conv1d(
+            output_tensor = ttl_conv1d(
                 input=input,
                 conv_kernel=kernel,
                 in_channel_num=layer_configuration["in_channel_num"],
@@ -259,6 +267,51 @@ def compile_encoder_with_ttl(
 
             input = output_tensor
 
+    except Exception as e:
+        print(layer_configurations_encoder)
+        print(f"Error message: {e}")
+        print(f"Error type: {type(e).__name__}")
+        import traceback
+
+        traceback.print_exc()
+        return None
+
+    try:
+
+        in_channel_num = layer_configurations_decoder[0]["in_channel_num"]
+        batch_num = layer_configurations_decoder[0]["batch_num"]
+
+        decoder_kernels = kernels["decoder_weights"]
+
+        split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+
+        tinput = output_tensor
+
+        idx = 0
+
+        for layer_configuration, kernel in zip(
+            layer_configurations_decoder, decoder_kernels
+        ):
+
+            activation_function = layer_configuration.get(
+                "conv_activation_function", "none"
+            )
+
+            print("return_at_stage: ", return_at_stage)
+
+            output_tensor = ttl_convtranspose1d(
+                input=input,
+                conv_kernel=kernel,
+                in_channel_num=layer_configuration["in_channel_num"],
+                out_channel_num=layer_configuration["out_channel_num"],
+                padding=layer_configuration["conv_padding"],
+                batch_num=layer_configuration["batch_num"],
+                stride=layer_configuration["conv_stride"],
+                activation_fnc=activation_function,
+            )
+
+            input = output_tensor
+
         output_buffer = GroqBuffer.output(output_tensor_name, output_tensor)
         mlirtext = gstruct_to_mlir(
             [
@@ -277,7 +330,7 @@ def compile_encoder_with_ttl(
         }
 
     except Exception as e:
-        print(layer_configurations)
+        print(layer_configurations_decoder)
         print(f"Error message: {e}")
         print(f"Error type: {type(e).__name__}")
         import traceback

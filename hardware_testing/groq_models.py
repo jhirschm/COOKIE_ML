@@ -39,28 +39,36 @@ from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
 
 
-def extract_encoder_weights(state_dict: Dict[str, torch.Tensor]) -> List[np.ndarray]:
+def extract_encoder_weights(
+    state_dict: Dict[str, torch.Tensor],
+) -> Dict[str, List[np.ndarray]]:
     """
-    Extract encoder.*.weight fields from a state_dict and return them as a list.
+    Extract encoder.*.weight and decoder.*.weight fields from a state_dict and return them as a dictionary.
 
     Args:
         state_dict: Dictionary containing model parameters (from model.state_dict())
 
     Returns:
-        List of weight tensors from encoder layers, ordered by layer index
+        Dictionary with two keys:
+        - "encoder_weights": List of numpy arrays (float16) containing encoder layer weights, ordered by layer index
+        - "decoder_weights": List of numpy arrays (float16) containing decoder layer weights, ordered by layer index
     """
     encoder_weights = []
+    decoder_weights = []
     # Filter for keys that start with "encoder." and end with ".weight"
     for key in sorted(state_dict.keys()):
         if key.startswith("encoder.") and key.endswith(".weight"):
             weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
             encoder_weights.append(weight)
+        if key.startswith("decoder.") and key.endswith(".weight"):
+            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
+            decoder_weights.append(weight)
 
-    return encoder_weights
+    return {"encoder_weights": encoder_weights, "decoder_weights": decoder_weights}
 
 
 # Load encoder configuration from JSON file
-config_path = os.path.join(current_dir, "encoder_config.json")
+config_path = os.path.join(current_dir, "model_config.json")
 
 with open(config_path, "r") as f:
     config = json.load(f)
@@ -68,18 +76,25 @@ with open(config_path, "r") as f:
 input_size = config["input_size"]
 batch_num = config["batch_num"]
 encoder_config = config["encoder"]
-layer_configurations = []
+decoder_config = config["decoder"]
+layer_configurations_encoder = []
+layer_configurations_decoder = []
 
 # Add batch_num to each layer configuration
 for layer_conf in encoder_config["layer_configurations"]:
     layer_conf_with_batch = layer_conf.copy()
     layer_conf_with_batch["batch_num"] = batch_num
-    layer_configurations.append(layer_conf_with_batch)
+    layer_configurations_encoder.append(layer_conf_with_batch)
+
+for layer_conf in decoder_config["layer_configurations"]:
+    layer_conf_with_batch = layer_conf.copy()
+    layer_conf_with_batch["batch_num"] = batch_num
+    layer_configurations_decoder.append(layer_conf_with_batch)
 
 
 # Torch Encoding layers
 encoder_layers = []
-for layer_conf in layer_configurations:
+for layer_conf in layer_configurations_encoder:
 
     sub_layers = []
     sub_layers.append(
@@ -111,6 +126,33 @@ for layer_conf in layer_configurations:
 
     encoder_layers.extend(sub_layers)
 
+# Torch Decoding layers
+decoder_layers = []
+for layer_conf in layer_configurations_decoder:
+
+    if layer_conf["conv_activation_function"] == "ReLU":
+        activation_function = nn.ReLU()
+    elif layer_conf["conv_activation_function"] == "Sigmoid":
+        activation_function = nn.Sigmoid()
+    elif layer_conf["conv_activation_function"] == "Tanh":
+        activation_function = nn.Tanh()
+    else:
+        activation_function = None
+
+    decoder_layers.append(
+        [
+            nn.ConvTranspose1d(  # convolutional layer
+                layer_conf["in_channel_num"],
+                layer_conf["out_channel_num"],
+                kernel_size=layer_conf["conv_kernel_size"],
+                stride=layer_conf["conv_stride"],
+                padding=layer_conf["conv_padding"],
+                bias=False,
+            ),
+            (activation_function),  # activation function
+        ]
+    )
+
 
 # encoder_layers = [
 #     [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
@@ -119,7 +161,7 @@ for layer_conf in layer_configurations:
 # ]
 
 
-decoder_layers = None
+# decoder_layers = None
 # decoder_layers = np.array([
 #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
 #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
@@ -131,7 +173,7 @@ decoder_layers = None
 autoencoder = Ximg_to_Ypdf_Autoencoder(
     encoder_layers,
     decoder_layers=decoder_layers,
-    outputEncoder=True,
+    outputEncoder=False,
     dtype=torch.float16,
 )
 
@@ -139,6 +181,7 @@ autoencoder = Ximg_to_Ypdf_Autoencoder(
 # Extract kernel matrices for Groq implementation
 # Get all parameters as a dictionary
 state_dict = autoencoder.state_dict()
+print("state_dict: ", state_dict.keys())
 kernels = extract_encoder_weights(state_dict)
 
 
@@ -146,8 +189,8 @@ kernels = extract_encoder_weights(state_dict)
 
 
 image = np.random.randn(
-    layer_configurations[0]["batch_num"],
-    layer_configurations[0]["in_channel_num"],
+    layer_configurations_encoder[0]["batch_num"],
+    layer_configurations_encoder[0]["in_channel_num"],
     input_size,
 ).astype(np.float32)
 
@@ -160,7 +203,11 @@ if compiler_type == CompilerType.gAPI:
     input_tensor_name = "image"
 
     compiled_program = compile_encoder_with_gapi(
-        layer_configurations, kernels, image_fp16, output_tensor_name, program_name
+        layer_configurations_encoder,
+        kernels["encoder_weights"],
+        image_fp16,
+        output_tensor_name,
+        program_name,
     )
 
     inputs = {input_tensor_name: image_fp16}
@@ -182,7 +229,12 @@ elif compiler_type == CompilerType.ttl:
     input_tensor_name = "image"
 
     compiled_program = compile_encoder_with_ttl(
-        layer_configurations, kernels, input_size, output_tensor_name, program_name
+        layer_configurations_encoder,
+        layer_configurations_decoder,
+        kernels,
+        input_size,
+        output_tensor_name,
+        program_name,
     )
     inputs = {input_tensor_name: image_fp16}
 
@@ -203,8 +255,8 @@ elapsed_time = 0
 for _ in range(iteration_num):
 
     test_image = np.random.randn(
-        layer_configurations[0]["batch_num"],
-        layer_configurations[0]["in_channel_num"],
+        layer_configurations_encoder[0]["batch_num"],
+        layer_configurations_encoder[0]["in_channel_num"],
         input_size,
     ).astype(np.float16)
 
@@ -215,7 +267,6 @@ for _ in range(iteration_num):
 
 elapsed_time = elapsed_time / iteration_num
 
-results_groq = runner.invoke(inputs)
 
 timings = runner.get_timings()
 print("\n=== Timing Results ===")
@@ -230,6 +281,9 @@ print(
     f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
 )
 
+
+results_groq = runner.invoke(inputs)
+
 output_tensor = results_groq[output_tensor_name]
 print("output_tensor.shape: ", output_tensor.shape)
 
@@ -241,7 +295,9 @@ with torch.no_grad():
 
 
 if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
-    print(f"Groq result matches torch result in test case {layer_configurations}.")
+    print(
+        f"Groq result matches torch result in test case {layer_configurations_encoder}."
+    )
 
     """Returns allclose result along with statistics."""
     diff = np.abs(output_tensor - result_torch)
@@ -301,7 +357,7 @@ else:
     print("-" * 80)
 
     raise RuntimeError(
-        f"Groq result differs from torch result in test case {layer_configurations}"
+        f"Groq result differs from torch result in test case {layer_configurations_encoder}"
     )
 
 inputs = {"x": torch.rand(1, 1, 512, 16)}
