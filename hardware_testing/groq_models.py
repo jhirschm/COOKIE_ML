@@ -19,13 +19,21 @@ from compile_lpu_model import (
     compile_encoder_with_compiler,
     compile_autoencoder_with_ttl,
     compile_zero_classifier_with_ttl,
-    compile_overall_model_with_ttl,
+    compile_lstm_pulsenum_classifier_with_ttl,
     CompilerType,
 )
 import groq.api as g
 
 
+class TargetModel(Enum):
+
+    autoencoder = "autoencoder"
+    zero_pulse_classifier = "zero_pulse_classifier"
+    lstm_pulsenum_classifier = "lstm_pulsenum_classifier"
+
+
 compiler_type = CompilerType.ttl
+target_model = TargetModel.autoencoder
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -39,81 +47,9 @@ sys.path.append(denoise_dir)
 
 from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
-
-
-def extract_autoencoder_weights(
-    state_dict: Dict[str, torch.Tensor],
-) -> Dict[str, List[np.ndarray]]:
-    """
-    Extract encoder.*.weight and decoder.*.weight fields from a state_dict and return them as a dictionary.
-
-    Args:
-        state_dict: Dictionary containing model parameters (from model.state_dict())
-
-    Returns:
-        Dictionary with two keys:
-        - "encoder_weights": List of numpy arrays (float16) containing encoder layer weights, ordered by layer index
-        - "decoder_weights": List of numpy arrays (float16) containing decoder layer weights, ordered by layer index
-    """
-    encoder_weights = []
-    decoder_weights = []
-    # Filter for keys that start with "encoder." and end with ".weight"
-    for key in sorted(state_dict.keys()):
-        if key.startswith("encoder.") and key.endswith(".weight"):
-            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
-            encoder_weights.append(weight)
-        if key.startswith("decoder.") and key.endswith(".weight"):
-            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
-            decoder_weights.append(weight)
-
-    return {"encoder_weights": encoder_weights, "decoder_weights": decoder_weights}
-
-
-def extract_classifier_weights(
-    state_dict: Dict[str, torch.Tensor],
-) -> Dict[str, List[np.ndarray]]:
-    """
-    Extract convolutional layer weights and fully connected layer weights and biases from a state_dict.
-
-    Args:
-        state_dict: Dictionary containing model parameters (from model.state_dict())
-
-    Returns:
-        Dictionary with three keys:
-        - "conv_weights": List of numpy arrays (float16) containing convolutional layer weights, ordered by layer index
-        - "fc_weights": List of numpy arrays (float16) containing fully connected layer weights, ordered by layer index
-        - "fc_biases": List of numpy arrays (float16) containing fully connected layer biases, ordered by layer index
-    """
-    conv_weights = []
-    fc_weights = []
-    fc_biases = []
-
-    # Filter for keys that contain conv-related patterns and end with ".weight"
-    # This handles Conv1d, Conv2d, ConvTranspose1d, ConvTranspose2d layers
-    for key in sorted(state_dict.keys()):
-        key_lower = key.lower()
-        if ("conv" in key_lower or "convtranspose" in key_lower) and key.endswith(
-            ".weight"
-        ):
-            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
-            conv_weights.append(weight)
-
-    # Filter for keys that contain fc/linear patterns
-    # Extract weights and biases separately
-    for key in sorted(state_dict.keys()):
-        key_lower = key.lower()
-        if ("fc" in key_lower or "linear" in key_lower) and key.endswith(".weight"):
-            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
-            fc_weights.append(weight)
-        elif ("fc" in key_lower or "linear" in key_lower) and key.endswith(".bias"):
-            bias = state_dict[key].detach().cpu().numpy().astype(np.float16)
-            fc_biases.append(bias)
-
-    return {
-        "conv_weights": conv_weights,
-        "fc_weights": fc_weights,
-        "fc_biases": fc_biases,
-    }
+from extract_weights import extract_autoencoder_weights, extract_classifier_weights
+from gen_zero_classifier_torch_layers import gen_zero_classifier_torch_layers
+from gen_autoencoder_torch_layers import gen_autoencoder_torch_layers
 
 
 def get_activation_function(activation_function_name):
@@ -164,134 +100,19 @@ for layer_conf in zero_mask_classifier_config["fc_layer_configurations"]:
     layer_conf_with_batch["batch_num"] = batch_num
     fc_layer_configurations_zero_mask_classifier.append(layer_conf_with_batch)
 
-# Torch Encoding layers
-encoder_layers = []
-for layer_conf in layer_configurations_encoder:
-
-    activation_function = get_activation_function(
-        layer_conf["conv_activation_function"]
-    )
-
-    sub_layers = []
-    sub_layers.append(
-        [
-            nn.Conv1d(  # convolutional layer
-                layer_conf["in_channel_num"],
-                layer_conf["out_channel_num"],
-                kernel_size=layer_conf["conv_kernel_size"],
-                stride=layer_conf["conv_stride"],
-                padding=layer_conf["conv_padding"],
-                bias=False,
-            ),
-            (activation_function),  # activation function
-        ]
-    )
-
-    sub_layers.append(
-        [
-            nn.MaxPool1d(  # pooling layer
-                kernel_size=layer_conf["pooling_kernel_size"],
-                stride=layer_conf["pooling_stride"],
-                padding=layer_conf["pooling_padding"],
-            ),
-            None,
-        ]
-    )
-
-    encoder_layers.extend(sub_layers)
-
-# Torch Decoding layers
-decoder_layers = []
-for layer_conf in layer_configurations_decoder:
-
-    activation_function = get_activation_function(
-        layer_conf["conv_activation_function"]
-    )
-
-    decoder_layers.append(
-        [
-            nn.ConvTranspose1d(  # convolutional layer
-                layer_conf["in_channel_num"],
-                layer_conf["out_channel_num"],
-                kernel_size=layer_conf["conv_kernel_size"],
-                stride=layer_conf["conv_stride"],
-                padding=layer_conf["conv_padding"],
-                bias=False,
-            ),
-            (activation_function),  # activation function
-        ]
-    )
+# Torch Encoder and Decoder layers
+encoder_layers, decoder_layers = gen_autoencoder_torch_layers(
+    layer_configurations_encoder,
+    layer_configurations_decoder,
+)
 
 # Torch Zero Mask Classifier layers
-zero_mask_classifier_conv_layers = []
-for layer_conf in conv_layer_configurations_zero_mask_classifier:
-
-    activation_function = get_activation_function(
-        layer_conf["conv_activation_function"]
+zero_mask_classifier_conv_layers, zero_mask_classifier_fc_layers = (
+    gen_zero_classifier_torch_layers(
+        conv_layer_configurations_zero_mask_classifier,
+        fc_layer_configurations_zero_mask_classifier,
     )
-
-    sub_layers = []
-    sub_layers.append(
-        [
-            nn.Conv1d(  # convolutional layer
-                layer_conf["in_channel_num"],
-                layer_conf["out_channel_num"],
-                kernel_size=layer_conf["conv_kernel_size"],
-                stride=layer_conf["conv_stride"],
-                padding=layer_conf["conv_padding"],
-                bias=False,
-            ),
-            (activation_function),  # activation function
-        ]
-    )
-
-    sub_layers.append(
-        [
-            nn.MaxPool1d(  # pooling layer
-                kernel_size=layer_conf["pooling_kernel_size"],
-                stride=layer_conf["pooling_stride"],
-                padding=layer_conf["pooling_padding"],
-            ),
-            None,
-        ]
-    )
-
-    zero_mask_classifier_conv_layers.extend(sub_layers)
-
-
-"""
-# Calculate the output size after conv layers
-def get_conv_output_size(input_size, conv_layers):
-    x = torch.randn(input_size)
-    model = nn.Sequential(
-        *[
-            layer
-            for layer_pair in conv_layers
-            for layer in layer_pair
-            if layer is not None
-        ]
-    )
-    x = model(x)
-    return x.shape
-
-
-output_size = get_conv_output_size((1, 16, 512), zero_mask_classifier_conv_layers)
-print(f"Output size after conv layers: {output_size}")
-"""
-zero_mask_classifier_fc_layers = []
-for layer_conf in fc_layer_configurations_zero_mask_classifier:
-
-    activation_function = get_activation_function(layer_conf["activation_function"])
-
-    zero_mask_classifier_fc_layers.append(
-        [
-            nn.Linear(layer_conf["input_size"], layer_conf["output_size"]),
-            (activation_function),
-        ]
-    )
-
-print("zero_mask_classifier_fc_layers: ", zero_mask_classifier_fc_layers)
-# zero_mask_classifier_fc_layers = []
+)
 
 
 autoencoder = Ximg_to_Ypdf_Autoencoder(
@@ -306,8 +127,6 @@ zero_mask_classifier = Zero_PulseClassifier(
     zero_mask_classifier_fc_layers,
     dtype=torch.float16,
 )
-
-print("zero_mask_classifier: ", zero_mask_classifier.state_dict().keys())
 
 
 # Extract kernel matrices for Groq implementation
@@ -352,59 +171,71 @@ elif compiler_type == CompilerType.Compiler:
     input_tensor_name = "arg000"
     image_torch = torch.from_numpy(image_fp16)
 
-    """
-    compiled_program = compile_encoder_with_compiler(
-        autoencoder, image_torch, program_name
-    )
-    """
+    if target_model == TargetModel.autoencoder:
+        compiled_program = compile_encoder_with_compiler(
+            autoencoder, image_torch, program_name
+        )
 
-    compiled_program = compile_encoder_with_compiler(
-        zero_mask_classifier, image_torch, program_name
-    )
+    elif target_model == TargetModel.zero_pulse_classifier:
+
+        compiled_program = compile_encoder_with_compiler(
+            zero_mask_classifier, image_torch, program_name
+        )
+
+    elif target_model == TargetModel.lstm_pulsenum_classifier:
+        raise ValueError(
+            f"LSTM pulse number classifier not supported for compiler type {compiler_type}"
+        )
+    else:
+        raise ValueError(f"Invalid target model: {target_model}")
 
     inputs = {input_tensor_name: image_fp16}
 
 elif compiler_type == CompilerType.ttl:
 
-    output_tensor_name = "encoder_result"
-    input_tensor_name = "image"
-    """
-    compiled_program = compile_autoencoder_with_ttl(
-        layer_configurations_encoder,
-        layer_configurations_decoder,
-        kernels,
-        input_size,
-        output_tensor_name,
-        program_name,
-    )
-    """
+    if target_model == TargetModel.autoencoder:
+        output_tensor_name = "encoder_result"
+        input_tensor_name = "image"
 
-    """
-    output_tensor_name = "classifier_result"
-    input_tensor_name = "image"
+        compiled_program = compile_autoencoder_with_ttl(
+            layer_configurations_encoder,
+            layer_configurations_decoder,
+            kernels,
+            input_size,
+            output_tensor_name,
+            program_name,
+        )
 
-    compiled_program = compile_zero_classifier_with_ttl(
-        conv_layer_configurations_zero_mask_classifier,
-        fc_layer_configurations_zero_mask_classifier,
-        classifier_weights,
-        input_size,
-        output_tensor_name,
-        program_name,
-    )
-    """
+    elif target_model == TargetModel.zero_pulse_classifier:
+        output_tensor_name = "classifier_result"
+        input_tensor_name = "image"
 
-    output_tensor_name = "overall_model_result"
-    input_tensor_name = "image"
+        compiled_program = compile_zero_classifier_with_ttl(
+            conv_layer_configurations_zero_mask_classifier,
+            fc_layer_configurations_zero_mask_classifier,
+            classifier_weights,
+            input_size,
+            output_tensor_name,
+            program_name,
+        )
 
-    compiled_program = compile_overall_model_with_ttl(
-        layer_configurations_encoder,
-        layer_configurations_decoder,
-        kernels,
-        conv_layer_configurations_zero_mask_classifier,
-        fc_layer_configurations_zero_mask_classifier,
-        classifier_weights,
-        input_size,
-    )
+    elif target_model == TargetModel.lstm_pulsenum_classifier:
+        output_tensor_name = "lstm_pulsenum_classifier"
+        input_tensor_name = "image"
+
+        compiled_program = compile_lstm_pulsenum_classifier_with_ttl(
+            layer_configurations_encoder,
+            layer_configurations_decoder,
+            kernels,
+            conv_layer_configurations_zero_mask_classifier,
+            fc_layer_configurations_zero_mask_classifier,
+            classifier_weights,
+            input_size,
+        )
+
+    else:
+        raise ValueError(f"Invalid target model: {target_model}")
+
     inputs = {input_tensor_name: image_fp16}
 
     program_name = "unnamed"
@@ -470,7 +301,6 @@ with torch.no_grad():
     result_torch = result_torch.detach().numpy()
     """
 
-print("output_tensor: ", output_tensor[:, :, 0:3])
 
 if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
     print(

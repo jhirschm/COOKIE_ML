@@ -1,4 +1,9 @@
-from gstruct.ops import conv1d as ttl_conv1d, Conv1dStageName, linear as ttl_linear
+from gstruct.ops import (
+    conv1d as ttl_conv1d,
+    Conv1dStageName,
+    linear as ttl_linear,
+    activation,
+)
 from gstruct.ops import maxpool1d as gstruct_maxpool1d
 from gstruct import TiledMemref, dtypes, GroqBuffer
 from gstruct import gstruct
@@ -43,15 +48,31 @@ def overall_model_to_ttl(
     print(output_tensor_autoencoder.out_tmemrefs[0])
     print(output_tensor_zero_classifier.out_tmemrefs[0])
 
-    output_tensor_zero_classifier = gstruct.broadcast(output_tensor_zero_classifier)
-
-    tmp = np.ones((VECTOR_SIZE,), dtype=np.float16)
+    # tmp = np.zeros((VECTOR_SIZE,), dtype=np.float16)
+    # tmp[0] = 1.0
     # output_tensor_zero_classifier = GroqBuffer.constant(value=tmp)
+
+    probabilities = activation(output_tensor_zero_classifier, "sigmoid")
+
+    # predictions = (probabilities > 0.5).float()
+    probability_threshold = GroqBuffer.constant(
+        value=np.full((VECTOR_SIZE,), 0.5, dtype=np.float16)
+    )
+
+    predictions = gstruct.vxm(
+        vxm_ops.vxm_binary_cmp_gt, probabilities, probability_threshold
+    )
+
+    predictions = gstruct.vxm(
+        vxm_ops.vxm_unary_conv, predictions, conv_dtype=dtypes.f16
+    )
+
+    predictions = gstruct.broadcast(predictions)
 
     output_tensor = gstruct.vxm(
         vxm_ops.vxm_binary_mulsat,
         output_tensor_autoencoder,
-        output_tensor_zero_classifier,
+        predictions,
     )
 
     output_tensor = gstruct.reshape(

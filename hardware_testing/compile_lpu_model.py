@@ -236,7 +236,7 @@ def compile_zero_classifier_with_ttl(
     )
 
 
-def compile_overall_model_with_ttl(
+def compile_lstm_pulsenum_classifier_with_ttl(
     layer_configurations_encoder: List[Dict[str, int]],
     layer_configurations_decoder: List[Dict[str, int]],
     autoencoder_kernels: Dict[str, List[np.ndarray]],
