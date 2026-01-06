@@ -33,7 +33,7 @@ class TargetModel(Enum):
 
 
 compiler_type = CompilerType.ttl
-target_model = TargetModel.autoencoder
+target_model = TargetModel.lstm_pulsenum_classifier
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -220,7 +220,7 @@ elif compiler_type == CompilerType.ttl:
         )
 
     elif target_model == TargetModel.lstm_pulsenum_classifier:
-        output_tensor_name = "lstm_pulsenum_classifier"
+        output_tensor_name = "lstm_pulsenum_classifier_result"
         input_tensor_name = "image"
 
         compiled_program = compile_lstm_pulsenum_classifier_with_ttl(
@@ -293,14 +293,21 @@ with torch.no_grad():
     image_torch = torch.from_numpy(image_fp16)
     print("image_torch.shape: ", image_torch.dtype)
 
-    result_torch = autoencoder(image_torch)
-    result_torch = result_torch.detach().numpy()
-    """
+    if (
+        target_model == TargetModel.autoencoder
+        or target_model == TargetModel.lstm_pulsenum_classifier
+    ):
+        result_torch = autoencoder(image_torch)
+        result_torch = result_torch.detach().numpy()
+    elif target_model == TargetModel.zero_pulse_classifier:
+        result_torch = zero_mask_classifier(image_torch)
+        result_torch = result_torch.detach().numpy()
+    else:
+        raise ValueError(f"Invalid target model: {target_model}")
 
-    result_torch = zero_mask_classifier(image_torch)
-    result_torch = result_torch.detach().numpy()
-    """
 
+print("output_tensor: ", output_tensor)
+print("result_torch: ", result_torch)
 
 if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
     print(

@@ -244,8 +244,8 @@ def compile_lstm_pulsenum_classifier_with_ttl(
     fc_layer_configurations: List[Dict[str, int]],
     zero_classifier_weights: Dict[str, List[np.ndarray]],
     input_size: int,
-    output_tensor_name: str = "overall_model_result",
-    program_name: str = "overall_model",
+    output_tensor_name: str = "lstm_pulsenum_classifier_result",
+    program_name: str = "lstm_pulsenum_classifier",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
     from ttl_overall_model import overall_model_to_ttl
