@@ -11,7 +11,7 @@
                 "pooling_kernel_size": 2,
                 "pooling_stride": 2,
                 "pooling_padding": 1,
-                "in_channel_num": 1,
+                "in_channel_num": 16,
                 "out_channel_num": 16
             },
             {
@@ -62,12 +62,12 @@
                 "conv_padding": 1,
                 "conv_activation_function": "Sigmoid",
                 "in_channel_num": 16,
-                "out_channel_num": 1
+                "out_channel_num": 16
             }
         ]
     },
     "zero_mask_classifier": {
-        "layer_configurations": [
+        "conv_layer_configurations": [
             {
                 "conv_kernel_size": 3,
                 "conv_stride": 1,
@@ -76,7 +76,7 @@
                 "pooling_kernel_size": 2,
                 "pooling_stride": 2,
                 "pooling_padding": 0,
-                "in_channel_num": 1,
+                "in_channel_num": 16,
                 "out_channel_num": 16
             },
             {
@@ -89,6 +89,18 @@
                 "pooling_padding": 0,
                 "in_channel_num": 16,
                 "out_channel_num": 32
+            }
+        ],
+        "fc_layer_configurations": [
+            {
+                "input_size": 4096,
+                "output_size": 4,
+                "activation_function": "ReLU"
+            },
+            {
+                "input_size": 4,
+                "output_size": 1,
+                "activation_function": "none"
             }
         ]
     }

@@ -17,7 +17,9 @@ from gstruct.runner import GroqRunner
 from compile_lpu_model import (
     compile_encoder_with_gapi,
     compile_encoder_with_compiler,
-    compile_encoder_with_ttl,
+    compile_autoencoder_with_ttl,
+    compile_zero_classifier_with_ttl,
+    compile_overall_model_with_ttl,
     CompilerType,
 )
 import groq.api as g
@@ -39,7 +41,7 @@ from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
 
 
-def extract_encoder_weights(
+def extract_autoencoder_weights(
     state_dict: Dict[str, torch.Tensor],
 ) -> Dict[str, List[np.ndarray]]:
     """
@@ -67,6 +69,64 @@ def extract_encoder_weights(
     return {"encoder_weights": encoder_weights, "decoder_weights": decoder_weights}
 
 
+def extract_classifier_weights(
+    state_dict: Dict[str, torch.Tensor],
+) -> Dict[str, List[np.ndarray]]:
+    """
+    Extract convolutional layer weights and fully connected layer weights and biases from a state_dict.
+
+    Args:
+        state_dict: Dictionary containing model parameters (from model.state_dict())
+
+    Returns:
+        Dictionary with three keys:
+        - "conv_weights": List of numpy arrays (float16) containing convolutional layer weights, ordered by layer index
+        - "fc_weights": List of numpy arrays (float16) containing fully connected layer weights, ordered by layer index
+        - "fc_biases": List of numpy arrays (float16) containing fully connected layer biases, ordered by layer index
+    """
+    conv_weights = []
+    fc_weights = []
+    fc_biases = []
+
+    # Filter for keys that contain conv-related patterns and end with ".weight"
+    # This handles Conv1d, Conv2d, ConvTranspose1d, ConvTranspose2d layers
+    for key in sorted(state_dict.keys()):
+        key_lower = key.lower()
+        if ("conv" in key_lower or "convtranspose" in key_lower) and key.endswith(
+            ".weight"
+        ):
+            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
+            conv_weights.append(weight)
+
+    # Filter for keys that contain fc/linear patterns
+    # Extract weights and biases separately
+    for key in sorted(state_dict.keys()):
+        key_lower = key.lower()
+        if ("fc" in key_lower or "linear" in key_lower) and key.endswith(".weight"):
+            weight = state_dict[key].detach().cpu().numpy().astype(np.float16)
+            fc_weights.append(weight)
+        elif ("fc" in key_lower or "linear" in key_lower) and key.endswith(".bias"):
+            bias = state_dict[key].detach().cpu().numpy().astype(np.float16)
+            fc_biases.append(bias)
+
+    return {
+        "conv_weights": conv_weights,
+        "fc_weights": fc_weights,
+        "fc_biases": fc_biases,
+    }
+
+
+def get_activation_function(activation_function_name):
+    if activation_function_name == "ReLU":
+        return nn.ReLU()
+    elif activation_function_name == "Sigmoid":
+        return nn.Sigmoid()
+    elif activation_function_name == "Tanh":
+        return nn.Tanh()
+    else:
+        return None
+
+
 # Load encoder configuration from JSON file
 config_path = os.path.join(current_dir, "model_config.json")
 
@@ -77,8 +137,11 @@ input_size = config["input_size"]
 batch_num = config["batch_num"]
 encoder_config = config["encoder"]
 decoder_config = config["decoder"]
+zero_mask_classifier_config = config["zero_mask_classifier"]
 layer_configurations_encoder = []
 layer_configurations_decoder = []
+conv_layer_configurations_zero_mask_classifier = []
+fc_layer_configurations_zero_mask_classifier = []
 
 # Add batch_num to each layer configuration
 for layer_conf in encoder_config["layer_configurations"]:
@@ -91,10 +154,23 @@ for layer_conf in decoder_config["layer_configurations"]:
     layer_conf_with_batch["batch_num"] = batch_num
     layer_configurations_decoder.append(layer_conf_with_batch)
 
+for layer_conf in zero_mask_classifier_config["conv_layer_configurations"]:
+    layer_conf_with_batch = layer_conf.copy()
+    layer_conf_with_batch["batch_num"] = batch_num
+    conv_layer_configurations_zero_mask_classifier.append(layer_conf_with_batch)
+
+for layer_conf in zero_mask_classifier_config["fc_layer_configurations"]:
+    layer_conf_with_batch = layer_conf.copy()
+    layer_conf_with_batch["batch_num"] = batch_num
+    fc_layer_configurations_zero_mask_classifier.append(layer_conf_with_batch)
 
 # Torch Encoding layers
 encoder_layers = []
 for layer_conf in layer_configurations_encoder:
+
+    activation_function = get_activation_function(
+        layer_conf["conv_activation_function"]
+    )
 
     sub_layers = []
     sub_layers.append(
@@ -107,9 +183,7 @@ for layer_conf in layer_configurations_encoder:
                 padding=layer_conf["conv_padding"],
                 bias=False,
             ),
-            (
-                nn.ReLU() if layer_conf["conv_activation_function"] == "ReLU" else None
-            ),  # activation function
+            (activation_function),  # activation function
         ]
     )
 
@@ -130,14 +204,9 @@ for layer_conf in layer_configurations_encoder:
 decoder_layers = []
 for layer_conf in layer_configurations_decoder:
 
-    if layer_conf["conv_activation_function"] == "ReLU":
-        activation_function = nn.ReLU()
-    elif layer_conf["conv_activation_function"] == "Sigmoid":
-        activation_function = nn.Sigmoid()
-    elif layer_conf["conv_activation_function"] == "Tanh":
-        activation_function = nn.Tanh()
-    else:
-        activation_function = None
+    activation_function = get_activation_function(
+        layer_conf["conv_activation_function"]
+    )
 
     decoder_layers.append(
         [
@@ -153,21 +222,76 @@ for layer_conf in layer_configurations_decoder:
         ]
     )
 
+# Torch Zero Mask Classifier layers
+zero_mask_classifier_conv_layers = []
+for layer_conf in conv_layer_configurations_zero_mask_classifier:
 
-# encoder_layers = [
-#     [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-#     [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-#     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()],
-# ]
+    activation_function = get_activation_function(
+        layer_conf["conv_activation_function"]
+    )
+
+    sub_layers = []
+    sub_layers.append(
+        [
+            nn.Conv1d(  # convolutional layer
+                layer_conf["in_channel_num"],
+                layer_conf["out_channel_num"],
+                kernel_size=layer_conf["conv_kernel_size"],
+                stride=layer_conf["conv_stride"],
+                padding=layer_conf["conv_padding"],
+                bias=False,
+            ),
+            (activation_function),  # activation function
+        ]
+    )
+
+    sub_layers.append(
+        [
+            nn.MaxPool1d(  # pooling layer
+                kernel_size=layer_conf["pooling_kernel_size"],
+                stride=layer_conf["pooling_stride"],
+                padding=layer_conf["pooling_padding"],
+            ),
+            None,
+        ]
+    )
+
+    zero_mask_classifier_conv_layers.extend(sub_layers)
 
 
-# decoder_layers = None
-# decoder_layers = np.array([
-#     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
-#     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-#     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
-#     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
-# ])
+"""
+# Calculate the output size after conv layers
+def get_conv_output_size(input_size, conv_layers):
+    x = torch.randn(input_size)
+    model = nn.Sequential(
+        *[
+            layer
+            for layer_pair in conv_layers
+            for layer in layer_pair
+            if layer is not None
+        ]
+    )
+    x = model(x)
+    return x.shape
+
+
+output_size = get_conv_output_size((1, 16, 512), zero_mask_classifier_conv_layers)
+print(f"Output size after conv layers: {output_size}")
+"""
+zero_mask_classifier_fc_layers = []
+for layer_conf in fc_layer_configurations_zero_mask_classifier:
+
+    activation_function = get_activation_function(layer_conf["activation_function"])
+
+    zero_mask_classifier_fc_layers.append(
+        [
+            nn.Linear(layer_conf["input_size"], layer_conf["output_size"]),
+            (activation_function),
+        ]
+    )
+
+print("zero_mask_classifier_fc_layers: ", zero_mask_classifier_fc_layers)
+# zero_mask_classifier_fc_layers = []
 
 
 autoencoder = Ximg_to_Ypdf_Autoencoder(
@@ -177,12 +301,22 @@ autoencoder = Ximg_to_Ypdf_Autoencoder(
     dtype=torch.float16,
 )
 
+zero_mask_classifier = Zero_PulseClassifier(
+    zero_mask_classifier_conv_layers,
+    zero_mask_classifier_fc_layers,
+    dtype=torch.float16,
+)
+
+print("zero_mask_classifier: ", zero_mask_classifier.state_dict().keys())
+
 
 # Extract kernel matrices for Groq implementation
 # Get all parameters as a dictionary
 state_dict = autoencoder.state_dict()
-print("state_dict: ", state_dict.keys())
-kernels = extract_encoder_weights(state_dict)
+kernels = extract_autoencoder_weights(state_dict)
+
+state_dict = zero_mask_classifier.state_dict()
+classifier_weights = extract_classifier_weights(state_dict)
 
 
 # compile the program for Groq hardware implementation
@@ -216,25 +350,60 @@ elif compiler_type == CompilerType.Compiler:
 
     output_tensor_name = "output000"
     input_tensor_name = "arg000"
-
     image_torch = torch.from_numpy(image_fp16)
+
+    """
     compiled_program = compile_encoder_with_compiler(
         autoencoder, image_torch, program_name
     )
+    """
+
+    compiled_program = compile_encoder_with_compiler(
+        zero_mask_classifier, image_torch, program_name
+    )
+
     inputs = {input_tensor_name: image_fp16}
 
 elif compiler_type == CompilerType.ttl:
 
     output_tensor_name = "encoder_result"
     input_tensor_name = "image"
-
-    compiled_program = compile_encoder_with_ttl(
+    """
+    compiled_program = compile_autoencoder_with_ttl(
         layer_configurations_encoder,
         layer_configurations_decoder,
         kernels,
         input_size,
         output_tensor_name,
         program_name,
+    )
+    """
+
+    """
+    output_tensor_name = "classifier_result"
+    input_tensor_name = "image"
+
+    compiled_program = compile_zero_classifier_with_ttl(
+        conv_layer_configurations_zero_mask_classifier,
+        fc_layer_configurations_zero_mask_classifier,
+        classifier_weights,
+        input_size,
+        output_tensor_name,
+        program_name,
+    )
+    """
+
+    output_tensor_name = "overall_model_result"
+    input_tensor_name = "image"
+
+    compiled_program = compile_overall_model_with_ttl(
+        layer_configurations_encoder,
+        layer_configurations_decoder,
+        kernels,
+        conv_layer_configurations_zero_mask_classifier,
+        fc_layer_configurations_zero_mask_classifier,
+        classifier_weights,
+        input_size,
     )
     inputs = {input_tensor_name: image_fp16}
 
@@ -248,7 +417,7 @@ else:
 runner = GroqRunner(timing_report=True)
 runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
 
-
+"""
 # measure the performance of the hardware implementation
 iteration_num = 500
 elapsed_time = 0
@@ -280,19 +449,28 @@ print("=" * 25)
 print(
     f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
 )
-
+"""
 
 results_groq = runner.invoke(inputs)
+
 
 output_tensor = results_groq[output_tensor_name]
 print("output_tensor.shape: ", output_tensor.shape)
 
+
 with torch.no_grad():
     image_torch = torch.from_numpy(image_fp16)
     print("image_torch.shape: ", image_torch.dtype)
+
     result_torch = autoencoder(image_torch)
     result_torch = result_torch.detach().numpy()
+    """
 
+    result_torch = zero_mask_classifier(image_torch)
+    result_torch = result_torch.detach().numpy()
+    """
+
+print("output_tensor: ", output_tensor[:, :, 0:3])
 
 if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
     print(
