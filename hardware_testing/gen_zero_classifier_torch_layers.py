@@ -96,4 +96,3 @@ def gen_zero_classifier_torch_layers(
         )
 
     return zero_mask_classifier_conv_layers, zero_mask_classifier_fc_layers
-

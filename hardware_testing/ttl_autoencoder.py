@@ -2,7 +2,7 @@ from gstruct.ops import conv1d as ttl_conv1d, Conv1dStageName
 from gstruct.ops import (
     convtranspose1d as ttl_convtranspose1d,
 )
-from gstruct.ops import maxpool1d as gstruct_maxpool1d
+from gstruct.ops import maxpool1d as ttl_maxpool1d
 from gstruct import TiledMemref, dtypes, GroqBuffer
 from gstruct import gstruct
 from gstruct import GroqMLIR
@@ -49,7 +49,7 @@ def autoencoder_model_to_ttl(
             "conv_activation_function", "none"
         )
 
-        print("return_at_stage: ", return_at_stage)
+        # print("return_at_stage: ", return_at_stage)
 
         output_tensor = ttl_conv1d(
             input=input,
@@ -65,12 +65,13 @@ def autoencoder_model_to_ttl(
 
         # if idx == 1:
         #    print("??? output_tensor.shape: ", output_tensor[0].out_tmemrefs[0])
+        #
 
         idx += 1
 
         # print("conv_unpacked.shape: ", output_tensor.out_tmemrefs[0])
 
-        output_tensor = gstruct_maxpool1d(
+        output_tensor = ttl_maxpool1d(
             image=output_tensor,
             kernel_size=layer_configuration["pooling_kernel_size"],
             channel_num=layer_configuration["out_channel_num"],
@@ -80,7 +81,7 @@ def autoencoder_model_to_ttl(
             exploded_input=True,
             channel_stride=4,
         )
-
+        print("output_tensor.shape: ", output_tensor.out_tmemrefs[0])
         input = output_tensor
 
     in_channel_num = layer_configurations_decoder[0]["in_channel_num"]
@@ -112,6 +113,9 @@ def autoencoder_model_to_ttl(
             stride=layer_configuration["conv_stride"],
             activation_fnc=activation_function,
         )
+        print("output_tensor.shape: ", output_tensor.out_tmemrefs[0])
+
+        # Lout = 1 + (image_size - 1) * stride - 2 * padding_orig + kernel_size - 1
 
         idx += 1
 

@@ -237,6 +237,31 @@ def compile_zero_classifier_with_ttl(
 
 
 def compile_lstm_pulsenum_classifier_with_ttl(
+    lstm_layer_configurations: Dict[str, int],
+    fc_layer_configurations: Dict[str, int],
+    lstm_classifier_weights: Dict[str, Any],
+    input_size: int,
+    output_tensor_name: str = "lstm_pulsenum_classifier_result",
+    program_name: str = "lstm_pulsenum_classifier",
+) -> Union[dict[str, Union[str, Any]], Any]:
+
+    from ttl_lstm_pulse_num_classifier import lstm_pulse_num_classifier_model
+
+    output_dir = "./LSTMPulseNumClassifierTTL"
+
+    output_tensor = lstm_pulse_num_classifier_model(
+        lstm_layer_configurations,
+        fc_layer_configurations,
+        lstm_classifier_weights,
+        input_size,
+    )
+
+    return compile_ttl_model(
+        output_tensor, output_tensor_name, program_name, output_dir
+    )
+
+
+def compile_pulsenum_classifier_workflow_with_ttl(
     layer_configurations_encoder: List[Dict[str, int]],
     layer_configurations_decoder: List[Dict[str, int]],
     autoencoder_kernels: Dict[str, List[np.ndarray]],

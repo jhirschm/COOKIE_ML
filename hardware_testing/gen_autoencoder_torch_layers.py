@@ -87,4 +87,3 @@ def gen_autoencoder_torch_layers(
         )
 
     return encoder_layers, decoder_layers
-

@@ -1,7 +1,22 @@
 from classifiers_util import *
 
+
 class CustomLSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_lstm_layers, num_classes, bidirectional=False, fc_layers=None, dropout_p=0.5, lstm_dropout=0.2, layer_norm=False, ignore_output_layer=False, ignore_fc_layers=False):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_lstm_layers,
+        num_classes,
+        bidirectional=False,
+        fc_layers=None,
+        dropout_p=0.5,
+        lstm_dropout=0.2,
+        layer_norm=False,
+        ignore_output_layer=False,
+        ignore_fc_layers=False,
+        dtype=torch.float32,
+    ):
         super(CustomLSTMClassifier, self).__init__()
         self.ignore_output_layer = ignore_output_layer
         self.ignore_fc_layers = ignore_fc_layers
@@ -10,27 +25,33 @@ class CustomLSTMClassifier(nn.Module):
         self.bidirectional = bidirectional
         self.num_directions = 2 if bidirectional else 1
         self.hidden_size = hidden_size * self.num_directions
+        self.dtype = dtype
 
         self.lstm = nn.LSTM(
-            input_size, 
-            hidden_size, 
-            num_lstm_layers, 
-            batch_first=True, 
-            bidirectional=bidirectional, 
-            dropout=lstm_dropout
+            input_size,
+            hidden_size,
+            num_lstm_layers,
+            batch_first=True,
+            bidirectional=bidirectional,
+            dropout=lstm_dropout,
+            dtype=dtype,
         )
 
         # Optional layer normalization
-        self.layer_norm = nn.LayerNorm(self.hidden_size) if layer_norm else None
+        self.layer_norm = (
+            nn.LayerNorm(self.hidden_size, dtype=dtype) if layer_norm else None
+        )
 
         # Dropout layer before fully connected layers
         self.dropout = nn.Dropout(p=dropout_p)
 
         # Fully connected layers
-        self.fc_layers, output_layer_input_size = self._build_fc_layers(fc_layers, hidden_size, layer_norm)
-        
+        self.fc_layers, output_layer_input_size = self._build_fc_layers(
+            fc_layers, hidden_size, layer_norm
+        )
+
         # Output layer for classification
-        self.output_layer = nn.Linear(output_layer_input_size, num_classes)
+        self.output_layer = nn.Linear(output_layer_input_size, num_classes, dtype=dtype)
 
     def forward(self, x):
         # LSTM forward pass
@@ -38,7 +59,7 @@ class CustomLSTMClassifier(nn.Module):
 
         # Apply layer normalization if defined
         if self.layer_norm:
-            out = self.layer_norm(out)
+            out = self.layer_norm(out)()
 
         # Apply fully connected layers (if defined)
         if self.fc_layers is not None and not self.ignore_fc_layers:
@@ -46,12 +67,14 @@ class CustomLSTMClassifier(nn.Module):
             if self.ignore_output_layer:
                 return out
         elif self.ignore_fc_layers:
-            out = out[:, -1, :] #allows model to be constructed with fc layers but then ignore them
+            out = out[
+                :, -1, :
+            ]  # allows model to be constructed with fc layers but then ignore them
 
             return out
         else:
             out = out[:, -1, :]
-        
+
         # Final output layer for classification
         out = self.output_layer(out)
 
@@ -70,28 +93,56 @@ class CustomLSTMClassifier(nn.Module):
             if fc_layer_size <= 0:
                 raise ValueError("Fully connected layer size must be greater than 0")
 
-            layers.append(nn.Linear(in_features, fc_layer_size))
+            layers.append(nn.Linear(in_features, fc_layer_size, dtype=self.dtype))
             layers.append(nn.ReLU())  # Apply ReLU activation
             layers.append(self.dropout)  # Apply dropout
 
             if layer_norm:
-                layers.append(nn.LayerNorm(fc_layer_size))
+                layers.append(nn.LayerNorm(fc_layer_size, dtype=self.dtype))
 
             in_features = fc_layer_size
 
-        return nn.Sequential(*layers), fc_layers[-1]  # Last fully connected layer's output size
-    
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10, denoising=False, second_denoising=False, denoise_model = None, zero_mask_model = None, parallel=True, second_train_dataloader=None, second_val_dataloader=None):
+        return (
+            nn.Sequential(*layers),
+            fc_layers[-1],
+        )  # Last fully connected layer's output size
+
+    def train_model(
+        self,
+        train_dataloader,
+        val_dataloader,
+        criterion,
+        optimizer,
+        scheduler,
+        model_save_dir,
+        identifier,
+        device,
+        checkpoints_enabled=True,
+        resume_from_checkpoint=False,
+        max_epochs=10,
+        denoising=False,
+        second_denoising=False,
+        denoise_model=None,
+        zero_mask_model=None,
+        parallel=True,
+        second_train_dataloader=None,
+        second_val_dataloader=None,
+    ):
         train_losses = []
         val_losses = []
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         best_epoch = 0
         start_epoch = 0
         if denoising and denoise_model is None and zero_mask_model is None:
             raise ValueError("Denoising is enabled but no denoising model is provided")
         if parallel:
             self = nn.DataParallel(self)
-            if (denoising and denoise_model is not None or second_denoising and denoise_model is not None) and zero_mask_model is not None:
+            if (
+                denoising
+                and denoise_model is not None
+                or second_denoising
+                and denoise_model is not None
+            ) and zero_mask_model is not None:
                 denoise_model = nn.DataParallel(denoise_model)
                 zero_mask_model = nn.DataParallel(zero_mask_model)
                 denoise_model.to(device)
@@ -99,23 +150,29 @@ class CustomLSTMClassifier(nn.Module):
         self.to(device)
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
-        
-        
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
-        if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
+        if (
+            checkpoints_enabled
+            and resume_from_checkpoint
+            and os.path.exists(checkpoint_path)
+        ):
             checkpoint = torch.load(checkpoint_path)
-            self.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            train_losses = checkpoint['train_losses']
-            val_losses = checkpoint['val_losses']
-            best_val_loss = checkpoint['best_val_loss']
-            best_epoch = checkpoint['best_epoch']
+            self.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            train_losses = checkpoint["train_losses"]
+            val_losses = checkpoint["val_losses"]
+            best_val_loss = checkpoint["best_val_loss"]
+            best_epoch = checkpoint["best_epoch"]
             best_model = None
         name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
         with open(name, "a") as f:
-            f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
+            f.write(
+                f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n"
+                if start_epoch > 0
+                else f"Training started at {datetime.datetime.now()}\n"
+            )
 
             for epoch in range(start_epoch, max_epochs):
                 self.train()  # Set the model to training mode
@@ -125,10 +182,16 @@ class CustomLSTMClassifier(nn.Module):
                     optimizer.zero_grad()  # Zero the parameter gradients
 
                     inputs, labels = batch
-                    labels = labels.to(device) #indexing for access to the first element of the list
+                    labels = labels.to(
+                        device
+                    )  # indexing for access to the first element of the list
                     # print(labels)
-                    if denoising and denoise_model is not None and zero_mask_model is not None:
-                       
+                    if (
+                        denoising
+                        and denoise_model is not None
+                        and zero_mask_model is not None
+                    ):
+
                         denoise_model.eval()
                         zero_mask_model.eval()
                         inputs = torch.unsqueeze(inputs, 1)
@@ -138,21 +201,20 @@ class CustomLSTMClassifier(nn.Module):
                         outputs = outputs.squeeze()
                         outputs = outputs.to(device)
                         if parallel:
-                            probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                            probs, zero_mask = zero_mask_model.module.predict(inputs)
                         else:
-                            probs, zero_mask  = zero_mask_model.predict(inputs)
+                            probs, zero_mask = zero_mask_model.predict(inputs)
                         zero_mask = zero_mask.to(device)
                         # zero mask either 0 or 1
                         # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                        zero_mask = torch.unsqueeze(zero_mask,2)
+                        zero_mask = torch.unsqueeze(zero_mask, 2)
                         zero_mask = zero_mask.to(device, torch.float32)
 
                         outputs = outputs * zero_mask
                         inputs = outputs.to(device, torch.float32)
 
-                    else: 
+                    else:
                         inputs = inputs.to(device, torch.float32)
-                    
 
                     outputs = self(inputs).to(device)
                     # print(outputs)
@@ -162,7 +224,6 @@ class CustomLSTMClassifier(nn.Module):
 
                     running_train_loss += loss.item()
 
-
                 # Training loop with second dataloader that requires denoising
                 if second_train_dataloader is not None and second_denoising:
                     for batch in second_train_dataloader:
@@ -171,7 +232,11 @@ class CustomLSTMClassifier(nn.Module):
                         inputs, labels = batch
                         labels = labels.to(device)
 
-                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                        if (
+                            second_denoising
+                            and denoise_model is not None
+                            and zero_mask_model is not None
+                        ):
                             denoise_model.eval()
                             zero_mask_model.eval()
                             inputs = torch.unsqueeze(inputs, 1)
@@ -180,7 +245,9 @@ class CustomLSTMClassifier(nn.Module):
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
                             if parallel:
-                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                                probs, zero_mask = zero_mask_model.module.predict(
+                                    inputs
+                                )
                             else:
                                 probs, zero_mask = zero_mask_model.predict(inputs)
                             zero_mask = zero_mask.to(device)
@@ -198,10 +265,11 @@ class CustomLSTMClassifier(nn.Module):
 
                         running_train_loss += loss.item()
 
-
-                train_loss = running_train_loss / (len(train_dataloader) + (len(second_train_dataloader) if second_train_dataloader else 0))
+                train_loss = running_train_loss / (
+                    len(train_dataloader)
+                    + (len(second_train_dataloader) if second_train_dataloader else 0)
+                )
                 train_losses.append(train_loss)
-               
 
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
@@ -210,9 +278,15 @@ class CustomLSTMClassifier(nn.Module):
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
-                        labels = labels.to(device) #indexing for access to the first element of the list
+                        labels = labels.to(
+                            device
+                        )  # indexing for access to the first element of the list
 
-                        if denoising and denoise_model is not None and zero_mask_model is not None:
+                        if (
+                            denoising
+                            and denoise_model is not None
+                            and zero_mask_model is not None
+                        ):
                             denoise_model.eval()
                             zero_mask_model.eval()
                             inputs = torch.unsqueeze(inputs, 1)
@@ -222,21 +296,22 @@ class CustomLSTMClassifier(nn.Module):
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
                             if parallel:
-                                probs, zero_mask  = zero_mask_model.module.predict(inputs)
+                                probs, zero_mask = zero_mask_model.module.predict(
+                                    inputs
+                                )
                             else:
-                                probs, zero_mask  = zero_mask_model.predict(inputs)
+                                probs, zero_mask = zero_mask_model.predict(inputs)
                             zero_mask = zero_mask.to(device)
                             # zero mask either 0 or 1
                             # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                            zero_mask = torch.unsqueeze(zero_mask,2)
+                            zero_mask = torch.unsqueeze(zero_mask, 2)
                             zero_mask = zero_mask.to(device, torch.float32)
 
                             outputs = outputs * zero_mask
                             inputs = outputs.to(device, torch.float32)
 
-                        else: 
+                        else:
                             inputs = inputs.to(device, torch.float32)
-                            
 
                         outputs = self(inputs).to(device)
                         loss = criterion(outputs, labels)
@@ -248,7 +323,11 @@ class CustomLSTMClassifier(nn.Module):
                         inputs, labels = batch
                         labels = labels.to(device)
 
-                        if second_denoising and denoise_model is not None and zero_mask_model is not None:
+                        if (
+                            second_denoising
+                            and denoise_model is not None
+                            and zero_mask_model is not None
+                        ):
                             denoise_model.eval()
                             zero_mask_model.eval()
                             inputs = torch.unsqueeze(inputs, 1)
@@ -257,7 +336,9 @@ class CustomLSTMClassifier(nn.Module):
                             outputs = outputs.squeeze()
                             outputs = outputs.to(device)
                             if parallel:
-                                probs, zero_mask = zero_mask_model.module.predict(inputs)
+                                probs, zero_mask = zero_mask_model.module.predict(
+                                    inputs
+                                )
                             else:
                                 probs, zero_mask = zero_mask_model.predict(inputs)
                             zero_mask = zero_mask.to(device)
@@ -273,12 +354,19 @@ class CustomLSTMClassifier(nn.Module):
                         running_val_loss += loss.item()
 
                 # val_loss = running_val_loss / len(val_dataloader)
-                val_loss = running_val_loss / (len(val_dataloader) + (len(second_val_dataloader) if second_val_dataloader else 0))
+                val_loss = running_val_loss / (
+                    len(val_dataloader)
+                    + (len(second_val_dataloader) if second_val_dataloader else 0)
+                )
 
                 val_losses.append(val_loss)
 
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                f.write(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
+                print(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
 
                 # Update the scheduler
                 should_stop = scheduler.step(val_loss, epoch)
@@ -296,17 +384,17 @@ class CustomLSTMClassifier(nn.Module):
                 ## Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': self.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'scheduler_state_dict': scheduler.state_dict(),
-                        'train_losses': train_losses,
-                        'val_losses': val_losses,
-                        'best_val_loss': best_val_loss,
-                        'best_epoch': best_epoch,
+                        "epoch": epoch,
+                        "model_state_dict": self.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                        "scheduler_state_dict": scheduler.state_dict(),
+                        "train_losses": train_losses,
+                        "val_losses": val_losses,
+                        "best_val_loss": best_val_loss,
+                        "best_epoch": best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
-                
+
                 # Early stopping check
                 # if scheduler.should_stop():
                 #     print(f"Early stopping at epoch {epoch+1}")
@@ -315,9 +403,9 @@ class CustomLSTMClassifier(nn.Module):
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-                f.flush() # Flush the buffer to write to the file
+                f.flush()  # Flush the buffer to write to the file
         # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+        run_summary_path = f"{model_save_dir}/{identifier}" + "_run_summary.txt"
         with open(run_summary_path, "w") as file:
             file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
             file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
@@ -325,12 +413,18 @@ class CustomLSTMClassifier(nn.Module):
 
         # Plot the training and validation losses
         plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
+        plt.plot(train_losses, label="Train Loss")
+        plt.plot(val_losses, label="Validation Loss")
+        plt.scatter(
+            best_epoch,
+            val_losses[best_epoch],
+            marker="*",
+            color="red",
+            label="Best Epoch",
+        )
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss")
         plt.legend()
         losses_path = os.path.join(model_save_dir, identifier + "_losses.pdf")
         plt.savefig(losses_path)
@@ -338,7 +432,18 @@ class CustomLSTMClassifier(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, test_dataloader, identifier, model_dir, device, denoising=False, denoise_model = None, zero_mask_model = None, rescale_0to1=False, two_pulse_analysis=False):
+    def evaluate_model(
+        self,
+        test_dataloader,
+        identifier,
+        model_dir,
+        device,
+        denoising=False,
+        denoise_model=None,
+        zero_mask_model=None,
+        rescale_0to1=False,
+        two_pulse_analysis=False,
+    ):
         # Lists to store true and predicted values for pulses
         true_1_pred_1 = []
         true_1_pred_2 = []
@@ -363,12 +468,20 @@ class CustomLSTMClassifier(nn.Module):
                 # Move data to the GPU
                 if two_pulse_analysis:
                     inputs, labels, phases = loader
-                    inputs, labels, phases = inputs.to(device), labels.to(device), phases.to(device)
+                    inputs, labels, phases = (
+                        inputs.to(device),
+                        labels.to(device),
+                        phases.to(device),
+                    )
                 else:
                     inputs, labels = loader
                     inputs, labels = inputs.to(device), labels.to(device)
 
-                if denoising and denoise_model is not None and zero_mask_model is not None:
+                if (
+                    denoising
+                    and denoise_model is not None
+                    and zero_mask_model is not None
+                ):
                     denoise_model.eval()
                     zero_mask_model.eval()
                     inputs = torch.unsqueeze(inputs, 1)
@@ -377,27 +490,26 @@ class CustomLSTMClassifier(nn.Module):
                     outputs = denoise_model(inputs)
                     outputs = outputs.squeeze()
                     outputs = outputs.to(device)
-                    probs, zero_mask  = zero_mask_model.predict(inputs)
+                    probs, zero_mask = zero_mask_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
-                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = torch.unsqueeze(zero_mask, 2)
                     zero_mask = zero_mask.to(device, torch.float32)
 
                     outputs = outputs * zero_mask
 
                     if rescale_0to1:
-                        inputs = (inputs +1)/2 
+                        inputs = (inputs + 1) / 2
                     inputs = outputs.to(device, torch.float32)
 
-
-                else: 
+                else:
                     inputs = inputs.to(device, torch.float32)
-                
+
                 if self.ignore_fc_layers:
                     probs = self(inputs)
                     return probs
-                
+
                 probs, preds = self.predict(inputs)
                 preds = preds.to(device)
                 probs = probs.to(device)
@@ -406,7 +518,6 @@ class CustomLSTMClassifier(nn.Module):
                 print("probs raw----------------")
                 print(probs)
 
-
                 true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
                 print("true----------------")
                 print(true_pulse_single_label)
@@ -414,7 +525,6 @@ class CustomLSTMClassifier(nn.Module):
 
                 predicted_pulse_single_label = np.argmax(probs.cpu().numpy(), axis=1)
                 print(predicted_pulse_single_label)
-
 
                 true_pulses.extend(true_pulse_single_label)
                 predicted_pulses.extend(predicted_pulse_single_label)
@@ -426,83 +536,87 @@ class CustomLSTMClassifier(nn.Module):
                     for i in range(len(true_pulse_single_label)):
                         true_pulse = true_pulse_single_label[i]
                         predicted_pulse = predicted_pulse_single_label[i]
-                        
+
                         if true_pulse == 2 and predicted_pulse == 1:
                             true_2_pred_1.append(phases[i].cpu().numpy())
                         if true_pulse == 2 and predicted_pulse == 2:
                             true_2_pred_2.append(phases[i].cpu().numpy())
-                
-            
-                        
-
 
         if two_pulse_analysis:
-            plot_path = os.path.join(model_dir, identifier + "_histogram_2True1Pred.pdf")
+            plot_path = os.path.join(
+                model_dir, identifier + "_histogram_2True1Pred.pdf"
+            )
             true_2_pred_1 = np.array(true_2_pred_1)
             abs_phase_differences = np.abs(np.diff(true_2_pred_1, axis=1))
             mean_phase_diff = np.mean(abs_phase_differences)
             std_phase_diff = np.std(abs_phase_differences)
-            sin_abs_phase_diff = np.sin(abs_phase_differences%np.pi)
+            sin_abs_phase_diff = np.sin(abs_phase_differences % np.pi)
             mean_sin_phase_diff = np.mean(sin_abs_phase_diff)
             std_sin_phase_diff = np.std(sin_abs_phase_diff)
-                                        
+
             print(f"Mean Phase Difference: {mean_phase_diff}")
             print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
             print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
-            print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
-
+            print(
+                f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}"
+            )
 
             # Plot the histogram of the absolute phase differences
             fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
-            ax_hist1.hist(abs_phase_differences, bins=50, color='blue', alpha=0.7)
-            ax_hist1.set_title('Histogram of Absolute Phase Differences')
-            ax_hist1.set_xlabel('Phase Difference (radians)')
-            ax_hist1.set_ylabel('Frequency')
+            ax_hist1.hist(abs_phase_differences, bins=50, color="blue", alpha=0.7)
+            ax_hist1.set_title("Histogram of Absolute Phase Differences")
+            ax_hist1.set_xlabel("Phase Difference (radians)")
+            ax_hist1.set_ylabel("Frequency")
 
             # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
-            ax_hist2.hist(sin_abs_phase_diff, bins=50, color='green', alpha=0.7)
-            ax_hist2.set_title('Histogram of sin(phase_diff%pi)')
-            ax_hist2.set_xlabel('sin(phase_diff%pi) ')
-            ax_hist2.set_ylabel('Frequency')
+            ax_hist2.hist(sin_abs_phase_diff, bins=50, color="green", alpha=0.7)
+            ax_hist2.set_title("Histogram of sin(phase_diff%pi)")
+            ax_hist2.set_xlabel("sin(phase_diff%pi) ")
+            ax_hist2.set_ylabel("Frequency")
 
             plt.savefig(plot_path)
 
-            plot_path = os.path.join(model_dir, identifier + "_histogram_2True2Pred.pdf")
+            plot_path = os.path.join(
+                model_dir, identifier + "_histogram_2True2Pred.pdf"
+            )
             true_2_pred_2 = np.array(true_2_pred_2)
             abs_phase_differences = np.abs(np.diff(true_2_pred_2, axis=1))
             mean_phase_diff = np.mean(abs_phase_differences)
             std_phase_diff = np.std(abs_phase_differences)
-            sin_abs_phase_diff = np.sin(abs_phase_differences%np.pi)
+            sin_abs_phase_diff = np.sin(abs_phase_differences % np.pi)
             mean_sin_phase_diff = np.mean(sin_abs_phase_diff)
             std_sin_phase_diff = np.std(sin_abs_phase_diff)
-                                        
+
             print(f"Mean Phase Difference: {mean_phase_diff}")
             print(f"Standard Deviation of Phase Difference: {std_phase_diff}")
             print(f"Mean Sine of Phase Difference: {mean_sin_phase_diff}")
-            print(f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}")
-
+            print(
+                f"Standard Deviation of Sine of Phase Difference: {std_sin_phase_diff}"
+            )
 
             # Plot the histogram of the absolute phase differences
             fig_hist, (ax_hist1, ax_hist2) = plt.subplots(1, 2, figsize=(12, 5))
-            ax_hist1.hist(abs_phase_differences, bins=50, color='blue', alpha=0.7)
-            ax_hist1.set_title('Histogram of Absolute Phase Differences')
-            ax_hist1.set_xlabel('Phase Difference (radians)')
-            ax_hist1.set_ylabel('Frequency')
+            ax_hist1.hist(abs_phase_differences, bins=50, color="blue", alpha=0.7)
+            ax_hist1.set_title("Histogram of Absolute Phase Differences")
+            ax_hist1.set_xlabel("Phase Difference (radians)")
+            ax_hist1.set_ylabel("Frequency")
 
             # Plot the histogram of cos^2(phase_diff) + sin^2(phase_diff)
-            ax_hist2.hist(sin_abs_phase_diff, bins=50, color='green', alpha=0.7)
-            ax_hist2.set_title('Histogram of sin(phase_diff%pi)')
-            ax_hist2.set_xlabel('sin(phase_diff%pi) ')
-            ax_hist2.set_ylabel('Frequency')
+            ax_hist2.hist(sin_abs_phase_diff, bins=50, color="green", alpha=0.7)
+            ax_hist2.set_title("Histogram of sin(phase_diff%pi)")
+            ax_hist2.set_xlabel("sin(phase_diff%pi) ")
+            ax_hist2.set_ylabel("Frequency")
 
             plt.savefig(plot_path)
-                                        
+
         num_classes_from_test = len(np.unique(true_pulses))
         # Calculate evaluation metrics as percentages
         accuracy = accuracy_score(true_pulses, predicted_pulses) * 100
-        precision = precision_score(true_pulses, predicted_pulses, average='macro') * 100
-        recall = recall_score(true_pulses, predicted_pulses, average='macro') * 100
-        f1 = f1_score(true_pulses, predicted_pulses, average='macro') * 100
+        precision = (
+            precision_score(true_pulses, predicted_pulses, average="macro") * 100
+        )
+        recall = recall_score(true_pulses, predicted_pulses, average="macro") * 100
+        f1 = f1_score(true_pulses, predicted_pulses, average="macro") * 100
 
         # Confusion matrix
         cm = confusion_matrix(true_pulses, predicted_pulses)
@@ -512,14 +626,14 @@ class CustomLSTMClassifier(nn.Module):
         normalized_cm = cm / row_sums.astype(float) * 100
 
         # Create class labels based on the number of classes
-        class_labels = [f'{i} Pulse(s)' for i in range(num_classes_from_test)]
+        class_labels = [f"{i} Pulse(s)" for i in range(num_classes_from_test)]
 
         # Plot the normalized confusion matrix with class labels
         plt.figure(figsize=(8, 6))
-        plt.imshow(normalized_cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
+        plt.imshow(normalized_cm, interpolation="nearest", cmap=plt.get_cmap("Blues"))
 
         # Add class labels to the plot
-        plt.title('Normalized Confusion Matrix (%)')
+        plt.title("Normalized Confusion Matrix (%)")
         plt.colorbar()
         tick_marks = np.arange(len(class_labels))
         plt.xticks(tick_marks, class_labels, rotation=45)
@@ -530,8 +644,8 @@ class CustomLSTMClassifier(nn.Module):
                 text_label = f"{normalized_cm[i, j]:.2f}%"
                 plt.text(j, i, text_label, horizontalalignment="center", color="black")
         # Add axis labels
-        plt.xlabel('Predicted')
-        plt.ylabel('True')
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
         plot_path = os.path.join(model_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
         plt.savefig(plot_path)
@@ -539,7 +653,7 @@ class CustomLSTMClassifier(nn.Module):
 
         # Print and display metrics
         # Redirect output to the same log file used during training
-        run_summary_path = f"{model_dir}/{identifier}"+ "_run_summary.txt"
+        run_summary_path = f"{model_dir}/{identifier}" + "_run_summary.txt"
         with open(run_summary_path, "a") as file:
             file.write(f"Accuracy: {accuracy:.2f}%\n")
             file.write(f"Precision: {precision:.2f}%\n")
@@ -554,6 +668,7 @@ class CustomLSTMClassifier(nn.Module):
                 file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
 
         return accuracy, precision, recall, f1, normalized_cm, plot_path
+
     def predict(self, x):
         """
         Perform binary classification prediction from logits.
@@ -569,32 +684,35 @@ class CustomLSTMClassifier(nn.Module):
             logits = self.forward(x)
             probabilities = torch.sigmoid(logits)
             predictions = (probabilities > 0.5).float()
-        
+
         return probabilities, predictions
-    
-def create_model_from_json(json_file_path, input_size, num_classes, ignore_output_layer = True, load_weights = True):
-    with open(json_file_path, 'r') as f:
-        data =  json.load(f)
-    data = data['best_results_formatted_parameters']
-    
+
+
+def create_model_from_json(
+    json_file_path, input_size, num_classes, ignore_output_layer=True, load_weights=True
+):
+    with open(json_file_path, "r") as f:
+        data = json.load(f)
+    data = data["best_results_formatted_parameters"]
+
     # Create CustomLSTMClassifier model
     model = CustomLSTMClassifier(
         input_size=input_size,
-        hidden_size=data['hidden_size'],
-        num_lstm_layers=data['num_lstm_layers'],
-        num_classes= num_classes,
-        bidirectional=data['bidirectional'],
-        fc_layers=data['fc_layers'],
-        dropout_p=data['dropout'],
-        lstm_dropout=data['lstm_dropout'],
-        layerNorm=data['layerNorm'],
-        ignore_output_layer = ignore_output_layer
+        hidden_size=data["hidden_size"],
+        num_lstm_layers=data["num_lstm_layers"],
+        num_classes=num_classes,
+        bidirectional=data["bidirectional"],
+        fc_layers=data["fc_layers"],
+        dropout_p=data["dropout"],
+        lstm_dropout=data["lstm_dropout"],
+        layerNorm=data["layerNorm"],
+        ignore_output_layer=ignore_output_layer,
     )
-    
+
     # Load model weights
     if load_weights:
-        path = data['path_to_best_model_weights']
-        model.load_state_dict(torch.load(data['path_to_best_model_weights']))
+        path = data["path_to_best_model_weights"]
+        model.load_state_dict(torch.load(data["path_to_best_model_weights"]))
         return model, path, data
     else:
-        return model, None, data    
+        return model, None, data

@@ -20,6 +20,7 @@ from compile_lpu_model import (
     compile_autoencoder_with_ttl,
     compile_zero_classifier_with_ttl,
     compile_lstm_pulsenum_classifier_with_ttl,
+    compile_pulsenum_classifier_workflow_with_ttl,
     CompilerType,
 )
 import groq.api as g
@@ -30,6 +31,7 @@ class TargetModel(Enum):
     autoencoder = "autoencoder"
     zero_pulse_classifier = "zero_pulse_classifier"
     lstm_pulsenum_classifier = "lstm_pulsenum_classifier"
+    pulsenum_classifier_workflow = "pulsenum_classifier_workflow"
 
 
 compiler_type = CompilerType.ttl
@@ -41,15 +43,24 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # Construct the path to the utils directory relative to the current file's directory
 utils_dir = os.path.abspath(os.path.join(current_dir, "../src/", "ml_backbone"))
 denoise_dir = os.path.abspath(os.path.join(current_dir, "../src/", "denoising"))
+classifiers_dir = os.path.abspath(
+    os.path.join(current_dir, "../src/", "ml_backbone", "classifiers")
+)
 
 sys.path.append(utils_dir)
 sys.path.append(denoise_dir)
+sys.path.append(classifiers_dir)
 
 from denoising_util import *
 from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassifier
-from extract_weights import extract_autoencoder_weights, extract_classifier_weights
+from extract_weights import (
+    extract_autoencoder_weights,
+    extract_classifier_weights,
+    extract_lstm_classifier_weights,
+)
 from gen_zero_classifier_torch_layers import gen_zero_classifier_torch_layers
 from gen_autoencoder_torch_layers import gen_autoencoder_torch_layers
+from lstm_pulseNum_classifier import CustomLSTMClassifier
 
 
 def get_activation_function(activation_function_name):
@@ -74,10 +85,17 @@ batch_num = config["batch_num"]
 encoder_config = config["encoder"]
 decoder_config = config["decoder"]
 zero_mask_classifier_config = config["zero_mask_classifier"]
+lstm_pulseNum_classifier_config = config["lstm_pulseNum_classifier"]
 layer_configurations_encoder = []
 layer_configurations_decoder = []
 conv_layer_configurations_zero_mask_classifier = []
 fc_layer_configurations_zero_mask_classifier = []
+lstm_layer_configurations_lstm_pulseNum_classifier = lstm_pulseNum_classifier_config[
+    "lstm_layer_configurations"
+][0]
+fc_layer_configurations_lstm_pulseNum_classifier = lstm_pulseNum_classifier_config[
+    "fc_layer_configurations"
+][0]
 
 # Add batch_num to each layer configuration
 for layer_conf in encoder_config["layer_configurations"]:
@@ -99,6 +117,10 @@ for layer_conf in zero_mask_classifier_config["fc_layer_configurations"]:
     layer_conf_with_batch = layer_conf.copy()
     layer_conf_with_batch["batch_num"] = batch_num
     fc_layer_configurations_zero_mask_classifier.append(layer_conf_with_batch)
+
+lstm_layer_configurations_lstm_pulseNum_classifier["batch_num"] = batch_num
+fc_layer_configurations_lstm_pulseNum_classifier["batch_num"] = batch_num
+
 
 # Torch Encoder and Decoder layers
 encoder_layers, decoder_layers = gen_autoencoder_torch_layers(
@@ -128,36 +150,73 @@ zero_mask_classifier = Zero_PulseClassifier(
     dtype=torch.float16,
 )
 
+# Instantiate the CustomLSTMClassifier
+classModel = CustomLSTMClassifier(
+    input_size=lstm_layer_configurations_lstm_pulseNum_classifier["input_size"],
+    hidden_size=lstm_layer_configurations_lstm_pulseNum_classifier["hidden_size"],
+    num_lstm_layers=lstm_layer_configurations_lstm_pulseNum_classifier[
+        "num_lstm_layers"
+    ],
+    num_classes=lstm_layer_configurations_lstm_pulseNum_classifier["num_classes"],
+    bidirectional=lstm_layer_configurations_lstm_pulseNum_classifier["bidirectional"],
+    fc_layers=fc_layer_configurations_lstm_pulseNum_classifier["fc_layers"],
+    dropout_p=0,
+    lstm_dropout=0,
+    layer_norm=fc_layer_configurations_lstm_pulseNum_classifier["layerNorm"],
+    ignore_output_layer=False,  # Set as needed based on your application
+    dtype=torch.float16,
+)
+
 
 # Extract kernel matrices for Groq implementation
 # Get all parameters as a dictionary
 state_dict = autoencoder.state_dict()
-kernels = extract_autoencoder_weights(state_dict)
+autoencoder_kernels = extract_autoencoder_weights(state_dict)
 
 state_dict = zero_mask_classifier.state_dict()
 classifier_weights = extract_classifier_weights(state_dict)
 
+state_dict = classModel.state_dict()
+lstm_classifier_weights = extract_lstm_classifier_weights(state_dict)
+
 
 # compile the program for Groq hardware implementation
 
+if (
+    target_model == TargetModel.autoencoder
+    or target_model == TargetModel.zero_pulse_classifier
+    or target_model == TargetModel.pulsenum_classifier_workflow
+):
+    image = np.random.randn(
+        layer_configurations_encoder[0]["batch_num"],
+        layer_configurations_encoder[0]["in_channel_num"],
+        input_size,
+    ).astype(np.float32)
 
-image = np.random.randn(
-    layer_configurations_encoder[0]["batch_num"],
-    layer_configurations_encoder[0]["in_channel_num"],
-    input_size,
-).astype(np.float32)
+    image_fp16 = image.copy().astype(np.float16)
 
-image_fp16 = image.copy().astype(np.float16)
-program_name = "encoder"
+elif target_model == TargetModel.lstm_pulsenum_classifier:
+    image = np.random.randn(
+        lstm_layer_configurations_lstm_pulseNum_classifier["batch_num"],
+        lstm_layer_configurations_lstm_pulseNum_classifier["seq_length"],
+        lstm_layer_configurations_lstm_pulseNum_classifier["input_size"],
+    ).astype(np.float32)
+
+    image_fp16 = image.copy().astype(np.float16)
+
+else:
+    raise ValueError(f"Invalid target model: {target_model}")
+
 
 if compiler_type == CompilerType.gAPI:
 
+    program_name = "encoder"
     output_tensor_name = "encoder_result"
     input_tensor_name = "image"
 
     compiled_program = compile_encoder_with_gapi(
         layer_configurations_encoder,
-        kernels["encoder_weights"],
+        autoencoder_kernels["encoder_weights"],
         image_fp16,
         output_tensor_name,
         program_name,
@@ -172,17 +231,24 @@ elif compiler_type == CompilerType.Compiler:
     image_torch = torch.from_numpy(image_fp16)
 
     if target_model == TargetModel.autoencoder:
+        program_name = "autoencoder"
         compiled_program = compile_encoder_with_compiler(
             autoencoder, image_torch, program_name
         )
 
     elif target_model == TargetModel.zero_pulse_classifier:
-
+        program_name = "zero_pulse_classifier"
         compiled_program = compile_encoder_with_compiler(
             zero_mask_classifier, image_torch, program_name
         )
 
     elif target_model == TargetModel.lstm_pulsenum_classifier:
+        program_name = "lstm_pulsenum_classifier"
+        compiled_program = compile_encoder_with_compiler(
+            classModel, image_torch, program_name
+        )
+
+    elif target_model == TargetModel.pulsenum_classifier_workflow:
         raise ValueError(
             f"LSTM pulse number classifier not supported for compiler type {compiler_type}"
         )
@@ -194,19 +260,21 @@ elif compiler_type == CompilerType.Compiler:
 elif compiler_type == CompilerType.ttl:
 
     if target_model == TargetModel.autoencoder:
+        program_name = "autoencoder"
         output_tensor_name = "encoder_result"
         input_tensor_name = "image"
 
         compiled_program = compile_autoencoder_with_ttl(
             layer_configurations_encoder,
             layer_configurations_decoder,
-            kernels,
+            autoencoder_kernels,
             input_size,
             output_tensor_name,
             program_name,
         )
 
     elif target_model == TargetModel.zero_pulse_classifier:
+        program_name = "zero_pulse_classifier"
         output_tensor_name = "classifier_result"
         input_tensor_name = "image"
 
@@ -220,13 +288,26 @@ elif compiler_type == CompilerType.ttl:
         )
 
     elif target_model == TargetModel.lstm_pulsenum_classifier:
+        program_name = "lstm_pulsenum_classifier"
         output_tensor_name = "lstm_pulsenum_classifier_result"
         input_tensor_name = "image"
 
         compiled_program = compile_lstm_pulsenum_classifier_with_ttl(
+            lstm_layer_configurations_lstm_pulseNum_classifier,
+            fc_layer_configurations_lstm_pulseNum_classifier,
+            lstm_classifier_weights,
+            input_size,
+        )
+
+    elif target_model == TargetModel.pulsenum_classifier_workflow:
+        program_name = "pulsenum_classifier_workflow"
+        output_tensor_name = "lstm_pulsenum_classifier_result"
+        input_tensor_name = "image"
+
+        compiled_program = compile_pulsenum_classifier_workflow_with_ttl(
             layer_configurations_encoder,
             layer_configurations_decoder,
-            kernels,
+            autoencoder_kernels,
             conv_layer_configurations_zero_mask_classifier,
             fc_layer_configurations_zero_mask_classifier,
             classifier_weights,
@@ -291,28 +372,32 @@ print("output_tensor.shape: ", output_tensor.shape)
 
 with torch.no_grad():
     image_torch = torch.from_numpy(image_fp16)
-    print("image_torch.shape: ", image_torch.dtype)
+    print("image_torch.dtype: ", image_torch.dtype)
 
     if (
         target_model == TargetModel.autoencoder
-        or target_model == TargetModel.lstm_pulsenum_classifier
+        or target_model == TargetModel.pulsenum_classifier_workflow
     ):
         result_torch = autoencoder(image_torch)
         result_torch = result_torch.detach().numpy()
     elif target_model == TargetModel.zero_pulse_classifier:
         result_torch = zero_mask_classifier(image_torch)
         result_torch = result_torch.detach().numpy()
+    elif target_model == TargetModel.lstm_pulsenum_classifier:
+        result_torch = classModel(image_torch)
+        result_torch = result_torch.detach().numpy()
     else:
         raise ValueError(f"Invalid target model: {target_model}")
 
 
-print("output_tensor: ", output_tensor)
-print("result_torch: ", result_torch)
+print("result_torch.shape: ", result_torch.shape)
+# print("output_tensor: ", output_tensor)
+# print("result_torch: ", result_torch)
+
+# exit()
 
 if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
-    print(
-        f"Groq result matches torch result in test case {layer_configurations_encoder}."
-    )
+    print(f"Groq result matches torch result in test case.")
 
     """Returns allclose result along with statistics."""
     diff = np.abs(output_tensor - result_torch)
@@ -329,9 +414,9 @@ if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
     print(stats)
 else:
     print("Groq ouput: ")
-    print(output_tensor[0, :, -16:])
+    print(output_tensor)
     print("Torch output:")
-    print(result_torch[0, :, -16:])
+    print(result_torch)
 
     # Find all differing elements using the same tolerance as allclose
     atol = 0.02

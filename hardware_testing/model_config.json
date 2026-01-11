@@ -41,15 +41,15 @@
     "decoder": {
         "layer_configurations": [
             {
-                "conv_kernel_size": 3,
+                "conv_kernel_size": 4,
                 "conv_stride": 2,
-                "conv_padding": 0,
+                "conv_padding": 1,
                 "conv_activation_function": "ReLU",
                 "in_channel_num": 64,
                 "out_channel_num": 32
             },
             {
-                "conv_kernel_size": 3,
+                "conv_kernel_size": 4,
                 "conv_stride": 2,
                 "conv_padding": 1,
                 "conv_activation_function": "ReLU",
@@ -57,7 +57,7 @@
                 "out_channel_num": 16
             },
             {
-                "conv_kernel_size": 3,
+                "conv_kernel_size": 4,
                 "conv_stride": 2,
                 "conv_padding": 1,
                 "conv_activation_function": "Sigmoid",
@@ -101,6 +101,30 @@
                 "input_size": 4,
                 "output_size": 1,
                 "activation_function": "none"
+            }
+        ]
+    },
+    "lstm_pulseNum_classifier": {
+        "lstm_layer_configurations": [
+            {
+                "input_size": 512,
+                "hidden_size": 128,
+                "num_lstm_layers": 3,
+                "seq_length": 16,
+                "bidirectional": true,
+                "num_classes": 10,
+                "ignore_fc_layers": false,
+                "ignore_output_layer": false
+            }
+        ],
+        "fc_layer_configurations": [
+            {
+                "fc_layers": [
+                    32,
+                    64
+                ],
+                "layerNorm": false,
+                "activation_function": "ReLU"
             }
         ]
     }
