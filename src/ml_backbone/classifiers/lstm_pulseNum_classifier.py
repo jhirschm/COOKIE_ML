@@ -59,7 +59,7 @@ class CustomLSTMClassifier(nn.Module):
 
         # Apply layer normalization if defined
         if self.layer_norm:
-            out = self.layer_norm(out)()
+            out = self.layer_norm(out)
 
         # Apply fully connected layers (if defined)
         if self.fc_layers is not None and not self.ignore_fc_layers:
@@ -443,6 +443,7 @@ class CustomLSTMClassifier(nn.Module):
         zero_mask_model=None,
         rescale_0to1=False,
         two_pulse_analysis=False,
+        return_with_probs=False,
     ):
         # Lists to store true and predicted values for pulses
         true_1_pred_1 = []
@@ -484,8 +485,12 @@ class CustomLSTMClassifier(nn.Module):
                 ):
                     denoise_model.eval()
                     zero_mask_model.eval()
-                    inputs = torch.unsqueeze(inputs, 1)
-                    inputs = inputs.to(device, torch.float32)
+                    if not isinstance(
+                        test_dataloader, list
+                    ):  # if the test_dataloader is a list, then it was created in groq_models.py
+                        inputs = torch.unsqueeze(inputs, 1)
+
+                    inputs = inputs.to(device, self.dtype)
                     # labels = labels[0]
                     outputs = denoise_model(inputs)
                     outputs = outputs.squeeze()
@@ -495,16 +500,16 @@ class CustomLSTMClassifier(nn.Module):
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
                     zero_mask = torch.unsqueeze(zero_mask, 2)
-                    zero_mask = zero_mask.to(device, torch.float32)
+                    zero_mask = zero_mask.to(device, self.dtype)
 
                     outputs = outputs * zero_mask
 
                     if rescale_0to1:
                         inputs = (inputs + 1) / 2
-                    inputs = outputs.to(device, torch.float32)
+                    inputs = outputs.to(device, self.dtype)
 
                 else:
-                    inputs = inputs.to(device, torch.float32)
+                    inputs = inputs.to(device, self.dtype)
 
                 if self.ignore_fc_layers:
                     probs = self(inputs)
@@ -517,6 +522,9 @@ class CustomLSTMClassifier(nn.Module):
                 print(preds)
                 print("probs raw----------------")
                 print(probs)
+
+                if return_with_probs:
+                    return probs, preds
 
                 true_pulse_single_label = np.argmax(labels.cpu().numpy(), axis=1)
                 print("true----------------")

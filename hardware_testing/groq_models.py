@@ -35,7 +35,9 @@ class TargetModel(Enum):
 
 
 compiler_type = CompilerType.ttl
-target_model = TargetModel.lstm_pulsenum_classifier
+target_model = TargetModel.pulsenum_classifier_workflow
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -119,7 +121,13 @@ for layer_conf in zero_mask_classifier_config["fc_layer_configurations"]:
     fc_layer_configurations_zero_mask_classifier.append(layer_conf_with_batch)
 
 lstm_layer_configurations_lstm_pulseNum_classifier["batch_num"] = batch_num
+lstm_layer_configurations_lstm_pulseNum_classifier["layer_norm"] = (
+    lstm_pulseNum_classifier_config.get("layer_norm", False)
+)
 fc_layer_configurations_lstm_pulseNum_classifier["batch_num"] = batch_num
+fc_layer_configurations_lstm_pulseNum_classifier["layer_norm"] = (
+    lstm_pulseNum_classifier_config.get("layer_norm", False)
+)
 
 
 # Torch Encoder and Decoder layers
@@ -162,7 +170,7 @@ classModel = CustomLSTMClassifier(
     fc_layers=fc_layer_configurations_lstm_pulseNum_classifier["fc_layers"],
     dropout_p=0,
     lstm_dropout=0,
-    layer_norm=fc_layer_configurations_lstm_pulseNum_classifier["layerNorm"],
+    layer_norm=lstm_pulseNum_classifier_config.get("layer_norm", False),
     ignore_output_layer=False,  # Set as needed based on your application
     dtype=torch.float16,
 )
@@ -177,6 +185,8 @@ state_dict = zero_mask_classifier.state_dict()
 classifier_weights = extract_classifier_weights(state_dict)
 
 state_dict = classModel.state_dict()
+# for key in state_dict.keys():
+#     print(key, state_dict[key].shape)
 lstm_classifier_weights = extract_lstm_classifier_weights(state_dict)
 
 
@@ -301,7 +311,10 @@ elif compiler_type == CompilerType.ttl:
 
     elif target_model == TargetModel.pulsenum_classifier_workflow:
         program_name = "pulsenum_classifier_workflow"
-        output_tensor_name = "lstm_pulsenum_classifier_result"
+        output_tensor_name = (
+            "probs",
+            "preds",
+        )
         input_tensor_name = "image"
 
         compiled_program = compile_pulsenum_classifier_workflow_with_ttl(
@@ -311,6 +324,9 @@ elif compiler_type == CompilerType.ttl:
             conv_layer_configurations_zero_mask_classifier,
             fc_layer_configurations_zero_mask_classifier,
             classifier_weights,
+            lstm_layer_configurations_lstm_pulseNum_classifier,
+            fc_layer_configurations_lstm_pulseNum_classifier,
+            lstm_classifier_weights,
             input_size,
         )
 
@@ -319,7 +335,7 @@ elif compiler_type == CompilerType.ttl:
 
     inputs = {input_tensor_name: image_fp16}
 
-    program_name = "unnamed"
+    program_name = compiled_program.get("program_name", "unnamed")
 
 else:
     raise ValueError(f"Invalid compiler type: {compiler_type}")
@@ -329,7 +345,7 @@ else:
 runner = GroqRunner(timing_report=True)
 runner.upload_iop_file(compiled_program["iop_file"], program_name=program_name)
 
-"""
+
 # measure the performance of the hardware implementation
 iteration_num = 500
 elapsed_time = 0
@@ -361,12 +377,16 @@ print("=" * 25)
 print(
     f"Groq runner total execution time: {elapsed_time:.6f} seconds ({elapsed_time * 1000000:.3f} microseconds)"
 )
-"""
+
 
 results_groq = runner.invoke(inputs)
 
+if isinstance(output_tensor_name, tuple):
+    output_tensor = results_groq[output_tensor_name[0]]
+    predictions = results_groq[output_tensor_name[1]]
+else:
+    output_tensor = results_groq[output_tensor_name]
 
-output_tensor = results_groq[output_tensor_name]
 print("output_tensor.shape: ", output_tensor.shape)
 
 
@@ -374,10 +394,7 @@ with torch.no_grad():
     image_torch = torch.from_numpy(image_fp16)
     print("image_torch.dtype: ", image_torch.dtype)
 
-    if (
-        target_model == TargetModel.autoencoder
-        or target_model == TargetModel.pulsenum_classifier_workflow
-    ):
+    if target_model == TargetModel.autoencoder:
         result_torch = autoencoder(image_torch)
         result_torch = result_torch.detach().numpy()
     elif target_model == TargetModel.zero_pulse_classifier:
@@ -386,6 +403,23 @@ with torch.no_grad():
     elif target_model == TargetModel.lstm_pulsenum_classifier:
         result_torch = classModel(image_torch)
         result_torch = result_torch.detach().numpy()
+    elif target_model == TargetModel.pulsenum_classifier_workflow:
+        labels = torch.tensor([[0]])
+        test_dataloader = [[image_torch, labels]]
+
+        probs, preds = classModel.evaluate_model(
+            test_dataloader,
+            None,
+            None,
+            device,
+            denoising=True,
+            denoise_model=autoencoder,
+            zero_mask_model=zero_mask_classifier,
+            two_pulse_analysis=False,
+            return_with_probs=True,
+        )
+
+        result_torch = probs.detach().numpy()
     else:
         raise ValueError(f"Invalid target model: {target_model}")
 

@@ -29,12 +29,11 @@ def zero_classifier_model_to_ttl(
     tinput = TiledMemref(
         (batch_num, in_channel_num, input_size),
         dtypes.f16,
-        ends=(split_num * 320 - input_size,),
+        ends=(split_num * VECTOR_SIZE - input_size,),
     )
     input_buffer = GroqBuffer.input("image", tinput)
 
     input = input_buffer
-    print("input.shape: ", input.out_tmemrefs[0])
 
     idx = 0
 
@@ -80,10 +79,7 @@ def zero_classifier_model_to_ttl(
 
         input = output_tensor
 
-    print("after conv output_tensor.shape: ", output_tensor.out_tmemrefs[0])
-
     output_tensor = gstruct.vector_pack(output_tensor)
-    print("after vector pack output_tensor.shape: ", output_tensor.out_tmemrefs[0])
 
     input = output_tensor
 
@@ -94,9 +90,6 @@ def zero_classifier_model_to_ttl(
         activation_function = layer_configuration.get("activation_function", "none")
 
         weights_loc = weights_loc.transpose(1, 0).copy()
-        print("weight.shape: ", weights_loc.shape)
-
-        print(bias)
 
         output_tensor = ttl_linear(
             input=input,
@@ -104,8 +97,6 @@ def zero_classifier_model_to_ttl(
             bias=bias,
             activation_fnc=activation_function,
         )
-
-        print("after linear output_tensor.shape: ", output_tensor.out_tmemrefs[0])
 
         idx += 1
 

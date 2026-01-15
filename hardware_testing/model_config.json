@@ -105,6 +105,7 @@
         ]
     },
     "lstm_pulseNum_classifier": {
+        "layer_norm": false,
         "lstm_layer_configurations": [
             {
                 "input_size": 512,
@@ -112,7 +113,7 @@
                 "num_lstm_layers": 3,
                 "seq_length": 16,
                 "bidirectional": true,
-                "num_classes": 10,
+                "num_classes": 6,
                 "ignore_fc_layers": false,
                 "ignore_output_layer": false
             }
@@ -123,7 +124,6 @@
                     32,
                     64
                 ],
-                "layerNorm": false,
                 "activation_function": "ReLU"
             }
         ]

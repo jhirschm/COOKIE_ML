@@ -113,6 +113,8 @@ def extract_lstm_classifier_weights(
     fc_layers_dict: Dict[str, Dict[str, Any]] = {}
     # Dictionary to store output layer by layer index/name
     output_layer_dict: Dict[str, Dict[str, Any]] = {}
+    # Dictionary to store layer norm by layer index/name
+    layer_norm_dict: Dict[str, Dict[str, Any]] = {}
 
     # Pattern to extract LSTM layer index: lstm.weight_ih_l0 -> 0
     # Use non-greedy match to correctly separate param_type from layer index
@@ -177,12 +179,30 @@ def extract_lstm_classifier_weights(
                 tensor = state_dict[key].detach().cpu().numpy().astype(np.float16)
                 output_layer_dict[layer_idx][param_type] = tensor
 
+        elif key.startswith("layer_norm"):
+            # Pattern: layer_norm.weight -> layer "layer_norm"
+            match = re.match(r"layer_norm\.(weight|bias)$", key)
+            if match:
+                layer_idx = "layer_norm"
+                param_type = match.group(1)  # weight or bias
+
+                # Initialize layer dict if not exists
+                if layer_idx not in layer_norm_dict:
+                    layer_norm_dict[layer_idx] = {
+                        "layer_index": layer_idx,
+                    }
+
+                # Convert to numpy float16
+                tensor = state_dict[key].detach().cpu().numpy().astype(np.float16)
+                layer_norm_dict[layer_idx][param_type] = tensor
+
     # Convert dictionaries to lists, ordered by layer index
     lstm_layers = [lstm_layers_dict[idx] for idx in sorted(lstm_layers_dict.keys())]
 
     # For FC layers and output layer, handle mixed numeric and string indices
     fc_layers = []
     output_layers = []
+    layer_norm_layers = []
     # First add numeric indices sorted numerically
     numeric_keys = [
         k for k in fc_layers_dict.keys() if isinstance(k, str) and k.isdigit()
@@ -203,8 +223,18 @@ def extract_lstm_classifier_weights(
         if not (isinstance(key, str) and key.isdigit()):
             output_layers.append(output_layer_dict[key])
 
+    numeric_keys_layer_norm = [
+        k for k in layer_norm_dict.keys() if isinstance(k, str) and k.isdigit()
+    ]
+    for key in sorted(numeric_keys_layer_norm, key=int):
+        layer_norm_layers.append(layer_norm_dict[key])
+    for key in layer_norm_dict.keys():
+        if not (isinstance(key, str) and key.isdigit()):
+            layer_norm_layers.append(layer_norm_dict[key])
+
     return {
         "lstm_layers": lstm_layers,
         "fc_layers": fc_layers,
         "output_layers": output_layers,
+        "layer_norm_layers": layer_norm_layers,
     }

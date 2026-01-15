@@ -9,7 +9,7 @@ import numpy as np
 import groq.api as g
 from enum import Enum
 
-from typing import Any, Union, List, Dict
+from typing import Any, Union, List, Dict, Tuple
 
 from groq_convolution.compile_lpu_convolution import (
     compile_g_api,
@@ -245,11 +245,11 @@ def compile_lstm_pulsenum_classifier_with_ttl(
     program_name: str = "lstm_pulsenum_classifier",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    from ttl_lstm_pulse_num_classifier import lstm_pulse_num_classifier_model
+    from ttl_lstm_pulse_num_classifier import lstm_pulse_num_classifier_model_to_ttl
 
     output_dir = "./LSTMPulseNumClassifierTTL"
 
-    output_tensor = lstm_pulse_num_classifier_model(
+    output_tensor = lstm_pulse_num_classifier_model_to_ttl(
         lstm_layer_configurations,
         fc_layer_configurations,
         lstm_classifier_weights,
@@ -268,8 +268,14 @@ def compile_pulsenum_classifier_workflow_with_ttl(
     conv_layer_configurations: List[Dict[str, int]],
     fc_layer_configurations: List[Dict[str, int]],
     zero_classifier_weights: Dict[str, List[np.ndarray]],
+    lstm_layer_configurations_lstm_pulseNum_classifier: Dict[str, int],
+    fc_layer_configurations_lstm_pulseNum_classifier: Dict[str, Any],
+    lstm_classifier_weights: Dict[str, Any],
     input_size: int,
-    output_tensor_name: str = "lstm_pulsenum_classifier_result",
+    output_tensor_name: Tuple[str, str] = (
+        "probs",
+        "preds",
+    ),  # probabilities and predictions
     program_name: str = "lstm_pulsenum_classifier",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
@@ -277,24 +283,27 @@ def compile_pulsenum_classifier_workflow_with_ttl(
 
     output_dir = "./overalModelTTL"
 
-    output_tensor = overall_model_to_ttl(
+    output_tensors = overall_model_to_ttl(
         layer_configurations_encoder,
         layer_configurations_decoder,
         autoencoder_kernels,
         conv_layer_configurations,
         fc_layer_configurations,
         zero_classifier_weights,
+        lstm_layer_configurations_lstm_pulseNum_classifier,
+        fc_layer_configurations_lstm_pulseNum_classifier,
+        lstm_classifier_weights,
         input_size,
     )
 
     return compile_ttl_model(
-        output_tensor, output_tensor_name, program_name, output_dir
+        output_tensors, output_tensor_name, program_name, output_dir
     )
 
 
 def compile_ttl_model(
-    model: GroqMLIR,
-    output_tensor_name: str = "model_result",
+    model: Union[GroqMLIR, Tuple[GroqMLIR, GroqMLIR]],
+    output_tensor_name: Union[str, Tuple[str, ...]] = "model_result",
     program_name: str = "model",
     output_dir: str = "./modelTTL",
 ) -> Union[dict[str, Union[str, Any]], Any]:
@@ -303,17 +312,22 @@ def compile_ttl_model(
 
     try:
 
-        output_buffer = GroqBuffer.output(output_tensor_name, model)
-        mlirtext = gstruct_to_mlir(
-            [
-                output_buffer,
+        if isinstance(model, tuple):
+
+            output_buffer = [
+                GroqBuffer.output(output_tensor_name[idx], model[idx])
+                for idx in range(len(model))
             ]
-        )
+
+        else:
+            output_buffer = [GroqBuffer.output(output_tensor_name, model)]
+
+        mlirtext = gstruct_to_mlir(output_buffer)
+
         iop_file = mlir_to_iop(
             mlirtext, program_name, output_dir, is_opt=False
         )  # ; assert False
 
-        program_name = "unnamed"
         compiled_program = {
             "iop_file": iop_file,
             "output_dir": output_dir,
