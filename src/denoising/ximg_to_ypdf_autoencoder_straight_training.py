@@ -95,21 +95,23 @@ def main():
     ''' 
     # (16 x 32)
     encoder_layers = np.array([ # (1,1,16,512)
-        [nn.Conv2d(1, 1, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 4), stride=(1, 2), padding=(0, 1)), None],
-        [nn.Conv2d(1, 2, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.Conv1d(1, 5, kernel_size=3, padding=1), nn.ReLU()],
         [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
-        [nn.Conv2d(2, 5, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
-        [nn.Conv2d(5, 10, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]])] #  (1,10,16,32) -> (1,1,16,320)
+        [nn.Conv1d(5, 10, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+        [nn.Conv1d(10, 15, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+        [nn.Conv1d(15, 10, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) #  (1,10,16,32) -> (1,1,16,320) Hourglass
+    # For output out (1, 10, 4, 64) use a stride of (2,2) in maxpool and look at contract layers
+    # Do a test between maxpool and average pool
     # The ouput of the econder needs to be transposed to (1, 1, 16, 32, 10) and then flattened (1, 1, 16, 320)
 
     decoder_layers = np.array([
-        [nn.ConvTranspose2d(10, 5, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(5, 2, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(2, 1, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
-        [nn.ConvTranspose2d(1, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+        [nn.ConvTranspose1d(10, 15, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose1d(15, 10, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose1d(10, 5, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose1d(5, 1, kernel_size=(1,2), stride=(1,2)), nn.Sigmoid()]])
 
     # encoder_layers = np.array([
     #     [nn.Conv2d(1, 16, kernel_size=3, padding=1), nn.ReLU()],
@@ -123,6 +125,17 @@ def main():
     #     [nn.ConvTranspose2d(1, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
     #     [nn.ConvTranspose2d(16, 16, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
     #     [nn.ConvTranspose2d(16, 1, kernel_size=(1,4), stride=(1,2), padding=(0,1)), nn.Sigmoid()]])
+
+
+    # encoder_layers = np.array([ # (1,1,16,512)
+    #     [nn.Conv1d(1, 5, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+    #     [nn.Conv1d(5, 10, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+    #     [nn.Conv1d(10, 15, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+    #     [nn.Conv1d(15, 10, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.MaxPool1d(kernel_size=(1, 2), stride=(1, 2)), None]])
         
 
 
@@ -138,7 +151,7 @@ def main():
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07032024_singlePulseAndZeroPulse_ErrorWeighted_test/"
     # model_save_dir = "/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_07282024_multiPulse/"
     date = str(datetime.datetime.now().strftime("%d%m%Y"))
-    model_save_dir = f"/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_{date}_multiPulse_small_latent/"
+    model_save_dir = f"/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/denoising/run_{date}_multiPulse_hourglass_maxpool/"
 
 
     # Check if directory exists, otherwise create it

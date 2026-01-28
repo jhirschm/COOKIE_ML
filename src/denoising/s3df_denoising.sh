@@ -1,14 +1,16 @@
 #!/bin/bash
 #SBATCH --partition=ampere
-#SBATCH --account=lcls:prjs2e21
+#SBATCH --account=scs:default
 #SBATCH --job-name=reg
 #SBATCH --output=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --error=/sdf/data/lcls/ds/prj/prjs2e21/results/COOKIE_ML_Output/s3df_runtime_outputs/output-%j.txt
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem-per-cpu=32g
+##SBATCH --cpus-per-task=8
+##SBATCH --mem-per-cpu=32g
+#SBATCH --cpus-per-task=3
+#SBATCH --mem-per-cpu=16g
 #SBATCH --time=0-12:00:00
-#SBATCH --gpus 2
+#SBATCH --gpus 0
 source ~/.bashrc
 source /sdf/group/lcls/ds/tools/conda_envs/jackh_pytorch/bin/activate cookie_ml
 
@@ -32,10 +34,10 @@ case "$1" in
         python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training.py
         ;;
     fineTuning)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training_fineTuning.py
+        python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_training_fineTuning.py
         ;;
     evaluation)
-        python3 /sdf/home/j/jhirschm/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
+        python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_straight_evaluation.py
         ;;
     encoder_inference)
         python3 ${CODE_PATH}/COOKIE_ML/src/denoising/ximg_to_ypdf_autoencoder_encoder_inference.py

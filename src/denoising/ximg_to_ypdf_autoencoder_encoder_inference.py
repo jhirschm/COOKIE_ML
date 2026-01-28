@@ -66,23 +66,45 @@ def main():
 
 
     # Example usage
-    encoder_layers = np.array([
-        [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
-        [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
+    # encoder_layers = np.array([
+    #     [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
+    #     [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
+    #     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])
    
+    # # decoder_layers = np.array([
+    # #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
+    # #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
+    # #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+    # #     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
+    # # ])
     # decoder_layers = np.array([
     #     [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
     #     [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-    #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Tanh()]  # Example with Sigmoid activation
+    #     [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
     #     # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
     # ])
+
+
+   encoder_layers = np.array([ # (1,1,16,512)
+        [nn.Conv2d(1, 5, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None],
+        [nn.Conv2d(5, 10, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+        [nn.Conv2d(10, 15, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None], #contract here
+        [nn.Conv2d(15, 10, kernel_size=3, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=(1, 2), stride=(1, 2)), None]]) #  (1,10,16,32) -> (1,1,16,320) Hourglass
+    # For output out (1, 10, 4, 64) use a stride of (2,2) in maxpool and look at contract layers
+    # Do a test between maxpool and average pool
+    # The ouput of the econder needs to be transposed to (1, 1, 16, 32, 10) and then flattened (1, 1, 16, 320)
+
     decoder_layers = np.array([
-        [nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()],
-        [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()]  # Example with Sigmoid activation
-        # [nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None],  # Example without activation
-    ])
+        [nn.ConvTranspose2d(10, 15, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(15, 10, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(10, 5, kernel_size=(1,2), stride=(1,2)), nn.ReLU()],
+        [nn.ConvTranspose2d(5, 1, kernel_size=(1,2), stride=(1,2)), nn.Sigmoid()]])
+
+    
     
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers, outputEncoder = True)
 
