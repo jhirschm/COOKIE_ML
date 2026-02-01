@@ -28,7 +28,7 @@ def lstm_pulse_num_classifier_model_to_ttl(
     lstm_layer_configurations: Dict[str, int],
     fc_layer_configurations: Dict[str, Any],
     lstm_classifier_weights: Dict[str, Any],
-    input_size: int,
+    input_size: Optional[int] = None,
     input_tensor: Optional[GroqMLIR] = None,
 ) -> GroqMLIR:
 

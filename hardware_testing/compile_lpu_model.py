@@ -309,18 +309,28 @@ def compile_ttl_model(
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
     from gstruct import GroqBuffer, gstruct_to_mlir, mlir_to_iop
+    from gstruct.ops import gstruct_output_tensor
 
     try:
 
         if isinstance(model, tuple):
 
             output_buffer = [
-                GroqBuffer.output(output_tensor_name[idx], model[idx])
+                gstruct_output_tensor(
+                    output_tensor_name[idx],
+                    model[idx],
+                    byte_packed=True,
+                    output_packed=True,
+                )
                 for idx in range(len(model))
             ]
 
         else:
-            output_buffer = [GroqBuffer.output(output_tensor_name, model)]
+            output_buffer = [
+                gstruct_output_tensor(
+                    output_tensor_name, model, byte_packed=True, output_packed=True
+                )
+            ]
 
         mlirtext = gstruct_to_mlir(output_buffer)
 

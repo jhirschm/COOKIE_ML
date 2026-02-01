@@ -7,7 +7,7 @@ from gstruct import TiledMemref, dtypes, GroqBuffer
 from gstruct import gstruct
 from gstruct import GroqMLIR
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 
 from gstruct.constants import VECTOR_SIZE
@@ -17,7 +17,8 @@ def autoencoder_model_to_ttl(
     layer_configurations_encoder: List[Dict[str, int]],
     layer_configurations_decoder: List[Dict[str, int]],
     kernels: Dict[str, List[np.ndarray]],
-    input_size: int,
+    input_size: Optional[int] = None,
+    input_tensor: Optional[GroqMLIR] = None,
 ) -> GroqMLIR:
 
     in_channel_num = layer_configurations_encoder[0]["in_channel_num"]
@@ -25,16 +26,18 @@ def autoencoder_model_to_ttl(
 
     encoder_kernels = kernels["encoder_weights"]
 
-    split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+    if input_tensor is None:
+        split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-    tinput = TiledMemref(
-        (batch_num, in_channel_num, input_size),
-        dtypes.f16,
-        ends=(split_num * 320 - input_size,),
-    )
-    input_buffer = GroqBuffer.input("image", tinput)
+        tinput = TiledMemref(
+            (batch_num, in_channel_num, input_size),
+            dtypes.f16,
+            ends=(split_num * 320 - input_size,),
+        )
+        input = GroqBuffer.input("image", tinput)
+    else:
+        input = input_tensor
 
-    input = input_buffer
     print("input.shape: ", input.out_tmemrefs[0])
 
     idx = 0
@@ -88,8 +91,6 @@ def autoencoder_model_to_ttl(
     batch_num = layer_configurations_decoder[0]["batch_num"]
 
     decoder_kernels = kernels["decoder_weights"]
-
-    split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
     tinput = output_tensor
 

@@ -4,7 +4,7 @@ from gstruct import TiledMemref, dtypes, GroqBuffer
 from gstruct import gstruct
 from gstruct import GroqMLIR
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 import numpy as np
 
 from gstruct.constants import VECTOR_SIZE
@@ -14,7 +14,8 @@ def zero_classifier_model_to_ttl(
     conv_layer_configurations: List[Dict[str, int]],
     fc_layer_configurations: List[Dict[str, int]],
     weights: Dict[str, List[np.ndarray]],
-    input_size: int,
+    input_size: Optional[int] = None,
+    input_tensor: Optional[GroqMLIR] = None,
 ) -> GroqMLIR:
 
     in_channel_num = conv_layer_configurations[0]["in_channel_num"]
@@ -24,16 +25,17 @@ def zero_classifier_model_to_ttl(
     fc_weights = weights["fc_weights"]
     fc_biases = weights["fc_biases"]
 
-    split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+    if input_tensor is None:
+        split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-    tinput = TiledMemref(
-        (batch_num, in_channel_num, input_size),
-        dtypes.f16,
-        ends=(split_num * VECTOR_SIZE - input_size,),
-    )
-    input_buffer = GroqBuffer.input("image", tinput)
-
-    input = input_buffer
+        tinput = TiledMemref(
+            (batch_num, in_channel_num, input_size),
+            dtypes.f16,
+            ends=(split_num * VECTOR_SIZE - input_size,),
+        )
+        input = GroqBuffer.input("image", tinput)
+    else:
+        input = input_tensor
 
     idx = 0
 
