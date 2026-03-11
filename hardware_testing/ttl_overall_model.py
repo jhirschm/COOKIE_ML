@@ -1,21 +1,19 @@
-from gstruct.ops import (
+from ttl.ops import (
     activation,
 )
-from gstruct import TiledMemref, dtypes, GroqBuffer
-from gstruct import gstruct
-from gstruct import GroqMLIR
+from ttl import Layout, dtypes, GroqBuffer
+from ttl import gapi
 
-# from gstruct.ops import gstruct_input_tensor
+from ttl.ops import gapi_input
+from ttl import GroqProgram
 
-from gstruct.ops import gstruct_input_tensor
-
-from gstruct.tiled_tensor_language import vxm_ops
+from ttl.tiled_tensor_language import vxm_ops
 
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Any
 import numpy as np
 
-from gstruct.constants import VECTOR_SIZE, dtypes_to_np
+from ttl.constants import VECTOR_SIZE, dtypes_to_np
 
 
 def overall_model_to_ttl(
@@ -29,8 +27,8 @@ def overall_model_to_ttl(
     lstm_fc_layer_configurations: Dict[str, Any],
     lstm_classifier_weights: Dict[str, Any],
     input_size: Optional[int] = None,
-    input_tensor: Optional[GroqMLIR] = None,
-) -> GroqMLIR:
+    input_tensor: Optional[GroqProgram] = None,
+) -> GroqProgram:
 
     from ttl_autoencoder import autoencoder_model_to_ttl
     from ttl_zero_classifier import zero_classifier_model_to_ttl
@@ -43,7 +41,7 @@ def overall_model_to_ttl(
 
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-        tinput = TiledMemref(
+        tinput = Layout(
             (
                 batch_num,
                 in_channel_num,
@@ -53,9 +51,7 @@ def overall_model_to_ttl(
             ends=(split_num * VECTOR_SIZE - input_size,),
         )
 
-        input_buffer = gstruct_input_tensor(
-            "image", tinput, byte_packed=True, input_packed=True
-        )
+        input_buffer = gapi_input("image", tinput, byte_packed=True, input_packed=True)
     else:
         input_buffer = input_tensor
 
@@ -73,10 +69,6 @@ def overall_model_to_ttl(
         input_tensor=input_buffer,
     )
 
-    # tmp = np.zeros((VECTOR_SIZE,), dtype=np.float16)
-    # tmp[0] = 1.0
-    # output_tensor_zero_classifier = GroqBuffer.constant(value=tmp)
-
     probabilities = activation(output_tensor_zero_classifier, "sigmoid")
 
     # predictions = (probabilities > 0.5).float()
@@ -84,28 +76,24 @@ def overall_model_to_ttl(
         value=np.full((VECTOR_SIZE,), 0.5, dtype=dtypes_to_np[probabilities.out_dtype])
     )
 
-    predictions = gstruct.vxm(
+    predictions = gapi.vxm(
         vxm_ops.vxm_binary_cmp_gt, probabilities, probability_threshold
     )
 
-    predictions = gstruct.vxm(
-        vxm_ops.vxm_unary_conv, predictions, conv_dtype=dtypes.f16
-    )
+    predictions = gapi.vxm(vxm_ops.vxm_unary_conv, predictions, conv_dtype=dtypes.f16)
 
-    predictions = gstruct.broadcast(predictions)
+    predictions = gapi.broadcast(predictions)
 
-    output_tensor = gstruct.vxm(
+    output_tensor = gapi.vxm(
         vxm_ops.vxm_binary_mulsat,
         output_tensor_autoencoder,
         predictions,
     )
 
-    output_tensor = gstruct.reshape(
+    output_tensor = gapi.reshape(
         output_tensor,
         output_tensor_autoencoder.out_tmemrefs[0],
     )
-
-    print("output_tensor.shape: ", output_tensor.out_tmemrefs[0])
 
     output_tensor_lstm_pulse_num_classifier = lstm_pulse_num_classifier_model_to_ttl(
         lstm_layer_configurations,
@@ -116,20 +104,18 @@ def overall_model_to_ttl(
 
     probabilities = activation(output_tensor_lstm_pulse_num_classifier, "sigmoid")
 
-    predictions = gstruct.vxm(
+    predictions = gapi.vxm(
         vxm_ops.vxm_binary_cmp_gt, probabilities, probability_threshold
     )
 
-    predictions = gstruct.vxm(
-        vxm_ops.vxm_unary_conv, predictions, conv_dtype=dtypes.f16
-    )
+    predictions = gapi.vxm(vxm_ops.vxm_unary_conv, predictions, conv_dtype=dtypes.f16)
 
-    probabilities = gstruct.reshape(
+    probabilities = gapi.reshape(
         probabilities,
         output_tensor_lstm_pulse_num_classifier.out_tmemrefs[0],
     )
 
-    predictions = gstruct.reshape(
+    predictions = gapi.reshape(
         predictions,
         output_tensor_lstm_pulse_num_classifier.out_tmemrefs[0],
     )

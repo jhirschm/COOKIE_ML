@@ -1,16 +1,16 @@
-from gstruct.ops import conv1d as ttl_conv1d, Conv1dStageName
-from gstruct.ops import (
+from ttl.ops import conv1d as ttl_conv1d, Conv1dStageName
+from ttl.ops import (
     convtranspose1d as ttl_convtranspose1d,
 )
-from gstruct.ops import maxpool1d as ttl_maxpool1d
-from gstruct import TiledMemref, dtypes, GroqBuffer
-from gstruct import gstruct
-from gstruct import GroqMLIR
+from ttl.ops import maxpool1d as ttl_maxpool1d
+from ttl.ops import gapi_input
+from ttl import Layout, dtypes
+from ttl import GroqProgram
 
 from typing import List, Dict, Optional
 import numpy as np
 
-from gstruct.constants import VECTOR_SIZE
+from ttl.constants import VECTOR_SIZE
 
 
 def autoencoder_model_to_ttl(
@@ -18,8 +18,8 @@ def autoencoder_model_to_ttl(
     layer_configurations_decoder: List[Dict[str, int]],
     kernels: Dict[str, List[np.ndarray]],
     input_size: Optional[int] = None,
-    input_tensor: Optional[GroqMLIR] = None,
-) -> GroqMLIR:
+    input_tensor: Optional[GroqProgram] = None,
+) -> GroqProgram:
 
     in_channel_num = layer_configurations_encoder[0]["in_channel_num"]
     batch_num = layer_configurations_encoder[0]["batch_num"]
@@ -29,16 +29,14 @@ def autoencoder_model_to_ttl(
     if input_tensor is None:
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-        tinput = TiledMemref(
+        tinput = Layout(
             (batch_num, in_channel_num, input_size),
             dtypes.f16,
             ends=(split_num * 320 - input_size,),
         )
-        input = GroqBuffer.input("image", tinput)
+        input = gapi_input("image", tinput, byte_packed=True, input_packed=True)
     else:
         input = input_tensor
-
-    print("input.shape: ", input.out_tmemrefs[0])
 
     idx = 0
 
@@ -52,8 +50,6 @@ def autoencoder_model_to_ttl(
             "conv_activation_function", "none"
         )
 
-        # print("return_at_stage: ", return_at_stage)
-
         output_tensor = ttl_conv1d(
             input=input,
             conv_kernel=kernel,
@@ -66,13 +62,7 @@ def autoencoder_model_to_ttl(
             activation_fnc=activation_function,
         )
 
-        # if idx == 1:
-        #    print("??? output_tensor.shape: ", output_tensor[0].out_tmemrefs[0])
-        #
-
         idx += 1
-
-        # print("conv_unpacked.shape: ", output_tensor.out_tmemrefs[0])
 
         output_tensor = ttl_maxpool1d(
             image=output_tensor,
@@ -84,7 +74,7 @@ def autoencoder_model_to_ttl(
             exploded_input=True,
             channel_stride=4,
         )
-        print("output_tensor.shape: ", output_tensor.out_tmemrefs[0])
+
         input = output_tensor
 
     in_channel_num = layer_configurations_decoder[0]["in_channel_num"]
@@ -114,9 +104,6 @@ def autoencoder_model_to_ttl(
             stride=layer_configuration["conv_stride"],
             activation_fnc=activation_function,
         )
-        print("output_tensor.shape: ", output_tensor.out_tmemrefs[0])
-
-        # Lout = 1 + (image_size - 1) * stride - 2 * padding_orig + kernel_size - 1
 
         idx += 1
 

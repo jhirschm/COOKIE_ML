@@ -1,21 +1,18 @@
 import os
 import sys
 import time
-import json
 
 # from groqflow import groqit
 import torch
 import numpy as np
 import torch.nn as nn
-from typing import Dict, List
 from enum import Enum
 
 
 # import tsp runner
-from gstruct.runner import GroqRunner
+from ttl.runner import GroqRunner
 
 from compile_lpu_model import (
-    compile_encoder_with_gapi,
     compile_encoder_with_compiler,
     compile_autoencoder_with_ttl,
     compile_zero_classifier_with_ttl,
@@ -24,7 +21,6 @@ from compile_lpu_model import (
     CompilerType,
 )
 from load_model_config import get_model_config
-import groq.api as g
 
 
 class TargetModel(Enum):
@@ -173,23 +169,7 @@ def main():
     else:
         raise ValueError(f"Invalid target model: {target_model}")
 
-    if compiler_type == CompilerType.gAPI:
-
-        program_name = "encoder"
-        output_tensor_name = "encoder_result"
-        input_tensor_name = "image"
-
-        compiled_program = compile_encoder_with_gapi(
-            layer_configurations_encoder,
-            autoencoder_kernels["encoder_weights"],
-            image_fp16,
-            output_tensor_name,
-            program_name,
-        )
-
-        inputs = {input_tensor_name: image_fp16}
-
-    elif compiler_type == CompilerType.Compiler:
+    if compiler_type == CompilerType.Compiler:
 
         output_tensor_name = "output000"
         input_tensor_name = "arg000"

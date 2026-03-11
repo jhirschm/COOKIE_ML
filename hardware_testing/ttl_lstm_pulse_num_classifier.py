@@ -1,20 +1,20 @@
-from gstruct.ops import (
+from ttl.ops import (
     multi_layer_lstm as ttl_multi_layer_lstm,
     Directions,
     Activations,
     linear as ttl_linear,
     layer_norm as ttl_layer_norm,
 )
-
-from gstruct import TiledMemref, dtypes, GroqBuffer
-from gstruct import gstruct
-from gstruct import GroqMLIR
+from ttl.ops import gapi_input
+from ttl import Layout, dtypes
+from ttl import gapi
+from ttl import GroqProgram
 
 
 from typing import List, Dict, Any, Union, Optional
 import numpy as np
 
-from gstruct.constants import VECTOR_SIZE
+from ttl.constants import VECTOR_SIZE
 
 
 def ifgo_to_iofc(weights):
@@ -29,8 +29,8 @@ def lstm_pulse_num_classifier_model_to_ttl(
     fc_layer_configurations: Dict[str, Any],
     lstm_classifier_weights: Dict[str, Any],
     input_size: Optional[int] = None,
-    input_tensor: Optional[GroqMLIR] = None,
-) -> GroqMLIR:
+    input_tensor: Optional[GroqProgram] = None,
+) -> GroqProgram:
 
     assert (
         lstm_layer_configurations["bidirectional"] == True
@@ -52,7 +52,7 @@ def lstm_pulse_num_classifier_model_to_ttl(
     if input_tensor is None:
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-        tinput = TiledMemref(
+        tinput = Layout(
             (
                 batch_num,
                 seq_length,
@@ -61,7 +61,7 @@ def lstm_pulse_num_classifier_model_to_ttl(
             dtypes.f16,
             ends=(split_num * 320 - input_size,),
         )
-        input_buffer = GroqBuffer.input("image", tinput)
+        input_buffer = gapi_input("image", tinput, byte_packed=True, input_packed=True)
     else:
         input_buffer = input_tensor
 
@@ -138,14 +138,14 @@ def lstm_pulse_num_classifier_model_to_ttl(
 
         assert len(vector_shape) == 3, "Output tensor must have 3 dimensions"
 
-        output_tensor = gstruct.subview(
+        output_tensor = gapi.subview(
             output_tensor,
             static_offsets=[0, vector_shape[1] - 1, 0],
             static_sizes=[vector_shape[0], 1, vector_shape[2]],
             static_strides=[1, 1, 1],
         )
 
-        output_tensor = gstruct.reshape(
+        output_tensor = gapi.reshape(
             output_tensor,
             output_tensor.out_tmemrefs[0].squeeze(1),
         )

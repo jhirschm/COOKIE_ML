@@ -6,21 +6,12 @@ methods (gAPI, gMLIR, or Compiler) for execution on Groq hardware accelerators.
 """
 
 import numpy as np
-import groq.api as g
 from enum import Enum
 
 from typing import Any, Union, List, Dict, Tuple
 
-from groq_convolution.compile_lpu_convolution import (
-    compile_g_api,
-    compile_with_compiler,
-    get_iop_stats,
-)
-from groq_convolution.gapi_conv1d import GroqConv1D, ResourceScopeName
-from groq_convolution.gapi_pooling import GroqMaxPooling1D
-from groq_convolution.constants import VECTOR_SIZE
 
-from gstruct import GroqMLIR
+from ttl import GroqProgram, compile_with_compiler
 
 import torch
 
@@ -34,7 +25,6 @@ class CompilerType(Enum):
         Compiler: Use the standard Groq compiler for compilation.
     """
 
-    gAPI = "gAPI"
     Compiler = "Compiler"
     ttl = "tiled_tensor_language"
 
@@ -73,117 +63,6 @@ def compile_encoder_with_compiler(
     return compile_with_compiler(
         model, image, program_name, output_dir, gen_vis_data=True
     )
-
-
-def compile_encoder_with_gapi(
-    layer_configurations: List[Dict[str, int]],
-    kernels: List[np.ndarray],
-    input: np.ndarray,
-    output_tensor_name: str = "encoder_result",
-    program_name: str = "encoder",
-) -> Union[dict[str, Union[str, Any]], Any]:
-    """Compile an encoder model using the Groq API (gAPI) compiler.
-
-    This function compiles a multi-layer encoder consisting of convolutional and
-    pooling layers for execution on Groq hardware using the gAPI compiler.
-    Each layer configuration should define both convolution and pooling parameters.
-
-    Args:
-        layer_configurations: List of dictionaries, each containing configuration
-            for one encoder layer. Each dictionary should include:
-            - "batch_num": Batch size
-            - "in_channel_num": Input channels for convolution
-            - "out_channel_num": Output channels for convolution and pooling
-            - "conv_kernel_size": Convolution kernel size
-            - "conv_stride": Convolution stride
-            - "conv_padding": Convolution padding
-            - "conv_activation_function": Activation function name (e.g., "ReLU")
-            - "pooling_kernel_size": Pooling kernel size
-            - "pooling_stride": Pooling stride
-            - "pooling_padding": Pooling padding
-        kernels: List of numpy arrays representing convolution kernels/weights
-            for each layer. Should match the order of layer_configurations.
-        input: Example input numpy array used for shape inference. Should be
-            float16 dtype and match the expected input shape (batch, channels, length).
-        output_tensor_name: Name of the output tensor in the compiled program.
-            Defaults to "encoder_result".
-        program_name: Name of the compiled program. Defaults to "encoder".
-
-    Returns:
-        Dictionary containing compilation results with keys:
-            - "iop_file": Path to the compiled IOP file
-            - "output_dir": Directory where compiled files are saved ("./encoderGAPI")
-            - "program_name": Name of the compiled program
-            Additional keys may be present depending on the compiler output.
-
-    Raises:
-        Exception: If compilation fails, the underlying exception is raised
-            with error details and a full traceback is printed.
-
-    Note:
-        The function automatically creates GroqConv1D and GroqMaxPooling1D layers
-        for each configuration and compiles them with overlapped scopes for
-        optimized execution on Groq hardware.
-    """
-
-    with g.ProgramContext(program_id=program_name) as pc:
-
-        input_mt = g.input_tensor(
-            shape=input.shape,
-            dtype=g.float16,
-            name="image",
-            layout="H1(W), -1, S2",
-            split_sizes=VECTOR_SIZE,
-        )
-
-        tsp_layers = []
-        for layer_configuration, kernel in zip(layer_configurations, kernels):
-            tsp_layer = GroqConv1D(
-                conv_kernel=kernel,
-                batch_num=layer_configuration["batch_num"],
-                padding=layer_configuration["conv_padding"],
-                activation_function=layer_configuration.get(
-                    "conv_activation_function", "none"
-                ),
-                overlapped_scopes=True,
-                return_at_scope=ResourceScopeName.UNPACK_CONV_RES,
-            )
-            tsp_layers.append(tsp_layer)
-
-            tsp_layer = GroqMaxPooling1D(
-                in_channel_num=layer_configuration["out_channel_num"],
-                kernel_size=layer_configuration["pooling_kernel_size"],
-                stride=layer_configuration["pooling_stride"],
-                batch_num=layer_configuration["batch_num"],
-                padding=layer_configuration["pooling_padding"],
-                overlapped_scopes=True,
-            )
-            tsp_layers.append(tsp_layer)
-
-        try:
-            compiled_program = compile_g_api(
-                tsp_layers,
-                input_mt,
-                output_dir="./encoderGAPI",
-                program_name="encoder",
-                output_tensor_name="encoder_result",
-            )
-
-            # Get iop stats
-            iop_stats_output = get_iop_stats(
-                compiled_program["output_dir"], compiled_program["program_name"]
-            )
-            print(iop_stats_output)
-
-            return compiled_program
-
-        except Exception as e:
-            print(f"Error message: {e}")
-            print(f"Error type: {type(e).__name__}")
-            import traceback
-
-            traceback.print_exc()
-            raise e
 
 
 def compile_autoencoder_with_ttl(
@@ -302,21 +181,21 @@ def compile_pulsenum_classifier_workflow_with_ttl(
 
 
 def compile_ttl_model(
-    model: Union[GroqMLIR, Tuple[GroqMLIR, GroqMLIR]],
+    model: Union[GroqProgram, Tuple[GroqProgram, GroqProgram]],
     output_tensor_name: Union[str, Tuple[str, ...]] = "model_result",
     program_name: str = "model",
     output_dir: str = "./modelTTL",
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
-    from gstruct import GroqBuffer, gstruct_to_mlir, mlir_to_iop
-    from gstruct.ops import gstruct_output_tensor
+    from ttl import ttl_to_iop
+    from ttl.ops import gapi_output
 
     try:
 
         if isinstance(model, tuple):
 
             output_buffer = [
-                gstruct_output_tensor(
+                gapi_output(
                     output_tensor_name[idx],
                     model[idx],
                     byte_packed=True,
@@ -327,16 +206,12 @@ def compile_ttl_model(
 
         else:
             output_buffer = [
-                gstruct_output_tensor(
+                gapi_output(
                     output_tensor_name, model, byte_packed=True, output_packed=True
                 )
             ]
 
-        mlirtext = gstruct_to_mlir(output_buffer)
-
-        iop_file = mlir_to_iop(
-            mlirtext, program_name, output_dir, is_opt=False
-        )  # ; assert False
+        iop_file = ttl_to_iop(output_buffer, program_name, output_dir)
 
         compiled_program = {
             "iop_file": iop_file,

@@ -1,13 +1,14 @@
-from gstruct.ops import conv1d as ttl_conv1d, Conv1dStageName, linear as ttl_linear
-from gstruct.ops import maxpool1d as gstruct_maxpool1d
-from gstruct import TiledMemref, dtypes, GroqBuffer
-from gstruct import gstruct
-from gstruct import GroqMLIR
+from ttl.ops import conv1d as ttl_conv1d, Conv1dStageName, linear as ttl_linear
+from ttl.ops import maxpool1d as ttl_maxpool1d
+from ttl.ops import gapi_input
+from ttl import Layout, dtypes
+from ttl import gapi
+from ttl import GroqProgram
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import numpy as np
 
-from gstruct.constants import VECTOR_SIZE
+from ttl.constants import VECTOR_SIZE
 
 
 def zero_classifier_model_to_ttl(
@@ -15,8 +16,8 @@ def zero_classifier_model_to_ttl(
     fc_layer_configurations: List[Dict[str, int]],
     weights: Dict[str, List[np.ndarray]],
     input_size: Optional[int] = None,
-    input_tensor: Optional[GroqMLIR] = None,
-) -> GroqMLIR:
+    input_tensor: Optional[GroqProgram] = None,
+) -> GroqProgram:
 
     in_channel_num = conv_layer_configurations[0]["in_channel_num"]
     batch_num = conv_layer_configurations[0]["batch_num"]
@@ -28,12 +29,12 @@ def zero_classifier_model_to_ttl(
     if input_tensor is None:
         split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
 
-        tinput = TiledMemref(
+        tinput = Layout(
             (batch_num, in_channel_num, input_size),
             dtypes.f16,
             ends=(split_num * VECTOR_SIZE - input_size,),
         )
-        input = GroqBuffer.input("image", tinput)
+        input = gapi_input("image", tinput, byte_packed=True, input_packed=True)
     else:
         input = input_tensor
 
@@ -61,14 +62,9 @@ def zero_classifier_model_to_ttl(
             activation_fnc=activation_function,
         )
 
-        # if idx == 1:
-        #    print("??? output_tensor.shape: ", output_tensor[0].out_tmemrefs[0])
-
         idx += 1
 
-        # print("conv_unpacked.shape: ", output_tensor.out_tmemrefs[0])
-
-        output_tensor = gstruct_maxpool1d(
+        output_tensor = ttl_maxpool1d(
             image=output_tensor,
             kernel_size=layer_configuration["pooling_kernel_size"],
             channel_num=layer_configuration["out_channel_num"],
@@ -81,7 +77,7 @@ def zero_classifier_model_to_ttl(
 
         input = output_tensor
 
-    output_tensor = gstruct.vector_pack(output_tensor)
+    output_tensor = gapi.vector_pack(output_tensor)
 
     input = output_tensor
 
