@@ -358,6 +358,8 @@ def main():
     # print("result_torch: ", result_torch)
 
     # exit()
+    print("output_tensor: ", output_tensor)
+    print("result_torch: ", result_torch)
 
     if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
         print(f"Groq result matches torch result in test case.")

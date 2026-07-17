@@ -67,12 +67,9 @@ def autoencoder_model_to_ttl(
         output_tensor = ttl_maxpool1d(
             image=output_tensor,
             kernel_size=layer_configuration["pooling_kernel_size"],
-            channel_num=layer_configuration["out_channel_num"],
             stride=layer_configuration["pooling_stride"],
-            batch_num=layer_configuration["batch_num"],
             padding=layer_configuration["pooling_padding"],
             exploded_input=True,
-            channel_stride=4,
         )
 
         input = output_tensor
