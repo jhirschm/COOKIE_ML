@@ -39,7 +39,7 @@ def gen_autoencoder_torch_layers(
         sub_layers = []
         sub_layers.append(
             [
-                nn.Conv1d(  # convolutional layer
+                nn.Conv2d(  # convolutional layer
                     layer_conf["in_channel_num"],
                     layer_conf["out_channel_num"],
                     kernel_size=layer_conf["conv_kernel_size"],
@@ -51,16 +51,16 @@ def gen_autoencoder_torch_layers(
             ]
         )
 
-        sub_layers.append(
-            [
-                nn.MaxPool1d(  # pooling layer
-                    kernel_size=layer_conf["pooling_kernel_size"],
-                    stride=layer_conf["pooling_stride"],
-                    padding=layer_conf["pooling_padding"],
-                ),
-                None,
-            ]
-        )
+        # sub_layers.append(
+        #     [
+        #         nn.MaxPool2d(  # pooling layer
+        #             kernel_size=layer_conf["pooling_kernel_size"],
+        #             stride=layer_conf["pooling_stride"],
+        #             padding=layer_conf["pooling_padding"],
+        #         ),
+        #         None,
+        #     ]
+        # )
 
         encoder_layers.extend(sub_layers)
 
@@ -74,7 +74,7 @@ def gen_autoencoder_torch_layers(
 
         decoder_layers.append(
             [
-                nn.ConvTranspose1d(  # convolutional layer
+                nn.ConvTranspose2d(  # convolutional layer
                     layer_conf["in_channel_num"],
                     layer_conf["out_channel_num"],
                     kernel_size=layer_conf["conv_kernel_size"],

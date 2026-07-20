@@ -151,8 +151,8 @@ def main():
     ):
         image = np.random.randn(
             layer_configurations_encoder[0]["batch_num"],
-            layer_configurations_encoder[0]["in_channel_num"],
-            input_size,
+            1,
+            *input_size,
         ).astype(np.float32)
 
         image_fp16 = image.copy().astype(np.float16)
@@ -241,7 +241,7 @@ def main():
                 lstm_layer_configurations_lstm_pulseNum_classifier,
                 fc_layer_configurations_lstm_pulseNum_classifier,
                 lstm_classifier_weights,
-                input_size,
+                lstm_layer_configurations_lstm_pulseNum_classifier["input_size"],
             )
 
         elif target_model == TargetModel.pulsenum_classifier_workflow:
@@ -286,8 +286,8 @@ def main():
 
         test_image = np.random.randn(
             layer_configurations_encoder[0]["batch_num"],
-            layer_configurations_encoder[0]["in_channel_num"],
-            input_size,
+            1,
+            *input_size,
         ).astype(np.float16)
 
         start_time = time.perf_counter()
@@ -354,19 +354,19 @@ def main():
             raise ValueError(f"Invalid target model: {target_model}")
 
     print("result_torch.shape: ", result_torch.shape)
-    # print("output_tensor: ", output_tensor)
-    # print("result_torch: ", result_torch)
+    print("output_tensor.shape: ", output_tensor.shape)
+    result_torch = result_torch.reshape(output_tensor.shape)
 
     # exit()
-    print("output_tensor: ", output_tensor)
-    print("result_torch: ", result_torch)
+    # print("output_tensor: ", output_tensor)
+    # print("result_torch: ", result_torch)
 
     if np.allclose(output_tensor, result_torch, atol=0.02, rtol=0.1):
         print(f"Groq result matches torch result in test case.")
 
         """Returns allclose result along with statistics."""
         diff = np.abs(output_tensor - result_torch)
-        relative_diff = np.abs(diff / (np.abs(result_torch) + 1e-8))
+        relative_diff = np.abs(diff / (np.abs(result_torch) + 1e-6))
 
         stats = {
             "mean_abs_error": np.mean(diff),
@@ -378,10 +378,10 @@ def main():
 
         print(stats)
     else:
-        print("Groq ouput: ")
-        print(output_tensor)
-        print("Torch output:")
-        print(result_torch)
+        # print("Groq ouput: ")
+        # print(output_tensor)
+        # print("Torch output:")
+        # print(result_torch)
 
         # Find all differing elements using the same tolerance as allclose
         atol = 0.02

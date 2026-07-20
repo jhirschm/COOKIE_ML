@@ -4,7 +4,7 @@ from ttl.ops import (
 from ttl import Layout, dtypes, GroqBuffer
 from ttl import gapi
 
-from ttl.ops import gapi_input
+from ttl.utils import gapi_input
 from ttl import GroqProgram
 
 from ttl.tiled_tensor_language import vxm_ops
@@ -26,7 +26,7 @@ def overall_model_to_ttl(
     lstm_layer_configurations: Dict[str, int],
     lstm_fc_layer_configurations: Dict[str, Any],
     lstm_classifier_weights: Dict[str, Any],
-    input_size: Optional[int] = None,
+    input_size: Optional[List[int]] = None,
     input_tensor: Optional[GroqProgram] = None,
 ) -> GroqProgram:
 
@@ -39,16 +39,15 @@ def overall_model_to_ttl(
 
     if input_tensor is None:
 
-        split_num = (input_size + VECTOR_SIZE - 1) // VECTOR_SIZE
+        assert input_size is not None, "input_size is required"
 
-        tinput = Layout(
+        tinput = Layout.create(
             (
                 batch_num,
                 in_channel_num,
-                input_size,
+                *input_size,
             ),
             dtypes.f16,
-            ends=(split_num * VECTOR_SIZE - input_size,),
         )
 
         input_buffer = gapi_input("image", tinput, byte_packed=True, input_packed=True)
@@ -94,6 +93,13 @@ def overall_model_to_ttl(
         output_tensor,
         output_tensor_autoencoder.out_tmemrefs[0],
     )
+
+    output_tensor = gapi.reshape(
+        output_tensor,
+        output_tensor.out_tmemrefs[0].merge_axes(0, 2),
+    )
+
+    print("input tensor to lstm pulse num classifier: ", output_tensor.out_tmemrefs[0])
 
     output_tensor_lstm_pulse_num_classifier = lstm_pulse_num_classifier_model_to_ttl(
         lstm_layer_configurations,

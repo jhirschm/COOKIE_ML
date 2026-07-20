@@ -50,7 +50,9 @@ class Zero_PulseClassifier(nn.Module):
 
     def forward(self, x):
         x = self.conv_layers(x)
+        print("conv output: ", x.shape)
         x = x.view(x.size(0), -1)  # Flatten the output from conv layers
+        print("flattened output: ", x.shape)
         x = self.fc_layers(x)
 
         return x

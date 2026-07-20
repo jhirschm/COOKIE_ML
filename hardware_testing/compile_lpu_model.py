@@ -61,7 +61,7 @@ def compile_encoder_with_compiler(
     output_dir = "encoderCompiler"
 
     return compile_with_compiler(
-        model, image, program_name, output_dir, gen_vis_data=True
+        model, image, program_name, output_dir, gen_vis_data=False
     )
 
 
@@ -188,7 +188,7 @@ def compile_ttl_model(
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
     from ttl import ttl_to_iop
-    from ttl.ops import gapi_output
+    from ttl.utils import gapi_output
 
     try:
 

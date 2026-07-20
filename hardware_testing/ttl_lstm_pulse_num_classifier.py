@@ -5,7 +5,7 @@ from ttl.ops import (
     linear as ttl_linear,
     layer_norm as ttl_layer_norm,
 )
-from ttl.ops import gapi_input
+from ttl.utils import gapi_input
 from ttl import Layout, dtypes
 from ttl import gapi
 from ttl import GroqProgram
@@ -197,5 +197,9 @@ def lstm_pulse_num_classifier_model_to_ttl(
             weights=weights.transpose(1, 0),
             bias=bias,
         )
+
+    print(
+        "output tensor from lstm pulse num classifier: ", output_tensor.out_tmemrefs[0]
+    )
 
     return output_tensor

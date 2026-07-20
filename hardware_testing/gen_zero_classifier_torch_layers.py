@@ -28,6 +28,32 @@ def gen_zero_classifier_torch_layers(
     Returns:
         Tuple of (conv_layers, fc_layers) where each is a list of layer pairs [layer, activation]
     """
+    import torch
+
+    # Calculate the output size after conv layers
+    def get_conv_output_size(input_size, conv_layers):
+        x = torch.randn(input_size)
+        model = nn.Sequential(
+            *[
+                layer
+                for layer_pair in conv_layers
+                for layer in layer_pair
+                if layer is not None
+            ]
+        )
+        x = model(x)
+        return x.shape
+
+    conv_layers = [
+        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
+        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
+    ]
+
+    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
+    print(f"Output size after conv layers: {output_size}")
+
     # Torch Zero Mask Classifier layers
     zero_mask_classifier_conv_layers = []
     for layer_conf in conv_layer_configurations:
@@ -39,7 +65,7 @@ def gen_zero_classifier_torch_layers(
         sub_layers = []
         sub_layers.append(
             [
-                nn.Conv1d(  # convolutional layer
+                nn.Conv2d(  # convolutional layer
                     layer_conf["in_channel_num"],
                     layer_conf["out_channel_num"],
                     kernel_size=layer_conf["conv_kernel_size"],
@@ -53,7 +79,7 @@ def gen_zero_classifier_torch_layers(
 
         sub_layers.append(
             [
-                nn.MaxPool1d(  # pooling layer
+                nn.MaxPool2d(  # pooling layer
                     kernel_size=layer_conf["pooling_kernel_size"],
                     stride=layer_conf["pooling_stride"],
                     padding=layer_conf["pooling_padding"],
