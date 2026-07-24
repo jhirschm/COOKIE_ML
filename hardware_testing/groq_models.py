@@ -17,6 +17,7 @@ from ximg_to_ypdf_autoencoder import Ximg_to_Ypdf_Autoencoder, Zero_PulseClassif
 
 # Example usage
 encoder_layers = np.array([
+    []
     [nn.Conv2d(1, 16, kernel_size=3, padding=2), nn.ReLU()],
     [nn.Conv2d(16, 32, kernel_size=3, padding=1), nn.ReLU()],
     [nn.Conv2d(32, 64, kernel_size=3, padding=1), nn.ReLU()]])

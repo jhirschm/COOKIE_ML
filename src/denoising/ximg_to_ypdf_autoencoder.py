@@ -343,10 +343,11 @@ class Zero_PulseClassifier(nn.Module):
 
         # return accuracy, precision, recall, f1, normalized_cm, plot_path
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
-    def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32, outputEncoder = False):
+    def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32, outputEncoder = False, expand_input = False):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
         self.dtype = dtype
         self.outputEncoder = outputEncoder
+        self.expand_input = expand_input
         
         # Create encoder based on the provided layer configuration
         encoder_modules = []
@@ -380,6 +381,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
     def forward(self, x):
         # Side network forward pass
+        if self.expand_input:
+            x.view(1, 1, 512, 16)
+            
         
         y = self.encoder(x)
         x = self.decoder(y)
