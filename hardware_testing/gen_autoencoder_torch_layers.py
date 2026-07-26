@@ -45,7 +45,6 @@ def gen_autoencoder_torch_layers(
                     kernel_size=layer_conf["conv_kernel_size"],
                     stride=layer_conf["conv_stride"],
                     padding=layer_conf["conv_padding"],
-                    bias=False,
                 ),
                 (activation_function),  # activation function
             ]
@@ -80,7 +79,6 @@ def gen_autoencoder_torch_layers(
                     kernel_size=layer_conf["conv_kernel_size"],
                     stride=layer_conf["conv_stride"],
                     padding=layer_conf["conv_padding"],
-                    bias=False,
                 ),
                 (activation_function),  # activation function
             ]

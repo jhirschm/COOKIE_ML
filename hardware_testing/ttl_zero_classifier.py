@@ -1,15 +1,17 @@
 from ttl.ops import conv2d as ttl_conv2d
 from ttl.ops import linear as ttl_linear
 from ttl.ops import maxpool2d as ttl_maxpool2d
-from ttl.utils import gapi_input
+from ttl.utils import input_tensor as ttl_input_tensor
 from ttl import Layout, dtypes
 from ttl import gapi
-from ttl import GroqProgram
+from ttl import GroqProgram, GroqBuffer
+from ttl.tiled_tensor_language import vxm_ops
 
 from typing import List, Dict, Optional, Any
 import numpy as np
 
 from ttl.constants import VECTOR_SIZE
+
 
 from ttl.utils import clean_inner_dim
 from ttl.utils import tile, untile
@@ -29,6 +31,7 @@ def zero_classifier_model_to_ttl(
     batch_num = conv_layer_configurations[0]["batch_num"]
 
     conv_kernels = weights["conv_weights"]
+    conv_biases = weights["conv_biases"]
     fc_weights = weights["fc_weights"]
     fc_biases = weights["fc_biases"]
 
@@ -41,13 +44,15 @@ def zero_classifier_model_to_ttl(
             dtypes.f16,
             axes=(3,),
         )
-        input = gapi_input("image", tinput, byte_packed=True, input_packed=True)
+        input = ttl_input_tensor("image", tinput, byte_packed=True, input_packed=True)
     else:
         input = input_tensor
 
     print("input: ", input.out_tmemrefs[0])
     idx = 0
-    for layer_configuration, kernel in zip(conv_layer_configurations, conv_kernels):
+    for layer_configuration, kernel, bias in zip(
+        conv_layer_configurations, conv_kernels, conv_biases
+    ):
 
         activation_function = layer_configuration.get(
             "conv_activation_function", "none"
@@ -65,6 +70,7 @@ def zero_classifier_model_to_ttl(
             batch_num=layer_configuration["batch_num"],
             stride=layer_configuration["conv_stride"],
             activation_fnc=activation_function,
+            bias=bias,
         )
 
         # output_tensor = clean_inner_dim(output_tensor)

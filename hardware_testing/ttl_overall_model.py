@@ -4,7 +4,7 @@ from ttl.ops import (
 from ttl import Layout, dtypes, GroqBuffer
 from ttl import gapi
 
-from ttl.utils import gapi_input
+from ttl.utils import input_tensor as ttl_input_tensor
 from ttl import GroqProgram
 
 from ttl.tiled_tensor_language import vxm_ops
@@ -50,7 +50,9 @@ def overall_model_to_ttl(
             dtypes.f16,
         )
 
-        input_buffer = gapi_input("image", tinput, byte_packed=True, input_packed=True)
+        input_buffer = ttl_input_tensor(
+            "image", tinput, byte_packed=True, input_packed=True
+        )
     else:
         input_buffer = input_tensor
 

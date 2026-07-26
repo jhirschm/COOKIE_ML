@@ -5,7 +5,7 @@ from ttl.ops import (
     linear as ttl_linear,
     layer_norm as ttl_layer_norm,
 )
-from ttl.utils import gapi_input
+from ttl.utils import input_tensor as ttl_input_tensor
 from ttl import Layout, dtypes
 from ttl import gapi
 from ttl import GroqProgram
@@ -61,7 +61,9 @@ def lstm_pulse_num_classifier_model_to_ttl(
             dtypes.f16,
             ends=(split_num * 320 - input_size,),
         )
-        input_buffer = gapi_input("image", tinput, byte_packed=True, input_packed=True)
+        input_buffer = ttl_input_tensor(
+            "image", tinput, byte_packed=True, input_packed=True
+        )
     else:
         input_buffer = input_tensor
 

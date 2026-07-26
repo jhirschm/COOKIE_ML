@@ -116,7 +116,7 @@
                 "num_lstm_layers": 3,
                 "seq_length": 16,
                 "bidirectional": true,
-                "num_classes": 6,
+                "num_classes": 5,
                 "ignore_fc_layers": false,
                 "ignore_output_layer": false
             }

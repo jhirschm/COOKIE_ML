@@ -188,14 +188,14 @@ def compile_ttl_model(
 ) -> Union[dict[str, Union[str, Any]], Any]:
 
     from ttl import ttl_to_iop
-    from ttl.utils import gapi_output
+    from ttl.utils import output_tensor as ttl_output_tensor
 
     try:
 
         if isinstance(model, tuple):
 
             output_buffer = [
-                gapi_output(
+                ttl_output_tensor(
                     output_tensor_name[idx],
                     model[idx],
                     byte_packed=True,
@@ -206,7 +206,7 @@ def compile_ttl_model(
 
         else:
             output_buffer = [
-                gapi_output(
+                ttl_output_tensor(
                     output_tensor_name, model, byte_packed=True, output_packed=True
                 )
             ]

@@ -3,7 +3,7 @@ from ttl.ops import (
     convtranspose2d as ttl_convtranspose2d,
 )
 from ttl.ops import maxpool2d as ttl_maxpool2d
-from ttl.utils import gapi_input
+from ttl.utils import input_tensor as ttl_input_tensor
 from ttl import Layout, dtypes
 from ttl import GroqProgram
 
@@ -31,7 +31,7 @@ def autoencoder_model_to_ttl(
     batch_num = layer_configurations_encoder[0]["batch_num"]
 
     encoder_kernels = kernels["encoder_weights"]
-
+    encoder_biases = kernels["encoder_biases"]
     if input_tensor is None:
 
         assert input_size is not None, "input_size is required"
@@ -42,7 +42,7 @@ def autoencoder_model_to_ttl(
             axes=(3,),
         )
 
-        input = gapi_input("image", tinput, byte_packed=True, input_packed=True)
+        input = ttl_input_tensor("image", tinput, byte_packed=True, input_packed=True)
     else:
         input = input_tensor
 
@@ -50,8 +50,8 @@ def autoencoder_model_to_ttl(
 
     # input = clean_inner_dim(input)
 
-    for layer_configuration, kernel in zip(
-        layer_configurations_encoder, encoder_kernels
+    for layer_configuration, kernel, bias in zip(
+        layer_configurations_encoder, encoder_kernels, encoder_biases
     ):
 
         activation_function = layer_configuration.get(
@@ -70,6 +70,7 @@ def autoencoder_model_to_ttl(
             batch_num=layer_configuration["batch_num"],
             stride=layer_configuration["conv_stride"],
             activation_fnc=activation_function,
+            bias=bias,
         )
 
         # output_tensor = clean_inner_dim(output_tensor)
@@ -98,13 +99,14 @@ def autoencoder_model_to_ttl(
     batch_num = layer_configurations_decoder[0]["batch_num"]
 
     decoder_kernels = kernels["decoder_weights"]
+    decoder_biases = kernels["decoder_biases"]
 
     tinput = output_tensor
 
     idx = 0
 
-    for layer_configuration, kernel in zip(
-        layer_configurations_decoder, decoder_kernels
+    for layer_configuration, kernel, bias in zip(
+        layer_configurations_decoder, decoder_kernels, decoder_biases
     ):
 
         activation_function = layer_configuration.get(
@@ -120,6 +122,7 @@ def autoencoder_model_to_ttl(
             batch_num=layer_configuration["batch_num"],
             stride=layer_configuration["conv_stride"],
             activation_fnc=activation_function,
+            bias=bias,
         )
 
         if idx == len(layer_configurations_decoder) - 1:

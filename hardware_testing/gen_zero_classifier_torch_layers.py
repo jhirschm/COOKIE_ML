@@ -30,30 +30,6 @@ def gen_zero_classifier_torch_layers(
     """
     import torch
 
-    # Calculate the output size after conv layers
-    def get_conv_output_size(input_size, conv_layers):
-        x = torch.randn(input_size)
-        model = nn.Sequential(
-            *[
-                layer
-                for layer_pair in conv_layers
-                for layer in layer_pair
-                if layer is not None
-            ]
-        )
-        x = model(x)
-        return x.shape
-
-    conv_layers = [
-        [nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
-        [nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1), nn.ReLU()],
-        [nn.MaxPool2d(kernel_size=2, stride=2, padding=0), None],
-    ]
-
-    output_size = get_conv_output_size((1, 1, 512, 16), conv_layers)
-    print(f"Output size after conv layers: {output_size}")
-
     # Torch Zero Mask Classifier layers
     zero_mask_classifier_conv_layers = []
     for layer_conf in conv_layer_configurations:
@@ -71,7 +47,7 @@ def gen_zero_classifier_torch_layers(
                     kernel_size=layer_conf["conv_kernel_size"],
                     stride=layer_conf["conv_stride"],
                     padding=layer_conf["conv_padding"],
-                    bias=False,
+                    bias=True,
                 ),
                 (activation_function),  # activation function
             ]

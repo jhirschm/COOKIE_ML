@@ -61,6 +61,14 @@ from gen_zero_classifier_torch_layers import gen_zero_classifier_torch_layers
 from gen_autoencoder_torch_layers import gen_autoencoder_torch_layers
 from lstm_pulseNum_classifier import CustomLSTMClassifier
 
+from utils import (
+    DataMilking_Nonfat,
+    DataMilking,
+    DataMilking_SemiSkimmed,
+    DataMilking_HalfAndHalf,
+    DataMilking_MilkCurds,
+)
+
 
 def get_activation_function(activation_function_name):
     if activation_function_name == "ReLU":
@@ -74,6 +82,21 @@ def get_activation_function(activation_function_name):
 
 
 def main():
+
+    datapath = "data/1_Subspike_Pulses_Processed/test/"
+    if os.path.isdir(datapath):
+        data = DataMilking_MilkCurds(
+            root_dirs=[datapath],
+            input_name="Ximg",
+            pulse_handler=None,
+            transform=None,
+            pulse_threshold=4,
+            zero_to_one_rescale=False,
+        )
+        print(data.inputs_arr.shape)
+    else:
+        data = None
+        print(f"No data directory found at {datapath}; data set to None")
 
     (
         layer_configurations_encoder,
@@ -106,11 +129,31 @@ def main():
         dtype=torch.float16,
     )
 
+    autoencoder_path = os.path.abspath(
+        os.path.join(current_dir, "../data/denoiser_autoencoder_best_model.pth")
+    )
+    if os.path.isfile(autoencoder_path):
+        state_dict = torch.load(autoencoder_path, map_location=device)
+        autoencoder.load_state_dict(state_dict)
+        print(f"Loaded autoencoder weights from {autoencoder_path}")
+    else:
+        print(f"No checkpoint found at {autoencoder_path}; using random weights")
+
     zero_mask_classifier = Zero_PulseClassifier(
         zero_mask_classifier_conv_layers,
         zero_mask_classifier_fc_layers,
         dtype=torch.float16,
     )
+
+    zero_mask_path = os.path.abspath(
+        os.path.join(current_dir, "../data/denoiser_zeroClassifier_best_model.pth")
+    )
+    if os.path.isfile(zero_mask_path):
+        state_dict = torch.load(zero_mask_path, map_location=device)
+        zero_mask_classifier.load_state_dict(state_dict)
+        print(f"Loaded zero_mask_classifier weights from {zero_mask_path}")
+    else:
+        print(f"No checkpoint found at {zero_mask_path}; using random weights")
 
     # Instantiate the CustomLSTMClassifier
     classModel = CustomLSTMClassifier(
@@ -131,6 +174,27 @@ def main():
         dtype=torch.float16,
     )
 
+    class_model_path = os.path.abspath(
+        os.path.join(current_dir, "../data/SubspikeClassifier_BiLSTM_best_model.pth")
+    )
+    if os.path.isfile(class_model_path):
+        state_dict = torch.load(class_model_path, map_location=device)
+
+        def remove_module_prefix(state_dict):
+            new_state_dict = {}
+            for k, v in state_dict.items():
+                if k.startswith("module."):
+                    new_state_dict[k[7:]] = v
+                else:
+                    new_state_dict[k] = v
+            return new_state_dict
+
+        state_dict = remove_module_prefix(state_dict)
+        classModel.load_state_dict(state_dict)
+        print(f"Loaded classModel weights from {class_model_path}")
+    else:
+        print(f"No checkpoint found at {class_model_path}; using random weights")
+
     # Extract kernel matrices for Groq implementation
     # Get all parameters as a dictionary
     state_dict = autoencoder.state_dict()
@@ -149,11 +213,24 @@ def main():
         or target_model == TargetModel.zero_pulse_classifier
         or target_model == TargetModel.pulsenum_classifier_workflow
     ):
-        image = np.random.randn(
-            layer_configurations_encoder[0]["batch_num"],
-            1,
-            *input_size,
-        ).astype(np.float32)
+        if data is None:
+            image = np.random.randn(
+                layer_configurations_encoder[0]["batch_num"],
+                1,
+                *input_size,
+            ).astype(np.float32)
+
+        else:
+            idx = np.random.randint(0, len(data.inputs_arr))
+            image = data.inputs_arr[idx, ...]
+            image = image.reshape(1, 1, *input_size)
+            if np.all(image == 0):
+                print(f"image at idx={idx} is all zeros")
+            else:
+                print(
+                    f"image at idx={idx} is not all zeros "
+                    f"(min={image.min()}, max={image.max()})"
+                )
 
         image_fp16 = image.copy().astype(np.float16)
 
