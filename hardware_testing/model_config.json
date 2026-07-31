@@ -1,0 +1,134 @@
+{
+    "input_size": [
+        16,
+        512
+    ],
+    "batch_num": 1,
+    "encoder": {
+        "layer_configurations": [
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 2,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 1,
+                "in_channel_num": 1,
+                "out_channel_num": 16
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 16,
+                "out_channel_num": 32
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 32,
+                "out_channel_num": 64
+            }
+        ]
+    },
+    "decoder": {
+        "layer_configurations": [
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "in_channel_num": 64,
+                "out_channel_num": 32
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "in_channel_num": 32,
+                "out_channel_num": 16
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 2,
+                "conv_activation_function": "Sigmoid",
+                "in_channel_num": 16,
+                "out_channel_num": 1
+            }
+        ]
+    },
+    "zero_mask_classifier": {
+        "conv_layer_configurations": [
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 1,
+                "out_channel_num": 16
+            },
+            {
+                "conv_kernel_size": 3,
+                "conv_stride": 1,
+                "conv_padding": 1,
+                "conv_activation_function": "ReLU",
+                "pooling_kernel_size": 2,
+                "pooling_stride": 2,
+                "pooling_padding": 0,
+                "in_channel_num": 16,
+                "out_channel_num": 32
+            }
+        ],
+        "fc_layer_configurations": [
+            {
+                "input_size": 16384,
+                "output_size": 4,
+                "activation_function": "ReLU"
+            },
+            {
+                "input_size": 4,
+                "output_size": 1,
+                "activation_function": "none"
+            }
+        ]
+    },
+    "lstm_pulseNum_classifier": {
+        "layer_norm": false,
+        "lstm_layer_configurations": [
+            {
+                "input_size": 512,
+                "hidden_size": 128,
+                "num_lstm_layers": 3,
+                "seq_length": 16,
+                "bidirectional": true,
+                "num_classes": 5,
+                "ignore_fc_layers": false,
+                "ignore_output_layer": false
+            }
+        ],
+        "fc_layer_configurations": [
+            {
+                "fc_layers": [
+                    32,
+                    64
+                ],
+                "activation_function": "ReLU"
+            }
+        ]
+    }
+}

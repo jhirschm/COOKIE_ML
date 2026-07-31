@@ -1,49 +1,58 @@
 from denoising_util import *
-from typing import List, Any
+from typing import List, Tuple, Any, Union
+from numpy.typing import NDArray
+
 
 class StepFunction(nn.Module):
     def __init__(self, threshold: float = 0.5):
         super(StepFunction, self).__init__()
         self.threshold = threshold
-    
+
     def forward(self, x):
         return (x > self.threshold).float()
 
+
 class Zero_PulseClassifier(nn.Module):
-    def __init__(self, conv_layers: List[List[Any]], fc_layers: List[List[Any]], dtype=torch.float32):
+    def __init__(
+        self,
+        conv_layers: List[List[Any]],
+        fc_layers: List[List[Any]],
+        dtype=torch.float32,
+    ):
         super(Zero_PulseClassifier, self).__init__()
         self.dtype = dtype
-        
+
         # Create convolutional layers based on the provided layer configuration
         conv_modules = []
         for layer, activation in conv_layers:
             conv_modules.append(layer)
             if activation is not None:
                 conv_modules.append(activation)
-        
+
         self.conv_layers = nn.Sequential(*conv_modules)
-        
+
         # Cast conv layers weights to specified dtype
         for param in self.conv_layers.parameters():
             param.data = param.data.to(self.dtype)
-        
+
         # Create fully connected layers based on the provided layer configuration
         fc_modules = []
         for layer, activation in fc_layers:
             fc_modules.append(layer)
             if activation is not None:
                 fc_modules.append(activation)
-        
+
         self.fc_layers = nn.Sequential(*fc_modules)
-        
+
         # Cast fc layers weights to specified dtype
         for param in self.fc_layers.parameters():
             param.data = param.data.to(self.dtype)
 
-
     def forward(self, x):
         x = self.conv_layers(x)
+        print("conv output: ", x.shape)
         x = x.view(x.size(0), -1)  # Flatten the output from conv layers
+        print("flattened output: ", x.shape)
         x = self.fc_layers(x)
 
         return x
@@ -63,35 +72,56 @@ class Zero_PulseClassifier(nn.Module):
             logits = self.forward(x)
             probabilities = torch.sigmoid(logits)
             predictions = (probabilities > 0.5).float()
-        
+
         return probabilities, predictions
-    
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
+
+    def train_model(
+        self,
+        train_dataloader,
+        val_dataloader,
+        criterion,
+        optimizer,
+        scheduler,
+        model_save_dir,
+        identifier,
+        device,
+        checkpoints_enabled=True,
+        resume_from_checkpoint=False,
+        max_epochs=10,
+    ):
         self.to(device)
         train_losses = []
         val_losses = []
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         best_epoch = 0
         start_epoch = 0
 
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
-        if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
+        if (
+            checkpoints_enabled
+            and resume_from_checkpoint
+            and os.path.exists(checkpoint_path)
+        ):
             checkpoint = torch.load(checkpoint_path)
-            self.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            train_losses = checkpoint['train_losses']
-            val_losses = checkpoint['val_losses']
-            best_val_loss = checkpoint['best_val_loss']
-            best_epoch = checkpoint['best_epoch']
+            self.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            train_losses = checkpoint["train_losses"]
+            val_losses = checkpoint["val_losses"]
+            best_val_loss = checkpoint["best_val_loss"]
+            best_epoch = checkpoint["best_epoch"]
 
-        name = f"{model_save_dir}/{identifier}"+"_run_time_info.txt"
-    
+        name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
+
         with open(name, "a") as f:
-            f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
+            f.write(
+                f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n"
+                if start_epoch > 0
+                else f"Training started at {datetime.datetime.now()}\n"
+            )
 
             for epoch in range(start_epoch, max_epochs):
                 self.train()  # Set the model to training mode
@@ -104,13 +134,10 @@ class Zero_PulseClassifier(nn.Module):
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
                     labels = labels.to(device, torch.float32)
-                    
 
                     outputs = self(inputs).to(device)
 
-                
-
-                    labels = labels[:,1:].to(device)
+                    labels = labels[:, 1:].to(device)
                     # Ensure outputs and labels require grad
                     if not outputs.requires_grad:
                         outputs.requires_grad_(True)
@@ -129,7 +156,7 @@ class Zero_PulseClassifier(nn.Module):
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
                 running_val_loss = 0.0
-                
+
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
@@ -142,18 +169,21 @@ class Zero_PulseClassifier(nn.Module):
                         # sum_of_points = sum_of_points.view(sum_of_points.size(0), -1)
                         # sum_of_points = sum_of_points.to(device, torch.float32)
 
-
                         outputs = self(inputs).to(device)
-                        #only use second element
-                        labels = labels[:,1:].to(device)
+                        # only use second element
+                        labels = labels[:, 1:].to(device)
                         loss = criterion(outputs, labels)
                         running_val_loss += loss.item()
 
                 val_loss = running_val_loss / len(val_dataloader)
                 val_losses.append(val_loss)
 
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                f.write(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
+                print(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
 
                 # Update the scheduler
                 should_stop = scheduler.step(val_loss, epoch)
@@ -171,14 +201,14 @@ class Zero_PulseClassifier(nn.Module):
                 # Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': self.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'scheduler_state_dict': scheduler.state_dict(),
-                        'train_losses': train_losses,
-                        'val_losses': val_losses,
-                        'best_val_loss': best_val_loss,
-                        'best_epoch': best_epoch,
+                        "epoch": epoch,
+                        "model_state_dict": self.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                        "scheduler_state_dict": scheduler.state_dict(),
+                        "train_losses": train_losses,
+                        "val_losses": val_losses,
+                        "best_val_loss": best_val_loss,
+                        "best_epoch": best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
 
@@ -187,8 +217,8 @@ class Zero_PulseClassifier(nn.Module):
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-                f.flush() # Flush the buffer to write to the file
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+                f.flush()  # Flush the buffer to write to the file
+        run_summary_path = f"{model_save_dir}/{identifier}" + "_run_summary.txt"
 
         with open(run_summary_path, "w") as file:
             file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
@@ -197,12 +227,18 @@ class Zero_PulseClassifier(nn.Module):
 
         # Plot the training and validation losses
         plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
+        plt.plot(train_losses, label="Train Loss")
+        plt.plot(val_losses, label="Validation Loss")
+        plt.scatter(
+            best_epoch,
+            val_losses[best_epoch],
+            marker="*",
+            color="red",
+            label="Best Epoch",
+        )
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss")
         plt.legend()
         losses_path = os.path.join(model_save_dir, identifier + "_losses.pdf")
         plt.savefig(losses_path)
@@ -211,13 +247,12 @@ class Zero_PulseClassifier(nn.Module):
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
     def evaluate_model(self, test_dataloader, identifier, model_save_dir, device):
-        
+
         true_pulses = []
         predicted_pulses = []
 
         self.to(device)
 
-        
         self.eval()  # Set the model to evaluation mode, ensures no dropout is applied
         # Iterate through the test data
 
@@ -228,7 +263,6 @@ class Zero_PulseClassifier(nn.Module):
                 inputs = inputs.to(device, torch.float32)
                 labels = labels.to(device, torch.float32)
 
-                        
                 outputs = self(inputs).to(device)
                 # predictions = torch.round(outputs).cpu().numpy()
                 # Apply sigmoid to convert logits to probabilities
@@ -237,7 +271,7 @@ class Zero_PulseClassifier(nn.Module):
                 # Convert probabilities to binary predictions (0 or 1)
                 predictions = torch.round(probabilities).cpu().numpy()
                 # print(predictions)
-                labels = labels[:,1:].to(device)
+                labels = labels[:, 1:].to(device)
                 # print("labels")
                 # print(labels)
 
@@ -248,7 +282,6 @@ class Zero_PulseClassifier(nn.Module):
         predicted_pulses = np.array(predicted_pulses)
         # print(np.sum(true_pulses))
         # print(np.sum(predicted_pulses))
-
 
         num_classes_from_test = 2
         # Calculate evaluation metrics as percentages
@@ -290,7 +323,7 @@ class Zero_PulseClassifier(nn.Module):
         # plt.ylabel('True')
         # Calculate the confusion matrix for binary classification
         cm = confusion_matrix(true_pulses, predicted_pulses)
-        
+
         # Print to verify
         print("True Labels:", true_pulses)
         print("Predicted Labels:", predicted_pulses)
@@ -302,12 +335,12 @@ class Zero_PulseClassifier(nn.Module):
         normalized_cm = cm / row_sums.astype(float) * 100
 
         # Create class labels for the two classes
-        class_labels = ['0 Pulse', '1 Pulse']
+        class_labels = ["0 Pulse", "1 Pulse"]
 
         # Plot the normalized confusion matrix with class labels
         plt.figure(figsize=(8, 6))
-        plt.imshow(normalized_cm, interpolation='nearest', cmap=plt.get_cmap('Blues'))
-        plt.title('Normalized Confusion Matrix (%)')
+        plt.imshow(normalized_cm, interpolation="nearest", cmap=plt.get_cmap("Blues"))
+        plt.title("Normalized Confusion Matrix (%)")
         plt.colorbar()
         tick_marks = np.arange(len(class_labels))
         plt.xticks(tick_marks, class_labels, rotation=45)
@@ -317,11 +350,11 @@ class Zero_PulseClassifier(nn.Module):
             for j in range(2):
                 text_label = f"{normalized_cm[i, j]:.2f}%"
                 plt.text(j, i, text_label, horizontalalignment="center", color="black")
-    
+
         plot_path = os.path.join(model_save_dir, identifier + "_confusion_matrix.pdf")
         # Display the plot
-        plt.xlabel('Predicted')
-        plt.ylabel('True')
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
         plt.savefig(plot_path)
         plt.close()
 
@@ -342,46 +375,53 @@ class Zero_PulseClassifier(nn.Module):
         #         file.write(f"{class_name} - Accuracy: {accuracy_class:.2f}%\n")
 
         # return accuracy, precision, recall, f1, normalized_cm, plot_path
+
+
 class Ximg_to_Ypdf_Autoencoder(nn.Module):
-    def __init__(self, encoder_layers: List[List[Any]], decoder_layers: List[List[Any]], dtype=torch.float32, outputEncoder = False):
+    def __init__(
+        self,
+        encoder_layers: Union[List[Tuple[Any, Any]], List[List[Any]]],
+        decoder_layers: Union[List[Tuple[Any, Any]], List[List[Any]], None] = None,
+        dtype: torch.dtype = torch.float32,
+        outputEncoder: bool = False,
+    ):
         super(Ximg_to_Ypdf_Autoencoder, self).__init__()
         self.dtype = dtype
         self.outputEncoder = outputEncoder
-        
+
         # Create encoder based on the provided layer configuration
         encoder_modules = []
-        
-        for i in range(encoder_layers.shape[0]):
-            layer = encoder_layers[i,0]
-            activation = encoder_layers[i,1]
+
+        for i in range(len(encoder_layers)):
+            layer = encoder_layers[i][0]
+            activation = encoder_layers[i][1]
             encoder_modules.append(layer)
             if activation is not None:
                 encoder_modules.append(activation)
-        
+
         self.encoder = nn.Sequential(*encoder_modules)
         # Cast encoder weights to torch.float32
         for param in self.encoder.parameters():
             param.data = param.data.to(self.dtype)
-        
+
         if not self.outputEncoder:
             # Create decoder based on the provided layer configuration
             decoder_modules = []
-            for i in range(len(decoder_layers)):
-                layer = decoder_layers[i,0]
-                activation = decoder_layers[i,1]
-                decoder_modules.append(layer)
-                if activation is not None:
-                    decoder_modules.append(activation)
-            
+            if decoder_layers is not None:
+                for i in range(len(decoder_layers)):
+                    layer = decoder_layers[i][0]
+                    activation = decoder_layers[i][1]
+                    decoder_modules.append(layer)
+                    if activation is not None:
+                        decoder_modules.append(activation)
+
             self.decoder = nn.Sequential(*decoder_modules)
             for param in self.decoder.parameters():
                 param.data = param.data.to(self.dtype)
 
-        
-
     def forward(self, x):
         # Side network forward pass
-        
+
         y = self.encoder(x)
         if self.outputEncoder:
             return y
@@ -390,7 +430,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         # if self.outputEncoder:
         #     return y, x
         return x
-    
+
     def freeze_all_layers(self):
         for param in self.parameters():
             param.requires_grad = False
@@ -399,39 +439,58 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
         for idx in encoder_layer_indices:
             for param in self.encoder[idx].parameters():
                 param.requires_grad = True
-        
+
         for idx in decoder_layer_indices:
             for param in self.decoder[idx].parameters():
                 param.requires_grad = True
-    
 
-    def train_model(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, checkpoints_enabled=True, resume_from_checkpoint=False, max_epochs=10):
+    def train_model(
+        self,
+        train_dataloader,
+        val_dataloader,
+        criterion,
+        optimizer,
+        scheduler,
+        model_save_dir,
+        identifier,
+        device,
+        checkpoints_enabled=True,
+        resume_from_checkpoint=False,
+        max_epochs=10,
+    ):
         self.to(device)
         train_losses = []
         val_losses = []
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         best_epoch = 0
         start_epoch = 0
 
         checkpoint_path = os.path.join(model_save_dir, f"{identifier}_checkpoint.pth")
 
         # Try to load from checkpoint if it exists and resume_from_checkpoint is True
-        if checkpoints_enabled and resume_from_checkpoint and os.path.exists(checkpoint_path):
+        if (
+            checkpoints_enabled
+            and resume_from_checkpoint
+            and os.path.exists(checkpoint_path)
+        ):
             checkpoint = torch.load(checkpoint_path)
-            self.load_state_dict(checkpoint['model_state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            train_losses = checkpoint['train_losses']
-            val_losses = checkpoint['val_losses']
-            best_val_loss = checkpoint['best_val_loss']
-            best_epoch = checkpoint['best_epoch']
+            self.load_state_dict(checkpoint["model_state_dict"])
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            start_epoch = checkpoint["epoch"] + 1
+            train_losses = checkpoint["train_losses"]
+            val_losses = checkpoint["val_losses"]
+            best_val_loss = checkpoint["best_val_loss"]
+            best_epoch = checkpoint["best_epoch"]
             best_model = None
 
-        name = f"{model_save_dir}/{identifier}"+"_run_time_info.txt"
+        name = f"{model_save_dir}/{identifier}" + "_run_time_info.txt"
         with open(name, "a") as f:
-            f.write(f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n" if start_epoch > 0 else f"Training started at {datetime.datetime.now()}\n")
-            
+            f.write(
+                f"Training resumed at {datetime.datetime.now()} from epoch {start_epoch}\n"
+                if start_epoch > 0
+                else f"Training started at {datetime.datetime.now()}\n"
+            )
 
             for epoch in range(max_epochs):
                 self.train()  # Set the model to training mode
@@ -443,22 +502,18 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     inputs, labels = batch
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
-                    
-                    
 
                     outputs = self(inputs).to(device)
                     outputs = outputs.squeeze()  # Remove channel dimension
-                    
+
                     labels = labels.squeeze()
                     labels = labels.to(device)
-                    
 
                     # Calculate the loss for each sample in the batch
                     losses = criterion(outputs, labels)
-                    
+
                     # Apply the weighting for zero labels
 
-                    
                     # Compute the mean loss
                     loss = torch.mean(losses)
 
@@ -473,14 +528,13 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
                 running_val_loss = 0.0
-                
+
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
                         inputs = torch.unsqueeze(inputs, 1)
                         inputs = inputs.to(device, torch.float32)
 
-                        
                         outputs = self(inputs).to(device)
                         outputs = outputs.squeeze()
 
@@ -492,8 +546,12 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 val_loss = running_val_loss / len(val_dataloader)
                 val_losses.append(val_loss)
 
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                f.write(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
+                print(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
 
                 # Update the scheduler
                 should_stop = scheduler.step(val_loss, epoch)
@@ -511,17 +569,17 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 # Save checkpoint
                 if checkpoints_enabled:
                     checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': self.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'scheduler_state_dict': scheduler.state_dict(),
-                        'train_losses': train_losses,
-                        'val_losses': val_losses,
-                        'best_val_loss': best_val_loss,
-                        'best_epoch': best_epoch,
+                        "epoch": epoch,
+                        "model_state_dict": self.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                        "scheduler_state_dict": scheduler.state_dict(),
+                        "train_losses": train_losses,
+                        "val_losses": val_losses,
+                        "best_val_loss": best_val_loss,
+                        "best_epoch": best_epoch,
                     }
                     torch.save(checkpoint, checkpoint_path)
-                
+
                 # Early stopping check
                 # if scheduler.should_stop():
                 #     print(f"Early stopping at epoch {epoch+1}")
@@ -530,9 +588,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
                     break
-                f.flush() # Flush the buffer to write to the file
+                f.flush()  # Flush the buffer to write to the file
         # Save the output to the specified file
-        run_summary_path = f"{model_save_dir}/{identifier}"+ "_run_summary.txt"
+        run_summary_path = f"{model_save_dir}/{identifier}" + "_run_summary.txt"
         with open(run_summary_path, "w") as file:
             file.write("Number of Epochs for Best Model: {}\n".format(best_epoch + 1))
             file.write("Final Training Loss: {:.10f}\n".format(train_losses[-1]))
@@ -540,12 +598,18 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         # Plot the training and validation losses
         plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
+        plt.plot(train_losses, label="Train Loss")
+        plt.plot(val_losses, label="Validation Loss")
+        plt.scatter(
+            best_epoch,
+            val_losses[best_epoch],
+            marker="*",
+            color="red",
+            label="Best Epoch",
+        )
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss")
         plt.legend()
         losses_path = os.path.join(model_save_dir, identifier + "_losses.pdf")
         plt.savefig(losses_path)
@@ -553,7 +617,17 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-    def evaluate_model(self, dataloader, criterion, device, save_results=False, results_dir=None, results_filename=None, zero_masking = False, zero_masking_model = None):
+    def evaluate_model(
+        self,
+        dataloader,
+        criterion,
+        device,
+        save_results=False,
+        results_dir=None,
+        results_filename=None,
+        zero_masking=False,
+        zero_masking_model=None,
+    ):
         # Calcualte the loss on the provided dataloader and save results if specified to H5 file including the input, output, and target
         self.eval()
         running_loss = 0.0
@@ -564,7 +638,9 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
             skip_eval = False
 
         if zero_masking and zero_masking_model is None:
-            raise ValueError("zero_masking_model must be provided if zero_masking is True")
+            raise ValueError(
+                "zero_masking_model must be provided if zero_masking is True"
+            )
 
         with torch.no_grad():
             i = 0
@@ -573,20 +649,22 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 inputs = torch.unsqueeze(inputs, 1)
                 inputs = inputs.to(device, torch.float32)
                 # labels = labels[0]
-                labels = labels.to(device,torch.float32) #indexing for access to the first element of the list
+                labels = labels.to(
+                    device, torch.float32
+                )  # indexing for access to the first element of the list
 
                 outputs = self(inputs)
-                
+
                 outputs = outputs.squeeze()
                 outputs = outputs.to(device)
                 # print("output from encoder size: ", outputs.size())
                 if zero_masking and zero_masking_model is not None:
-                    probs, zero_mask  = zero_masking_model.predict(inputs)
+                    probs, zero_mask = zero_masking_model.predict(inputs)
                     zero_mask = zero_mask.to(device)
                     # zero mask either 0 or 1
                     # change size of zero mask to match the size of the output dimensions so can broadcast in multiply
                     # print(zero_mask.shape)
-                    zero_mask = torch.unsqueeze(zero_mask,2)
+                    zero_mask = torch.unsqueeze(zero_mask, 2)
                     # print(zero_mask.shape)
                     zero_mask = zero_mask.to(device, torch.float32)
 
@@ -607,48 +685,66 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     # results[i] = (inputs_np, outputs_np, labels_np, loss.item())
                     results[i] = (inputs_np, outputs_np, labels_np)
 
-                i+=1
+                i += 1
 
         avg_loss = running_loss / len(dataloader)
 
         if save_results and results_dir and results_filename:
             results_filepath = os.path.join(results_dir, results_filename)
-            with h5py.File(results_filepath, 'w') as h5file:
+            with h5py.File(results_filepath, "w") as h5file:
                 for batch_idx, (inputs_np, outputs_np, labels_np) in results.items():
                     for example_idx in range(inputs_np.shape[0]):
                         group = h5file.create_group(f"{batch_idx}_{example_idx}")
                         # group.create_dataset('input', data=inputs_np[example_idx].reshape(16, 512))
                         # group.create_dataset('output', data=outputs_np[example_idx].reshape(16, 512))
                         # group.create_dataset('target', data=labels_np[example_idx].reshape(16, 512))
-                        group.create_dataset('input', data=inputs_np[example_idx])
-                        group.create_dataset('output', data=outputs_np[example_idx])
-                        group.create_dataset('target', data=labels_np[example_idx])
+                        group.create_dataset("input", data=inputs_np[example_idx])
+                        group.create_dataset("output", data=outputs_np[example_idx])
+                        group.create_dataset("target", data=labels_np[example_idx])
                         # group.attrs['loss'] = loss  # Store the loss as an attribute
-                        
 
         return avg_loss
 
-    def fine_tune(self, train_dataloader, val_dataloader, criterion, optimizer, scheduler, model_save_dir, identifier, device, encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze, initial_weights_path, max_epochs=10, gradient_clipping_value=0.01, learning_rate_scale=0.1):
+    def fine_tune(
+        self,
+        train_dataloader,
+        val_dataloader,
+        criterion,
+        optimizer,
+        scheduler,
+        model_save_dir,
+        identifier,
+        device,
+        encoder_layer_indices_unfreeze,
+        decoder_layer_indices_unfreeze,
+        initial_weights_path,
+        max_epochs=10,
+        gradient_clipping_value=0.01,
+        learning_rate_scale=0.1,
+    ):
         self.to(device)
         self.load_state_dict(torch.load(initial_weights_path, map_location=device))
-    
+
         # Freeze all layers
         self.freeze_all_layers()
 
-    
-        self.unfreeze_layers(encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze)
+        self.unfreeze_layers(
+            encoder_layer_indices_unfreeze, decoder_layer_indices_unfreeze
+        )
         self.to(device)
 
-        
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.parameters()), lr=optimizer.param_groups[0]['lr'] * learning_rate_scale)
-        
+        optimizer = torch.optim.Adam(
+            filter(lambda p: p.requires_grad, self.parameters()),
+            lr=optimizer.param_groups[0]["lr"] * learning_rate_scale,
+        )
+
         train_losses = []
         val_losses = []
-        best_val_loss = float('inf')
+        best_val_loss = float("inf")
         best_epoch = 0
         start_epoch = 0
 
-        name = f"{model_save_dir}/{identifier}"+"_fine_tuning_info.txt"
+        name = f"{model_save_dir}/{identifier}" + "_fine_tuning_info.txt"
         with open(name, "a") as f:
             f.write(f"Fine-tuning started at {datetime.datetime.now()}\n")
 
@@ -662,10 +758,10 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     inputs, labels = batch
                     inputs = torch.unsqueeze(inputs, 1)
                     inputs = inputs.to(device, torch.float32)
-                    
+
                     outputs = self(inputs).to(device)
                     outputs = outputs.squeeze()  # Remove channel dimension
-                    
+
                     labels = labels.squeeze()
                     labels = labels.to(device)
                     loss = criterion(outputs, labels)
@@ -680,10 +776,12 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     loss += reg_term
 
                     loss.backward()
-                    
+
                     # Gradient clipping
-                    torch.nn.utils.clip_grad_norm_(self.parameters(), gradient_clipping_value)
-                    
+                    torch.nn.utils.clip_grad_norm_(
+                        self.parameters(), gradient_clipping_value
+                    )
+
                     optimizer.step()
 
                     running_train_loss += loss.item()
@@ -694,7 +792,7 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 # Validation loop
                 self.eval()  # Set the model to evaluation mode
                 running_val_loss = 0.0
-                
+
                 with torch.no_grad():
                     for batch in val_dataloader:
                         inputs, labels = batch
@@ -712,8 +810,12 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                 val_loss = running_val_loss / len(val_dataloader)
                 val_losses.append(val_loss)
 
-                f.write(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
-                print(f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n")
+                f.write(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
+                print(
+                    f"Epoch [{epoch+1}/{max_epochs}] - Train Loss: {train_loss:.10f}, Validation Loss: {val_loss:.10f}\n\n"
+                )
 
                 # Update the scheduler
                 should_stop = scheduler.step(val_loss, epoch)
@@ -725,11 +827,13 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
                     best_model = self.state_dict().copy()
 
                     # Save the best model with a specified name and path in the model_dir
-                    best_model_path = f"{model_save_dir}/{identifier}_fine_tuned_best_model.pth"
+                    best_model_path = (
+                        f"{model_save_dir}/{identifier}_fine_tuned_best_model.pth"
+                    )
                     torch.save(self.state_dict(), best_model_path)
 
                 f.flush()  # Flush the buffer to write to the file
-                
+
                 if should_stop:
                     print(f"Early stopping at epoch {epoch+1}\n")
                     f.write(f"Early stopping at epoch {epoch+1}\n")
@@ -744,21 +848,29 @@ class Ximg_to_Ypdf_Autoencoder(nn.Module):
 
         # Plot the training and validation losses
         plt.figure()
-        plt.plot(train_losses, label='Train Loss')
-        plt.plot(val_losses, label='Validation Loss')
-        plt.scatter(best_epoch, val_losses[best_epoch], marker='*', color='red', label='Best Epoch')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training and Validation Loss')
+        plt.plot(train_losses, label="Train Loss")
+        plt.plot(val_losses, label="Validation Loss")
+        plt.scatter(
+            best_epoch,
+            val_losses[best_epoch],
+            marker="*",
+            color="red",
+            label="Best Epoch",
+        )
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.title("Training and Validation Loss")
         plt.legend()
-        losses_path = os.path.join(model_save_dir, identifier + "_fine_tuning_losses.pdf")
+        losses_path = os.path.join(
+            model_save_dir, identifier + "_fine_tuning_losses.pdf"
+        )
         plt.savefig(losses_path)
         plt.close()
 
         return best_model, best_epoch, train_losses[-1], val_losses[-1], best_val_loss
 
-def main():
 
+def main():
 
     # Example usage
     encoder_layers = [
@@ -770,13 +882,16 @@ def main():
     decoder_layers = [
         (nn.ConvTranspose2d(64, 32, kernel_size=3, padding=1), nn.ReLU()),
         (nn.ConvTranspose2d(32, 16, kernel_size=3, padding=1), nn.ReLU()),
-        (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), nn.Sigmoid()),  # Example with Sigmoid activation
+        (
+            nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2),
+            nn.Sigmoid(),
+        ),  # Example with Sigmoid activation
         # (nn.ConvTranspose2d(16, 1, kernel_size=3, padding=2), None),  # Example without activation
     ]
 
-
     autoencoder = Ximg_to_Ypdf_Autoencoder(encoder_layers, decoder_layers)
+
+
 if __name__ == "__main__":
-  
 
     main()
